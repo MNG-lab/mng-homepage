@@ -114,3 +114,20 @@ npm run dev
 npm run dev -- --port 5174
 ```
 - 폰트가 느리게 로드되면: 네트워크 상태 확인(구글 폰트 CDN 사용)
+
+## 7) GitHub Pages 배포(자동)
+
+이 저장소에는 GitHub Actions 배포 파일이 포함되어 있습니다.
+
+- 워크플로 파일: `.github/workflows/deploy-pages.yml`
+- `main` 브랜치에 push하면 자동으로 빌드 후 Pages에 배포됩니다.
+
+최초 1회 설정:
+
+1. GitHub 저장소 접속
+2. `Settings > Pages`
+3. `Build and deployment`의 `Source`를 `GitHub Actions`로 선택
+4. 변경사항을 `main`에 push
+5. `Actions` 탭에서 `Deploy to GitHub Pages` 성공 확인
+6. 배포 URL 접속  
+   예: `https://MNG-lab.github.io/mng-homepage/`
