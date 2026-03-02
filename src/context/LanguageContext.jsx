@@ -15,8 +15,7 @@ function getInitialLanguage() {
     return saved;
   }
 
-  const browserLanguage = (window.navigator.language || "").toLowerCase();
-  return browserLanguage.startsWith("ko") ? "ko" : "en";
+  return "en";
 }
 
 function resolveLocalizedValue(language, value) {
