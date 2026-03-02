@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { colors, spacing, typography } from "../design-tokens";
-import { publicationThemes, publicationsData } from "../content/publications-data";
+import { publicationMigrationStatus, publicationThemes, publicationsData } from "../content/publications-data";
 import { useLanguage } from "../context/LanguageContext";
 
 const PAGE_SIZE = 4;
@@ -110,6 +110,16 @@ const styles = {
     cursor: "pointer",
     fontSize: typography.fontSize.sm,
   },
+  migrationNote: {
+    marginTop: spacing[4],
+    background: colors.surface.card,
+    border: `1px dashed ${colors.border.strong}`,
+    borderRadius: 10,
+    padding: spacing[4],
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.sm,
+    lineHeight: typography.lineHeight.relaxed,
+  },
 };
 
 const copy = {
@@ -124,6 +134,7 @@ const copy = {
   featured: { ko: "주요 논문", en: "Featured" },
   view: { ko: "원문 보기", en: "View Paper" },
   none: { ko: "조건에 맞는 논문이 없습니다.", en: "No publications match current filters." },
+  migrationPrefix: { ko: "이관 상태", en: "Migration Status" },
 };
 
 export default function PublicationsPage() {
@@ -162,6 +173,10 @@ export default function PublicationsPage() {
       <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
       <h1 style={styles.title}>{t(copy.title)}</h1>
       <p style={styles.desc}>{t(copy.description)}</p>
+      <div style={styles.migrationNote}>
+        <strong>{t(copy.migrationPrefix)}:</strong> {publicationMigrationStatus.verifiedItems} verified item(s), legacy archive with{" "}
+        {publicationMigrationStatus.observedLegacyPagination} pages observed. {publicationMigrationStatus.note}
+      </div>
 
       <div style={styles.filterRow}>
         <label>

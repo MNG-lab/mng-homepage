@@ -81,6 +81,7 @@ export default function ContactPage() {
         <article style={styles.card}>
           <h2 style={styles.cardTitle}>{t(contactData.locationTitle)}</h2>
           <p style={styles.cardBody}>{t(contactData.address)}</p>
+          <p style={{ ...styles.cardBody, marginTop: spacing[2] }}>{t(contactData.altAddress)}</p>
         </article>
         <article style={styles.card}>
           <h2 style={styles.cardTitle}>{t(contactData.emailTitle)}</h2>
@@ -88,7 +89,11 @@ export default function ContactPage() {
         </article>
         <article style={styles.card}>
           <h2 style={styles.cardTitle}>{t(contactData.phoneTitle)}</h2>
-          <p style={styles.cardBody}>{contactData.phone}</p>
+          {contactData.phones.map((phone) => (
+            <p key={phone.value} style={styles.cardBody}>
+              {t(phone.label)}: {phone.value}
+            </p>
+          ))}
         </article>
         <article style={styles.card}>
           <h2 style={styles.cardTitle}>{t(contactData.officeHoursTitle)}</h2>

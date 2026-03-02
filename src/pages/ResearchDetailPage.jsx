@@ -54,6 +54,13 @@ const styles = {
     color: colors.text.secondary,
     lineHeight: typography.lineHeight.relaxed,
   },
+  sourceLink: {
+    display: "inline-block",
+    marginTop: spacing[5],
+    color: colors.brand.accent,
+    textDecoration: "none",
+    fontSize: typography.fontSize.sm,
+  },
 };
 
 const copy = {
@@ -61,6 +68,7 @@ const copy = {
   overview: { ko: "개요", en: "Overview" },
   focus: { ko: "핵심 목표", en: "Focus" },
   notFound: { ko: "요청한 연구 항목이 없습니다.", en: "Research item not found." },
+  source: { ko: "기존 연구 페이지", en: "Legacy Research Page" },
 };
 
 export default function ResearchDetailPage() {
@@ -101,6 +109,10 @@ export default function ResearchDetailPage() {
           ))}
         </ul>
       </article>
+
+      <a href={area.legacyPath} target="_blank" rel="noreferrer" style={styles.sourceLink}>
+        {t(copy.source)}
+      </a>
     </section>
   );
 }

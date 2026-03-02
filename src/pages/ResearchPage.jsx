@@ -85,6 +85,13 @@ const styles = {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
   },
+  sourceLink: {
+    display: "inline-block",
+    color: colors.text.secondary,
+    textDecoration: "none",
+    fontSize: typography.fontSize.xs,
+    marginTop: spacing[2],
+  },
 };
 
 const copy = {
@@ -95,6 +102,7 @@ const copy = {
     en: "Each research card links to a detail page with specific goals and methods.",
   },
   detailLink: { ko: "상세 보기", en: "View Details" },
+  source: { ko: "기존 페이지", en: "Legacy Page" },
 };
 
 export default function ResearchPage() {
@@ -124,6 +132,9 @@ export default function ResearchPage() {
             <Link to={getResearchDetailPath(area.slug)} style={styles.link}>
               {t(copy.detailLink)}
             </Link>
+            <a href={area.legacyPath} target="_blank" rel="noreferrer" style={styles.sourceLink}>
+              {t(copy.source)}
+            </a>
           </article>
         ))}
       </div>

@@ -71,6 +71,13 @@ const styles = {
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.relaxed,
   },
+  source: {
+    display: "inline-block",
+    marginTop: spacing[2],
+    color: colors.brand.accent,
+    fontSize: typography.fontSize.sm,
+    textDecoration: "none",
+  },
 };
 
 const copy = {
@@ -83,6 +90,7 @@ const copy = {
   year: { ko: "연도", en: "Year" },
   category: { ko: "카테고리", en: "Category" },
   none: { ko: "조건에 맞는 항목이 없습니다.", en: "No gallery items match current filters." },
+  source: { ko: "원본 보기", en: "View Source" },
 };
 
 export default function GalleryPage() {
@@ -139,6 +147,9 @@ export default function GalleryPage() {
               </p>
               <h2 style={styles.cardTitle}>{t(item.title)}</h2>
               <p style={styles.body}>{t(item.description)}</p>
+              <a href={item.sourcePage} target="_blank" rel="noreferrer" style={styles.source}>
+                {t(copy.source)}
+              </a>
             </article>
           ))
         )}

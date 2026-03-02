@@ -4,8 +4,12 @@ export const contactData = {
     en: "Lab Location",
   },
   address: {
-    ko: "서울특별시 서대문구 연세로 50, 연세대학교 생명과학관",
-    en: "College of Life Science and Biotechnology, Yonsei University, 50 Yonsei-ro, Seodaemun-gu, Seoul",
+    ko: "03722 서울특별시 서대문구 연세로 50 연세대학교 323동(과학원) S305호",
+    en: "Room S305, Building 323, Yonsei University, 50 Yonsei-ro, Seodaemun-gu, Seoul 03722, Korea",
+  },
+  altAddress: {
+    ko: "교수 연구실: 323동 S309호",
+    en: "Professor office: Room S309, Building 323",
   },
   emailTitle: {
     ko: "이메일",
@@ -16,7 +20,11 @@ export const contactData = {
     ko: "전화",
     en: "Phone",
   },
-  phone: "+82-2-2123-2699",
+  phones: [
+    { label: { ko: "실험실", en: "Lab" }, value: "02-2123-7584" },
+    { label: { ko: "교수실", en: "Office" }, value: "02-2123-2699" },
+    { label: { ko: "대표 연락", en: "Legacy Footer" }, value: "+82-2-2123-7286" },
+  ],
   officeHoursTitle: {
     ko: "문의 가능 시간",
     en: "Office Hours",
@@ -33,6 +41,10 @@ export const contactData = {
     {
       label: { ko: "Google Scholar", en: "Google Scholar" },
       url: "https://scholar.google.com/citations?user=vZtD7W0AAAAJ",
+    },
+    {
+      label: { ko: "기존 Contact", en: "Legacy Contact" },
+      url: "https://dglab.yonsei.ac.kr/contact",
     },
     {
       label: { ko: "지원 안내", en: "Join Us" },
