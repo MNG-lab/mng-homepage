@@ -172,7 +172,7 @@ export default function SiteLayout() {
           </div>
         </div>
 
-        <div style={styles.footerBottom}>© 2026 Molecular NeuroGenetics Lab, Yonsei University.</div>
+        <div style={styles.footerBottom}>(c) 2026 Molecular NeuroGenetics Lab, Yonsei University.</div>
       </footer>
     </div>
   );
