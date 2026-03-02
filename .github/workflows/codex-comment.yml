@@ -1,0 +1,216 @@
+name: Codex comment-to-code (Issue/PR) - no approval prompts
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: codex-${{ github.repository }}-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  codex:
+    if: >
+      github.event.comment.user.type != 'Bot' &&
+      (contains(github.event.comment.body, '@codex') || startsWith(github.event.comment.body, '/codex')) &&
+      (github.event.comment.author_association == 'COLLABORATOR' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'OWNER')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (base)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install tools (codex, gh, jq)
+        run: |
+          set -euo pipefail
+          npm install -g @openai/codex
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+
+      - name: Restore CODEX auth.json
+        env:
+          CODEX_CLI_KEY: ${{ secrets.CODEX_CLI_KEY }}
+          CODEX_HOME: ${{ runner.temp }}/codex-home
+        run: |
+          set -euo pipefail
+          mkdir -p "$CODEX_HOME"
+          if [[ -z "${CODEX_CLI_KEY:-}" ]]; then
+            echo "Missing secrets.CODEX_CLI_KEY (auth.json payload)"
+            exit 1
+          fi
+          printf '%s' "$CODEX_CLI_KEY" > "$CODEX_HOME/auth.json"
+          chmod 600 "$CODEX_HOME/auth.json"
+
+      - name: Determine target (Issue vs PR) and checkout branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          EVENT="${{ github.event_name }}"
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+
+          if [[ "$EVENT" == "issue_comment" ]]; then
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
+            echo "NUMBER=$ISSUE_NUMBER" >> "$GITHUB_ENV"
+
+            if [[ "${{ github.event.issue.pull_request }}" != "" ]]; then
+              echo "TARGET_KIND=pr" >> "$GITHUB_ENV"
+              PR_NUMBER="$ISSUE_NUMBER"
+              echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+
+              HEAD_REF="$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)"
+              echo "TARGET_REF=$HEAD_REF" >> "$GITHUB_ENV"
+
+              git fetch origin "$HEAD_REF":"$HEAD_REF"
+              git checkout "$HEAD_REF"
+            else
+              echo "TARGET_KIND=issue" >> "$GITHUB_ENV"
+
+              git checkout "$DEFAULT_BRANCH"
+              git pull --ff-only
+
+              NEW_BRANCH="codex/issue-${ISSUE_NUMBER}"
+              echo "TARGET_REF=$NEW_BRANCH" >> "$GITHUB_ENV"
+              git checkout -b "$NEW_BRANCH"
+            fi
+          else
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            echo "NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+            echo "TARGET_KIND=pr" >> "$GITHUB_ENV"
+            echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+
+            HEAD_REF="$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)"
+            echo "TARGET_REF=$HEAD_REF" >> "$GITHUB_ENV"
+
+            git fetch origin "$HEAD_REF":"$HEAD_REF"
+            git checkout "$HEAD_REF"
+          fi
+
+      - name: Build Codex prompt (with context)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          EVENT="${{ github.event_name }}"
+          COMMENT_BODY="${{ github.event.comment.body }}"
+
+          # Remove trigger tokens (simple)
+          REQUEST="$(printf "%s" "$COMMENT_BODY" | sed -e 's/@codex//g' -e 's/^\/codex//g')"
+
+          if [[ "${TARGET_KIND}" == "pr" ]]; then
+            PR_NUMBER="${PR_NUMBER:?}"
+
+            TITLE="$(gh pr view "$PR_NUMBER" --json title -q .title)"
+            BODY="$(gh pr view "$PR_NUMBER" --json body -q .body)"
+            BASE="$(gh pr view "$PR_NUMBER" --json baseRefName -q .baseRefName)"
+            HEAD="$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)"
+
+            EXTRA_CONTEXT=""
+            if [[ "$EVENT" == "pull_request_review_comment" ]]; then
+              FILE_PATH="${{ github.event.comment.path }}"
+              DIFF_HUNK="${{ github.event.comment.diff_hunk }}"
+              printf -v EXTRA_CONTEXT "This request comes from a PR review comment.\n\nFile: %s\n\nRelevant diff hunk:\n%s\n" "$FILE_PATH" "$DIFF_HUNK"
+            fi
+
+            printf -v CONTEXT "You are working on PR #%s (%s).\nBase: %s\nHead: %s\n\nPR description:\n%s\n\n%s" "$PR_NUMBER" "$TITLE" "$BASE" "$HEAD" "$BODY" "$EXTRA_CONTEXT"
+          else
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
+            TITLE="$(gh issue view "$ISSUE_NUMBER" --json title -q .title)"
+            BODY="$(gh issue view "$ISSUE_NUMBER" --json body -q .body)"
+
+            printf -v CONTEXT "You are working on Issue #%s (%s).\n\nIssue description:\n%s\n" "$ISSUE_NUMBER" "$TITLE" "$BODY"
+          fi
+
+          PROMPT_FILE="/tmp/codex_prompt.txt"
+          : > "$PROMPT_FILE"
+
+          printf "%s\n" "Follow these rules:" >> "$PROMPT_FILE"
+          printf "%s\n" "- Make minimal, correct changes aligned to the request." >> "$PROMPT_FILE"
+          printf "%s\n" "- Do not modify unrelated files." >> "$PROMPT_FILE"
+          printf "%s\n" "- If there are existing tests, update/add the smallest test needed." >> "$PROMPT_FILE"
+          printf "%s\n" "- Do not ask for confirmation; proceed autonomously." >> "$PROMPT_FILE"
+          printf "%s\n" "- If you run commands, keep them minimal (e.g., lint/test only if quick)." >> "$PROMPT_FILE"
+          printf "%s\n\n" "- At the end, write a short summary of what you changed (for a GitHub comment)." >> "$PROMPT_FILE"
+
+          printf "%s\n\n" "$CONTEXT" >> "$PROMPT_FILE"
+          printf "%s\n" "User request:" >> "$PROMPT_FILE"
+          printf "%s\n" "$REQUEST" >> "$PROMPT_FILE"
+
+      - name: Run Codex (non-interactive, NO approvals)
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex-home
+        run: |
+          set -euo pipefail
+          codex exec \
+            -a never \
+            --model "gpt-5.3-codex" \
+            --prompt-file /tmp/codex_prompt.txt \
+            --output stdout | tee /tmp/codex_out.txt
+
+      - name: Commit & push changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "NO_CHANGES=true" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "codex: apply request (#${NUMBER})"
+          git push -u origin "${TARGET_REF}"
+
+      - name: Create PR (only when Issue comment)
+        if: env.TARGET_KIND == 'issue' && env.NO_CHANGES != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+
+          PR_URL="$(gh pr create \
+            --base "$DEFAULT_BRANCH" \
+            --head "${TARGET_REF}" \
+            --title "Codex: resolve #$ISSUE_NUMBER" \
+            --body "Automated changes requested via comment on issue #$ISSUE_NUMBER.")"
+
+          gh issue comment "$ISSUE_NUMBER" --body "✅ Codex 작업 완료. PR 생성: $PR_URL"
+
+      - name: Comment result (PR)
+        if: env.TARGET_KIND == 'pr'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PR_NUMBER="${PR_NUMBER:?}"
+
+          if [[ "${NO_CHANGES:-}" == "true" ]]; then
+            gh pr comment "$PR_NUMBER" --body "ℹ️ Codex가 실행됐지만 변경사항이 없어서 커밋/푸시는 하지 않았어요."
+            exit 0
+          fi
+
+          gh pr comment "$PR_NUMBER" --body "✅ Codex 작업 완료. 변경사항을 \`${TARGET_REF}\` 브랜치에 반영해서 push 했어요."
