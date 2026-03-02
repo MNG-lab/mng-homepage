@@ -11,6 +11,7 @@ import GalleryPage from "./pages/GalleryPage";
 import ContactPage from "./pages/ContactPage";
 import JoinUsPage from "./pages/JoinUsPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import SeoManager from "./components/SeoManager";
 
 function ScrollManager() {
   const location = useLocation();
@@ -34,6 +35,7 @@ function ScrollManager() {
 export default function App() {
   return (
     <>
+      <SeoManager />
       <ScrollManager />
       <Routes>
         <Route path="/publications/publications" element={<Navigate to={ROUTES.publications} replace />} />
