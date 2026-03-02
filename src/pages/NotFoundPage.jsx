@@ -1,8 +1,13 @@
 import { Link } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { ROUTES } from "../config/site-routes";
+import { pageContent } from "../content/page-content";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function NotFoundPage() {
+  const { t } = useLanguage();
+  const content = pageContent.notFound;
+
   return (
     <section
       style={{
@@ -21,7 +26,7 @@ export default function NotFoundPage() {
           fontSize: typography.fontSize.xs,
         }}
       >
-        404
+        {content.code}
       </p>
       <h1
         style={{
@@ -32,7 +37,7 @@ export default function NotFoundPage() {
           fontSize: "clamp(2rem, 6vw, 3.2rem)",
         }}
       >
-        Page Not Found
+        {t(content.title)}
       </h1>
       <p
         style={{
@@ -42,7 +47,7 @@ export default function NotFoundPage() {
           lineHeight: typography.lineHeight.relaxed,
         }}
       >
-        The requested URL does not exist in the new route map.
+        {t(content.description)}
       </p>
       <Link
         to={ROUTES.home}
@@ -57,7 +62,7 @@ export default function NotFoundPage() {
           fontSize: typography.fontSize.sm,
         }}
       >
-        Go Home
+        {t(content.cta)}
       </Link>
     </section>
   );

@@ -83,6 +83,7 @@ export default function PageTemplate({
   title,
   description,
   bullets,
+  scopeTitle = "In Scope",
   primaryCta,
   secondaryCta,
 }) {
@@ -94,7 +95,7 @@ export default function PageTemplate({
 
       {Array.isArray(bullets) && bullets.length > 0 ? (
         <div style={styles.panel}>
-          <h2 style={styles.listTitle}>In Scope</h2>
+          <h2 style={styles.listTitle}>{scopeTitle}</h2>
           <ul style={styles.list}>
             {bullets.map((item) => (
               <li key={item}>{item}</li>

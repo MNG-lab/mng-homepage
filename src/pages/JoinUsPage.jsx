@@ -1,19 +1,21 @@
 import PageTemplate from "../components/PageTemplate";
 import { ROUTES } from "../config/site-routes";
+import { pageContent } from "../content/page-content";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function JoinUsPage() {
+  const { t } = useLanguage();
+  const content = pageContent.join;
+
   return (
     <PageTemplate
-      eyebrow="Join Us"
-      title="Recruitment"
-      description="This page is the operational entry point for open positions, eligibility, and application flow."
-      bullets={[
-        "Open position summary",
-        "Eligibility and required documents",
-        "Application process and FAQ",
-      ]}
-      primaryCta={{ to: ROUTES.contact, label: "Contact PI" }}
-      secondaryCta={{ to: ROUTES.home, label: "Back Home" }}
+      eyebrow={t(content.eyebrow)}
+      title={t(content.title)}
+      description={t(content.description)}
+      bullets={content.bullets.map((item) => t(item))}
+      scopeTitle={t(pageContent.common.inScope)}
+      primaryCta={{ to: ROUTES.contact, label: t(content.primaryCta) }}
+      secondaryCta={{ to: ROUTES.home, label: t(content.secondaryCta) }}
     />
   );
 }

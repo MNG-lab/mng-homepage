@@ -1,29 +1,8 @@
 import { Link } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { ROUTES } from "../config/site-routes";
-
-const sections = [
-  {
-    id: "about",
-    title: "About",
-    text: "We study the molecular mechanisms of cilia biology and connect basic science to rare disease and metabolism research.",
-  },
-  {
-    id: "research-summary",
-    title: "Research Summary",
-    text: "Current focus areas: ciliopathies and rare genetic disease, obesity and metabolic regulation, liver fibrosis and aging.",
-  },
-  {
-    id: "news",
-    title: "News",
-    text: "Major publications, conference activity, and grant updates are managed in a unified feed for lab visibility and recruiting.",
-  },
-  {
-    id: "join",
-    title: "Join",
-    text: "Graduate students and postdocs can find role descriptions, application process, and direct contacts from the Join Us page.",
-  },
-];
+import { homeContent } from "../content/home-content";
+import { useLanguage } from "../context/LanguageContext";
 
 const styles = {
   hero: {
@@ -47,7 +26,7 @@ const styles = {
     margin: 0,
     fontFamily: typography.fontFamily.serif,
     fontWeight: typography.fontWeight.regular,
-    fontSize: "clamp(2.2rem, 7vw, 3.5rem)",
+    fontSize: "clamp(2.1rem, 7vw, 3.5rem)",
     lineHeight: typography.lineHeight.tight,
     maxWidth: 760,
   },
@@ -86,6 +65,7 @@ const styles = {
     margin: "0 auto",
     padding: `${spacing[12]} ${spacing[6]} ${spacing[4]}`,
     display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: spacing[6],
   },
   card: {
@@ -110,32 +90,32 @@ const styles = {
 };
 
 export default function HomePage() {
+  const { t } = useLanguage();
+
   return (
     <>
       <section id="top" style={styles.hero}>
         <div style={styles.heroInner}>
-          <div style={styles.eyebrow}>Molecular NeuroGenetics Lab</div>
-          <h1 style={styles.title}>DGLab Homepage Migration Baseline</h1>
-          <p style={styles.subtitle}>
-            P0 now uses a real route structure with reusable layout. Home anchors are linked and can be opened directly.
-          </p>
+          <div style={styles.eyebrow}>{t(homeContent.eyebrow)}</div>
+          <h1 style={styles.title}>{t(homeContent.title)}</h1>
+          <p style={styles.subtitle}>{t(homeContent.subtitle)}</p>
 
           <div style={styles.ctaRow}>
             <Link to={ROUTES.research} style={styles.ctaPrimary}>
-              Go to Research
+              {t(homeContent.ctaPrimary)}
             </Link>
             <Link to={`${ROUTES.home}#about`} style={styles.ctaSecondary}>
-              Jump to About
+              {t(homeContent.ctaSecondary)}
             </Link>
           </div>
         </div>
       </section>
 
       <section style={styles.contentWrap}>
-        {sections.map((section) => (
+        {homeContent.sections.map((section) => (
           <article key={section.id} id={section.id} style={styles.card}>
-            <h2 style={styles.cardTitle}>{section.title}</h2>
-            <p style={styles.cardText}>{section.text}</p>
+            <h2 style={styles.cardTitle}>{t(section.title)}</h2>
+            <p style={styles.cardText}>{t(section.text)}</p>
           </article>
         ))}
       </section>

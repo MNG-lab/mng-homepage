@@ -1,19 +1,21 @@
 import PageTemplate from "../components/PageTemplate";
 import { ROUTES } from "../config/site-routes";
+import { pageContent } from "../content/page-content";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ContactPage() {
+  const { t } = useLanguage();
+  const content = pageContent.contact;
+
   return (
     <PageTemplate
-      eyebrow="Contact"
-      title="Contact"
-      description="Contact details, map embed, and external links will be sourced from `content/contact.json` in migration phase."
-      bullets={[
-        "Address and phone",
-        "Email and external links",
-        "Map embed placeholder",
-      ]}
-      primaryCta={{ to: ROUTES.join, label: "Open Positions" }}
-      secondaryCta={{ to: ROUTES.home, label: "Back Home" }}
+      eyebrow={t(content.eyebrow)}
+      title={t(content.title)}
+      description={t(content.description)}
+      bullets={content.bullets.map((item) => t(item))}
+      scopeTitle={t(pageContent.common.inScope)}
+      primaryCta={{ to: ROUTES.join, label: t(content.primaryCta) }}
+      secondaryCta={{ to: ROUTES.home, label: t(content.secondaryCta) }}
     />
   );
 }

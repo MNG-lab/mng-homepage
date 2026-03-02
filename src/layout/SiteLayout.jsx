@@ -1,6 +1,8 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { HOME_ANCHOR_ITEMS, PRIMARY_NAV_ITEMS, ROUTES } from "../config/site-routes";
+import { uiCopy } from "../content/ui-copy";
+import { useLanguage } from "../context/LanguageContext";
 
 const styles = {
   app: {
@@ -22,7 +24,7 @@ const styles = {
     minHeight: 68,
     padding: `${spacing[4]} ${spacing[6]}`,
     display: "flex",
-    gap: spacing[6],
+    gap: spacing[5],
     alignItems: "center",
     justifyContent: "space-between",
     flexWrap: "wrap",
@@ -50,11 +52,35 @@ const styles = {
     fontSize: typography.fontSize.md,
     lineHeight: 1.1,
   },
+  controls: {
+    display: "flex",
+    alignItems: "center",
+    gap: spacing[4],
+    flexWrap: "wrap",
+  },
   nav: {
     display: "flex",
     alignItems: "center",
     gap: spacing[4],
     flexWrap: "wrap",
+  },
+  languageWrap: {
+    display: "inline-flex",
+    alignItems: "center",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.22)",
+    borderRadius: 9999,
+    padding: 2,
+  },
+  langButton: {
+    border: 0,
+    background: "transparent",
+    borderRadius: 9999,
+    color: "rgba(255,255,255,0.7)",
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
+    padding: "0.3rem 0.65rem",
+    cursor: "pointer",
   },
   footer: {
     background: colors.brand.navy,
@@ -112,7 +138,17 @@ function footerLinkStyle() {
   };
 }
 
+function languageButtonStyle(isActive) {
+  return {
+    ...styles.langButton,
+    background: isActive ? colors.brand.gold : "transparent",
+    color: isActive ? colors.brand.navy : "rgba(255,255,255,0.72)",
+  };
+}
+
 export default function SiteLayout() {
+  const { language, setLanguage, t } = useLanguage();
+
   return (
     <div style={styles.app}>
       <header style={styles.header}>
@@ -122,13 +158,24 @@ export default function SiteLayout() {
             <span style={styles.brandName}>MNG Lab</span>
           </Link>
 
-          <nav style={styles.nav} aria-label="Primary">
-            {PRIMARY_NAV_ITEMS.map((item) => (
-              <NavLink key={item.key} to={item.path} style={({ isActive }) => navStyle(isActive)} end={item.path === ROUTES.home}>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <div style={styles.controls}>
+            <nav style={styles.nav} aria-label="Primary">
+              {PRIMARY_NAV_ITEMS.map((item) => (
+                <NavLink key={item.key} to={item.path} style={({ isActive }) => navStyle(isActive)} end={item.path === ROUTES.home}>
+                  {t(uiCopy.nav[item.key])}
+                </NavLink>
+              ))}
+            </nav>
+
+            <div style={styles.languageWrap} role="group" aria-label={t(uiCopy.language.label)}>
+              <button type="button" onClick={() => setLanguage("ko")} style={languageButtonStyle(language === "ko")}>
+                KR
+              </button>
+              <button type="button" onClick={() => setLanguage("en")} style={languageButtonStyle(language === "en")}>
+                EN
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -139,40 +186,40 @@ export default function SiteLayout() {
       <footer style={styles.footer}>
         <div style={styles.footerInner}>
           <div>
-            <h2 style={styles.footerTitle}>Molecular NeuroGenetics Lab</h2>
+            <h2 style={styles.footerTitle}>{t(uiCopy.footer.labName)}</h2>
             <p style={styles.footerText}>
-              Department of Biochemistry
+              {t(uiCopy.footer.department)}
               <br />
-              College of Life Science and Biotechnology
+              {t(uiCopy.footer.college)}
               <br />
-              Yonsei University
+              {t(uiCopy.footer.university)}
             </p>
           </div>
 
           <div>
-            <h3 style={styles.footerTitle}>Pages</h3>
+            <h3 style={styles.footerTitle}>{t(uiCopy.footer.pagesTitle)}</h3>
             <div style={styles.footerLinks}>
               {PRIMARY_NAV_ITEMS.map((item) => (
                 <Link key={item.key} to={item.path} style={footerLinkStyle()}>
-                  {item.label}
+                  {t(uiCopy.nav[item.key])}
                 </Link>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 style={styles.footerTitle}>Home Anchors</h3>
+            <h3 style={styles.footerTitle}>{t(uiCopy.footer.anchorsTitle)}</h3>
             <div style={styles.footerLinks}>
               {HOME_ANCHOR_ITEMS.map((item) => (
                 <Link key={item.key} to={item.path} style={footerLinkStyle()}>
-                  {item.label}
+                  {t(uiCopy.homeAnchors[item.key])}
                 </Link>
               ))}
             </div>
           </div>
         </div>
 
-        <div style={styles.footerBottom}>(c) 2026 Molecular NeuroGenetics Lab, Yonsei University.</div>
+        <div style={styles.footerBottom}>{t(uiCopy.footer.copyright)}</div>
       </footer>
     </div>
   );
