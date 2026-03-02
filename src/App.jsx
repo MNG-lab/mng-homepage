@@ -4,6 +4,7 @@ import SiteLayout from "./layout/SiteLayout";
 import { ROUTES } from "./config/site-routes";
 import HomePage from "./pages/HomePage";
 import ResearchPage from "./pages/ResearchPage";
+import ResearchDetailPage from "./pages/ResearchDetailPage";
 import MembersPage from "./pages/MembersPage";
 import PublicationsPage from "./pages/PublicationsPage";
 import GalleryPage from "./pages/GalleryPage";
@@ -40,6 +41,7 @@ export default function App() {
         <Route element={<SiteLayout />}>
           <Route path={ROUTES.home} element={<HomePage />} />
           <Route path={ROUTES.research} element={<ResearchPage />} />
+          <Route path={ROUTES.researchDetail} element={<ResearchDetailPage />} />
           <Route path={ROUTES.members} element={<MembersPage />} />
           <Route path={ROUTES.publications} element={<PublicationsPage />} />
           <Route path={ROUTES.gallery} element={<GalleryPage />} />

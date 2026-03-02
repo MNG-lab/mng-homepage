@@ -1,12 +1,17 @@
 export const ROUTES = {
   home: "/",
   research: "/research",
+  researchDetail: "/research/:slug",
   members: "/members",
   publications: "/publications",
   gallery: "/gallery",
   contact: "/contact",
   join: "/join-us",
 };
+
+export function getResearchDetailPath(slug) {
+  return `/research/${slug}`;
+}
 
 export const PRIMARY_NAV_ITEMS = [
   { key: "home", path: ROUTES.home },
