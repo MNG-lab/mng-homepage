@@ -73,7 +73,7 @@ const copy = {
 
 export default function ResearchDetailPage() {
   const { slug } = useParams();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const area = researchAreas.find((item) => item.slug === slug);
 
   if (!area) {
@@ -88,12 +88,14 @@ export default function ResearchDetailPage() {
   }
 
   return (
-    <section style={styles.section}>
+    <section style={styles.section} aria-labelledby="research-detail-title">
       <Link to={ROUTES.research} style={styles.backLink}>
         {t(copy.back)}
       </Link>
 
-      <h1 style={styles.title}>{t(area.title)}</h1>
+      <h1 id="research-detail-title" style={styles.title}>
+        {t(area.title)}
+      </h1>
       <p style={styles.summary}>{t(area.summary)}</p>
 
       <article style={styles.panel}>
@@ -110,7 +112,13 @@ export default function ResearchDetailPage() {
         </ul>
       </article>
 
-      <a href={area.legacyPath} target="_blank" rel="noreferrer" style={styles.sourceLink}>
+      <a
+        href={area.legacyPath}
+        target="_blank"
+        rel="noreferrer"
+        style={styles.sourceLink}
+        aria-label={`${t(copy.source)}: ${t(area.title)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+      >
         {t(copy.source)}
       </a>
     </section>

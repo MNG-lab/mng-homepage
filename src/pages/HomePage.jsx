@@ -94,10 +94,12 @@ export default function HomePage() {
 
   return (
     <>
-      <section id="top" style={styles.hero}>
+      <section id="top" style={styles.hero} aria-labelledby="home-hero-title">
         <div style={styles.heroInner}>
           <div style={styles.eyebrow}>{t(homeContent.eyebrow)}</div>
-          <h1 style={styles.title}>{t(homeContent.title)}</h1>
+          <h1 id="home-hero-title" style={styles.title}>
+            {t(homeContent.title)}
+          </h1>
           <p style={styles.subtitle}>{t(homeContent.subtitle)}</p>
 
           <div style={styles.ctaRow}>
