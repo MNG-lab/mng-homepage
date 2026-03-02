@@ -99,6 +99,20 @@ const styles = {
     lineHeight: typography.lineHeight.relaxed,
     fontSize: typography.fontSize.sm,
   },
+  sourceBox: {
+    marginTop: spacing[8],
+    background: colors.surface.card,
+    border: `1px dashed ${colors.border.strong}`,
+    borderRadius: 10,
+    padding: spacing[4],
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    lineHeight: typography.lineHeight.relaxed,
+  },
+  sourceLink: {
+    color: colors.brand.accent,
+    textDecoration: "none",
+  },
 };
 
 const copy = {
@@ -109,6 +123,7 @@ const copy = {
   alumni: { ko: "동문", en: "Alumni" },
   email: { ko: "이메일", en: "Email" },
   scholar: { ko: "Google Scholar", en: "Google Scholar" },
+  source: { ko: "원본 멤버 페이지", en: "Legacy Members Page" },
 };
 
 export default function MembersPage() {
@@ -142,7 +157,7 @@ export default function MembersPage() {
             <h3 style={styles.memberName}>{t(member.name)}</h3>
             <p style={styles.meta}>{t(member.role)}</p>
             <p style={styles.desc}>{t(member.interests)}</p>
-            <p style={{ ...styles.desc, marginTop: spacing[2] }}>{member.email}</p>
+            {member.email ? <p style={{ ...styles.desc, marginTop: spacing[2] }}>{member.email}</p> : null}
           </article>
         ))}
       </div>
@@ -156,6 +171,12 @@ export default function MembersPage() {
             <p style={styles.desc}>{t(member.now)}</p>
           </article>
         ))}
+      </div>
+
+      <div style={styles.sourceBox}>
+        <a href={membersData.source.membersPage} target="_blank" rel="noreferrer" style={styles.sourceLink}>
+          {t(copy.source)}
+        </a>
       </div>
     </section>
   );
