@@ -135,7 +135,7 @@ export default function GalleryPage() {
           filtered.map((item) => (
             <article key={item.id} style={styles.card}>
               <p style={styles.meta}>
-                {item.year} · {item.category}
+                {item.year} - {item.category}
               </p>
               <h2 style={styles.cardTitle}>{t(item.title)}</h2>
               <p style={styles.body}>{t(item.description)}</p>
