@@ -9,18 +9,18 @@ export const ROUTES = {
 };
 
 export const PRIMARY_NAV_ITEMS = [
-  { key: "home", label: "Home", path: ROUTES.home },
-  { key: "research", label: "Research", path: ROUTES.research },
-  { key: "members", label: "Members", path: ROUTES.members },
-  { key: "publications", label: "Publications", path: ROUTES.publications },
-  { key: "gallery", label: "Gallery", path: ROUTES.gallery },
-  { key: "contact", label: "Contact", path: ROUTES.contact },
-  { key: "join", label: "Join Us", path: ROUTES.join },
+  { key: "home", path: ROUTES.home },
+  { key: "research", path: ROUTES.research },
+  { key: "members", path: ROUTES.members },
+  { key: "publications", path: ROUTES.publications },
+  { key: "gallery", path: ROUTES.gallery },
+  { key: "contact", path: ROUTES.contact },
+  { key: "join", path: ROUTES.join },
 ];
 
 export const HOME_ANCHOR_ITEMS = [
-  { key: "about", label: "About", path: `${ROUTES.home}#about` },
-  { key: "research-summary", label: "Research Summary", path: `${ROUTES.home}#research-summary` },
-  { key: "news", label: "News", path: `${ROUTES.home}#news` },
-  { key: "join", label: "Join", path: `${ROUTES.home}#join` },
+  { key: "about", path: `${ROUTES.home}#about` },
+  { key: "research-summary", path: `${ROUTES.home}#research-summary` },
+  { key: "news", path: `${ROUTES.home}#news` },
+  { key: "join", path: `${ROUTES.home}#join` },
 ];

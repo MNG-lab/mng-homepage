@@ -1,19 +1,21 @@
 import PageTemplate from "../components/PageTemplate";
 import { ROUTES } from "../config/site-routes";
+import { pageContent } from "../content/page-content";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function MembersPage() {
+  const { t } = useLanguage();
+  const content = pageContent.members;
+
   return (
     <PageTemplate
-      eyebrow="Members"
-      title="Members and Alumni"
-      description="This template is ready to render PI, current members, and alumni sections from external content files."
-      bullets={[
-        "PI profile block",
-        "Current members grouped by role",
-        "Alumni list with current affiliation",
-      ]}
-      primaryCta={{ to: ROUTES.contact, label: "Contact the Lab" }}
-      secondaryCta={{ to: ROUTES.home, label: "Back Home" }}
+      eyebrow={t(content.eyebrow)}
+      title={t(content.title)}
+      description={t(content.description)}
+      bullets={content.bullets.map((item) => t(item))}
+      scopeTitle={t(pageContent.common.inScope)}
+      primaryCta={{ to: ROUTES.contact, label: t(content.primaryCta) }}
+      secondaryCta={{ to: ROUTES.home, label: t(content.secondaryCta) }}
     />
   );
 }

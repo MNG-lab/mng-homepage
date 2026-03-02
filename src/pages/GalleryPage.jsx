@@ -1,19 +1,21 @@
 import PageTemplate from "../components/PageTemplate";
 import { ROUTES } from "../config/site-routes";
+import { pageContent } from "../content/page-content";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function GalleryPage() {
+  const { t } = useLanguage();
+  const content = pageContent.gallery;
+
   return (
     <PageTemplate
-      eyebrow="Gallery"
-      title="Gallery and Events"
-      description="The gallery template is prepared for category and year grouping with data-driven rendering."
-      bullets={[
-        "Event categories",
-        "Year collections",
-        "Accessible image captions",
-      ]}
-      primaryCta={{ to: ROUTES.join, label: "Join Us" }}
-      secondaryCta={{ to: ROUTES.home, label: "Back Home" }}
+      eyebrow={t(content.eyebrow)}
+      title={t(content.title)}
+      description={t(content.description)}
+      bullets={content.bullets.map((item) => t(item))}
+      scopeTitle={t(pageContent.common.inScope)}
+      primaryCta={{ to: ROUTES.join, label: t(content.primaryCta) }}
+      secondaryCta={{ to: ROUTES.home, label: t(content.secondaryCta) }}
     />
   );
 }
