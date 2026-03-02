@@ -1,17 +1,34 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import SiteLayout from "./layout/SiteLayout";
 import { ROUTES } from "./config/site-routes";
-import HomePage from "./pages/HomePage";
-import ResearchPage from "./pages/ResearchPage";
-import ResearchDetailPage from "./pages/ResearchDetailPage";
-import MembersPage from "./pages/MembersPage";
-import PublicationsPage from "./pages/PublicationsPage";
-import GalleryPage from "./pages/GalleryPage";
-import ContactPage from "./pages/ContactPage";
-import JoinUsPage from "./pages/JoinUsPage";
-import NotFoundPage from "./pages/NotFoundPage";
 import SeoManager from "./components/SeoManager";
+
+const SiteLayout = lazy(() => import("./layout/SiteLayout"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const ResearchPage = lazy(() => import("./pages/ResearchPage"));
+const ResearchDetailPage = lazy(() => import("./pages/ResearchDetailPage"));
+const MembersPage = lazy(() => import("./pages/MembersPage"));
+const PublicationsPage = lazy(() => import("./pages/PublicationsPage"));
+const GalleryPage = lazy(() => import("./pages/GalleryPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const JoinUsPage = lazy(() => import("./pages/JoinUsPage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+
+const loadingStyles = {
+  minHeight: "32vh",
+  display: "grid",
+  placeItems: "center",
+  fontSize: "0.95rem",
+  color: "#3D3D3D",
+};
+
+function RouteFallback() {
+  return (
+    <div role="status" aria-live="polite" style={loadingStyles}>
+      Loading page...
+    </div>
+  );
+}
 
 function ScrollManager() {
   const location = useLocation();
@@ -37,21 +54,23 @@ export default function App() {
     <>
       <SeoManager />
       <ScrollManager />
-      <Routes>
-        <Route path="/publications/publications" element={<Navigate to={ROUTES.publications} replace />} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/publications/publications" element={<Navigate to={ROUTES.publications} replace />} />
 
-        <Route element={<SiteLayout />}>
-          <Route path={ROUTES.home} element={<HomePage />} />
-          <Route path={ROUTES.research} element={<ResearchPage />} />
-          <Route path={ROUTES.researchDetail} element={<ResearchDetailPage />} />
-          <Route path={ROUTES.members} element={<MembersPage />} />
-          <Route path={ROUTES.publications} element={<PublicationsPage />} />
-          <Route path={ROUTES.gallery} element={<GalleryPage />} />
-          <Route path={ROUTES.contact} element={<ContactPage />} />
-          <Route path={ROUTES.join} element={<JoinUsPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
+          <Route element={<SiteLayout />}>
+            <Route path={ROUTES.home} element={<HomePage />} />
+            <Route path={ROUTES.research} element={<ResearchPage />} />
+            <Route path={ROUTES.researchDetail} element={<ResearchDetailPage />} />
+            <Route path={ROUTES.members} element={<MembersPage />} />
+            <Route path={ROUTES.publications} element={<PublicationsPage />} />
+            <Route path={ROUTES.gallery} element={<GalleryPage />} />
+            <Route path={ROUTES.contact} element={<ContactPage />} />
+            <Route path={ROUTES.join} element={<JoinUsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </>
   );
 }
