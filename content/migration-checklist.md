@@ -22,7 +22,7 @@ Branch: `codex/p3-content-migration`
 - [x] Research section mapped to legacy Research 1/2/3 topics and source links.
 - [x] Members page updated with legacy PI info and multiple verified member emails.
 - [x] Publications updated with one verified item and DOI link.
-- [x] Gallery categories linked to legacy archive routes (`~2023`, `2024`, `와글와글`).
+- [x] Gallery categories linked to legacy archive routes (`~2023`, `2024`, `waglewagle`).
 - [x] Per-page source links added for auditability.
 
 ## Pending Items
