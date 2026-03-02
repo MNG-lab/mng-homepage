@@ -1,114 +1,100 @@
-# MNG Homepage (React + Vite)
+# MNG Homepage
 
-MNG Lab 홈페이지 마이그레이션 프로젝트입니다.  
-현재 저장소는 실제 운영 구조(페이지 라우팅, 콘텐츠 데이터, QA/검증 스크립트, GitHub Pages 배포 워크플로)를 포함합니다.
+MNG Lab 홈페이지 저장소입니다.  
+이 문서는 **비개발자가 이슈 기반으로 유지보수**할 때 바로 사용할 수 있게 구성되어 있습니다.
 
-## 1) 요구사항
+## 비개발자용 빠른 사용법
 
-- Node.js 20 이상 권장
-- npm 10 이상 권장
+### 1) 수정 요청하기 (가장 많이 쓰는 방식)
+GitHub Issue에 아래처럼 작성하세요.
 
-확인:
+```text
+제목: [페이지명] 수정 요청
 
-```bash
-node -v
-npm -v
+배경:
+- 왜 수정이 필요한지
+
+요청사항:
+1. 무엇을 어디서 어떻게 바꿀지
+2. 국문/영문 모두 반영 여부
+3. 완료 기준(예: 링크 동작, 문구 검수)
+
+검증:
+- 확인할 페이지 URL
+- 확인할 항목(모바일/PC, 오탈자, 이미지)
 ```
 
-## 2) 로컬 실행
+요청이 구체적일수록 자동 작업 정확도가 올라갑니다.
 
-### macOS / Linux
+### 2) 댓글로 Codex 실행하기
+Issue 또는 PR 댓글에 `@codex`(또는 `/codex`)로 시작해 지시하면 자동으로 코드 변경을 시도합니다.
+
+예시:
+
+```text
+@codex
+- publications에 2026 논문 2건 추가
+- home 통계 숫자 자동 반영 확인
+- build/콘텐츠 검증 통과 후 커밋
+```
+
+동작 방식:
+- Issue 댓글: `codex/issue-...` 브랜치를 만들고 PR 생성
+- PR 댓글: 해당 PR 브랜치에 직접 커밋/푸시
+
+### 3) 결과 확인하기
+- GitHub `Actions` 탭에서 실행 로그 확인
+- 생성된 PR에서 변경 파일/미리보기 확인
+- 이상 없으면 `main`으로 머지
+
+### 4) 배포 확인하기
+`main`에 머지되면 GitHub Pages가 자동 배포됩니다.
+- 워크플로: `.github/workflows/deploy-pages.yml`
+
+---
+
+<details>
+<summary><strong>For Developers (접기/펼치기)</strong></summary>
+
+## 개발 환경
+
+요구사항:
+- Node.js 20+
+- npm 10+
 
 ```bash
-cd /Users/user/Desktop/mng-homepage
 npm install
 npm run dev
 ```
 
-### Windows (PowerShell)
-
-```powershell
-cd C:\Users\user\Desktop\mng-homepage
-npm install
-npm run dev
-```
-
-## 3) 빌드
-
-`build` 전에 `prebuild`가 자동 실행되어 `public/sitemap.xml`, `public/robots.txt`를 생성합니다.
+빌드/미리보기:
 
 ```bash
 npm run build
+npm run preview
 ```
 
-## 4) 주요 스크립트
+## 주요 스크립트
 
-- `npm run dev`: 개발 서버
-- `npm run build`: 프로덕션 빌드 (`prebuild` 자동 포함)
-- `npm run preview`: 빌드 결과 미리보기
-- `npm run qa:smoke`: 주요 라우트 스모크 테스트
-- `npm run qa:matrix:responsive`: 반응형 QA 매트릭스(모바일/태블릿/데스크톱) 스크린샷 수집 + 리포트 생성
-- `npm run qa:cross-browser`: 크로스브라우저 라우트 스모크(Chromium/Firefox/WebKit) 리포트 생성
-- `npm run qa:accessibility`: 접근성 점검(heading-order/image-alt/color-contrast) 리포트 생성
-- `npm run validate:content`: 콘텐츠 구조 검증
-- `npm run validate:content:urls`: 콘텐츠 + 외부 URL 상태 검증
-- `npm run verify:members`: 레거시 멤버 데이터 정합 리포트 생성
-- `npm run validate:redirects`: 레거시->신규 URL 매핑 검증 리포트 생성
-- `npm run verify:routes:published`: 배포 URL 라우트/레거시 진입 경로 검증
-- `npm run verify:rollback:deploy -- --sha <commit-sha>`: 특정 SHA의 롤백 배포 반영 여부 검증
-- `npm run check:pages:status`: 최신 Pages 배포 상태/롤백 SHA 리포트 생성
-- `npm run preflight:p5`: P5 배포 전 점검(SEO/빌드/콘텐츠/외부 링크/스모크/접근성/리다이렉트/배포상태) 일괄 실행
-- `npm run generate:seo`: sitemap/robots 수동 생성
+- `npm run build`: 프로덕션 빌드 (`prebuild` 포함)
+- `npm run validate:content`: 콘텐츠 스키마/참조 검증
+- `npm run validate:content:urls`: 콘텐츠 + 외부 URL 검증
+- `npm run qa:smoke`: 핵심 라우트 스모크 테스트
+- `npm run qa:matrix:responsive`: 반응형 캡처 + 리포트
+- `npm run qa:cross-browser`: Chromium/Firefox/WebKit 점검
+- `npm run qa:accessibility`: 접근성 점검 리포트
+- `npm run preflight:p5`: 릴리즈 전 통합 점검
 
-`qa:matrix:responsive` 최초 1회 실행 전 브라우저 설치:
+## Codex 워크플로 파일
 
-```bash
-npx playwright install chromium
-```
+- `.github/workflows/codex-comment.yml`
+- `.github/workflows/deploy-pages.yml`
 
-`qa:cross-browser`까지 포함하려면:
+## 운영 문서
 
-```bash
-npx playwright install chromium firefox webkit
-```
+- `content/migration-checklist.md`
+- `content/p5-pages-checklist.md`
+- `content/p5-custom-domain-guide.md`
+- `content/release-handoff-summary-2026-03-03.md`
 
-## 5) 사이트 URL(SEO) 설정
-
-Canonical URL, OG URL, sitemap/robots 기준 URL은 `VITE_SITE_URL`로 제어합니다.
-
-기본값:
-
-- `https://mng-lab.github.io/mng-homepage`
-
-### macOS / Linux
-
-```bash
-VITE_SITE_URL=https://dglab.yonsei.ac.kr npm run build
-```
-
-### Windows (PowerShell)
-
-```powershell
-$env:VITE_SITE_URL="https://dglab.yonsei.ac.kr"; npm run build
-```
-
-## 6) GitHub Pages 배포
-
-- 워크플로: `.github/workflows/deploy-pages.yml`
-- PR 품질 게이트: `.github/workflows/ci-quality.yml`
-- `main` 브랜치 push 시 자동 배포
-- SPA fallback: `dist/index.html` -> `dist/404.html`
-
-최초 1회:
-
-1. GitHub 저장소 `Settings > Pages`
-2. Source를 `GitHub Actions`로 설정
-3. `main`에 push 후 `Actions`의 `Deploy to GitHub Pages` 성공 확인
-
-## 7) 운영 문서
-
-- 마이그레이션 체크리스트: `content/migration-checklist.md`
-- 릴리스 핸드오프 요약: `content/release-handoff-summary-2026-03-03.md`
-- Pages 안정화 체크리스트: `content/p5-pages-checklist.md`
-- 배포 상태 리포트: `content/p5-deployment-status-report.md`
-- 커스텀 도메인/HTTPS 수동 가이드: `content/p5-custom-domain-guide.md`
+</details>
