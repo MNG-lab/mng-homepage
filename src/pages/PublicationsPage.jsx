@@ -138,11 +138,13 @@ const copy = {
 };
 
 export default function PublicationsPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const years = useMemo(() => ["All", ...new Set(publicationsData.map((item) => String(item.year)))], []);
   const [selectedYear, setSelectedYear] = useState("All");
   const [selectedTheme, setSelectedTheme] = useState("All");
   const [page, setPage] = useState(1);
+  const allOptionLabel = language === "ko" ? "전체" : "All";
+  const paginationLabel = language === "ko" ? "페이지 탐색" : "Pagination";
 
   const filtered = useMemo(() => {
     const sorted = [...publicationsData].sort((a, b) => b.year - a.year || Number(b.featured) - Number(a.featured));
@@ -169,9 +171,11 @@ export default function PublicationsPage() {
   }
 
   return (
-    <section style={styles.section}>
+    <section style={styles.section} aria-labelledby="publications-title">
       <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
-      <h1 style={styles.title}>{t(copy.title)}</h1>
+      <h1 id="publications-title" style={styles.title}>
+        {t(copy.title)}
+      </h1>
       <p style={styles.desc}>{t(copy.description)}</p>
       <div style={styles.migrationNote}>
         <strong>{t(copy.migrationPrefix)}:</strong> {publicationMigrationStatus.verifiedItems} verified item(s), legacy archive with{" "}
@@ -179,27 +183,35 @@ export default function PublicationsPage() {
       </div>
 
       <div style={styles.filterRow}>
-        <label>
-          {t(copy.yearFilter)}{" "}
-          <select value={selectedYear} onChange={(event) => onYearChange(event.target.value)} style={styles.select}>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </label>
+        <label htmlFor="publication-year-filter">{t(copy.yearFilter)}</label>
+        <select
+          id="publication-year-filter"
+          value={selectedYear}
+          onChange={(event) => onYearChange(event.target.value)}
+          style={styles.select}
+          aria-label={t(copy.yearFilter)}
+        >
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {year === "All" ? allOptionLabel : year}
+            </option>
+          ))}
+        </select>
 
-        <label>
-          {t(copy.themeFilter)}{" "}
-          <select value={selectedTheme} onChange={(event) => onThemeChange(event.target.value)} style={styles.select}>
-            {publicationThemes.map((theme) => (
-              <option key={theme} value={theme}>
-                {theme}
-              </option>
-            ))}
-          </select>
-        </label>
+        <label htmlFor="publication-theme-filter">{t(copy.themeFilter)}</label>
+        <select
+          id="publication-theme-filter"
+          value={selectedTheme}
+          onChange={(event) => onThemeChange(event.target.value)}
+          style={styles.select}
+          aria-label={t(copy.themeFilter)}
+        >
+          {publicationThemes.map((theme) => (
+            <option key={theme} value={theme}>
+              {theme === "All" ? allOptionLabel : theme}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div style={styles.list}>
@@ -218,7 +230,13 @@ export default function PublicationsPage() {
               <h2 style={styles.paperTitle}>{item.title}</h2>
               <p style={styles.meta}>{item.authors}</p>
               <p style={styles.meta}>{item.journal}</p>
-              <a href={item.url} target="_blank" rel="noreferrer" style={styles.link}>
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                style={styles.link}
+                aria-label={`${t(copy.view)}: ${item.title}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+              >
                 {t(copy.view)}
               </a>
             </article>
@@ -226,7 +244,7 @@ export default function PublicationsPage() {
         )}
       </div>
 
-      <div style={styles.pagination}>
+      <nav style={styles.pagination} aria-label={paginationLabel}>
         {Array.from({ length: pageCount }, (_, index) => index + 1).map((item) => (
           <button
             key={item}
@@ -237,11 +255,13 @@ export default function PublicationsPage() {
               color: item === pageSafe ? colors.text.inverse : colors.text.primary,
             }}
             onClick={() => setPage(item)}
+            aria-current={item === pageSafe ? "page" : undefined}
+            aria-label={language === "ko" ? `${item}페이지` : `Page ${item}`}
           >
             {item}
           </button>
         ))}
-      </div>
+      </nav>
     </section>
   );
 }

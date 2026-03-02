@@ -127,13 +127,15 @@ const copy = {
 };
 
 export default function MembersPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { pi, current, alumni } = membersData;
 
   return (
-    <section style={styles.section}>
+    <section style={styles.section} aria-labelledby="members-title">
       <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
-      <h1 style={styles.title}>{t(copy.title)}</h1>
+      <h1 id="members-title" style={styles.title}>
+        {t(copy.title)}
+      </h1>
 
       <article style={styles.piCard}>
         <h2 style={styles.heading}>{t(copy.pi)}</h2>
@@ -141,10 +143,16 @@ export default function MembersPage() {
         <p style={styles.piTitle}>{t(pi.title)}</p>
         <p style={styles.piBio}>{t(pi.bio)}</p>
         <div style={styles.linkRow}>
-          <a href={`mailto:${pi.email}`} style={styles.pillLink}>
+          <a href={`mailto:${pi.email}`} style={styles.pillLink} aria-label={`${t(copy.email)}: ${pi.email}`}>
             {t(copy.email)}: {pi.email}
           </a>
-          <a href={pi.scholarUrl} target="_blank" rel="noreferrer" style={styles.pillLink}>
+          <a
+            href={pi.scholarUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={styles.pillLink}
+            aria-label={`${t(copy.scholar)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+          >
             {t(copy.scholar)}
           </a>
         </div>
@@ -174,7 +182,13 @@ export default function MembersPage() {
       </div>
 
       <div style={styles.sourceBox}>
-        <a href={membersData.source.membersPage} target="_blank" rel="noreferrer" style={styles.sourceLink}>
+        <a
+          href={membersData.source.membersPage}
+          target="_blank"
+          rel="noreferrer"
+          style={styles.sourceLink}
+          aria-label={`${t(copy.source)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+        >
           {t(copy.source)}
         </a>
       </div>

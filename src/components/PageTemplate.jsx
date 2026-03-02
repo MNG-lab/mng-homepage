@@ -88,9 +88,11 @@ export default function PageTemplate({
   secondaryCta,
 }) {
   return (
-    <section style={styles.section}>
+    <section style={styles.section} aria-labelledby="page-template-title">
       <div style={styles.eyebrow}>{eyebrow}</div>
-      <h1 style={styles.title}>{title}</h1>
+      <h1 id="page-template-title" style={styles.title}>
+        {title}
+      </h1>
       <p style={styles.description}>{description}</p>
 
       {Array.isArray(bullets) && bullets.length > 0 ? (

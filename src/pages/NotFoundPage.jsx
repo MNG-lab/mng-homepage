@@ -10,6 +10,7 @@ export default function NotFoundPage() {
 
   return (
     <section
+      aria-labelledby="not-found-title"
       style={{
         maxWidth: 900,
         margin: "0 auto",
@@ -29,6 +30,7 @@ export default function NotFoundPage() {
         {content.code}
       </p>
       <h1
+        id="not-found-title"
         style={{
           marginTop: spacing[3],
           marginBottom: spacing[4],

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { HOME_ANCHOR_ITEMS, PRIMARY_NAV_ITEMS, ROUTES } from "../config/site-routes";
@@ -10,6 +11,22 @@ const styles = {
     background: colors.surface.base,
     fontFamily: typography.fontFamily.sans,
     color: colors.text.primary,
+  },
+  skipLink: {
+    position: "absolute",
+    left: spacing[4],
+    top: -100,
+    zIndex: 1000,
+    borderRadius: 8,
+    textDecoration: "none",
+    background: colors.brand.gold,
+    color: colors.brand.navy,
+    padding: `${spacing[2]} ${spacing[4]}`,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  skipLinkVisible: {
+    top: spacing[3],
   },
   header: {
     position: "sticky",
@@ -148,9 +165,22 @@ function languageButtonStyle(isActive) {
 
 export default function SiteLayout() {
   const { language, setLanguage, t } = useLanguage();
+  const [skipFocused, setSkipFocused] = useState(false);
+
+  const skipToMainLabel = language === "ko" ? "본문으로 건너뛰기" : "Skip to main content";
+  const primaryNavLabel = language === "ko" ? "주요 메뉴" : "Primary navigation";
 
   return (
     <div style={styles.app}>
+      <a
+        href="#main-content"
+        style={{ ...styles.skipLink, ...(skipFocused ? styles.skipLinkVisible : {}) }}
+        onFocus={() => setSkipFocused(true)}
+        onBlur={() => setSkipFocused(false)}
+      >
+        {skipToMainLabel}
+      </a>
+
       <header style={styles.header}>
         <div style={styles.headerInner}>
           <Link to={ROUTES.home} style={styles.brand}>
@@ -159,7 +189,7 @@ export default function SiteLayout() {
           </Link>
 
           <div style={styles.controls}>
-            <nav style={styles.nav} aria-label="Primary">
+            <nav style={styles.nav} aria-label={primaryNavLabel}>
               {PRIMARY_NAV_ITEMS.map((item) => (
                 <NavLink key={item.key} to={item.path} style={({ isActive }) => navStyle(isActive)} end={item.path === ROUTES.home}>
                   {t(uiCopy.nav[item.key])}
@@ -168,10 +198,20 @@ export default function SiteLayout() {
             </nav>
 
             <div style={styles.languageWrap} role="group" aria-label={t(uiCopy.language.label)}>
-              <button type="button" onClick={() => setLanguage("ko")} style={languageButtonStyle(language === "ko")}>
+              <button
+                type="button"
+                onClick={() => setLanguage("ko")}
+                style={languageButtonStyle(language === "ko")}
+                aria-pressed={language === "ko"}
+              >
                 KR
               </button>
-              <button type="button" onClick={() => setLanguage("en")} style={languageButtonStyle(language === "en")}>
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                style={languageButtonStyle(language === "en")}
+                aria-pressed={language === "en"}
+              >
                 EN
               </button>
             </div>
@@ -179,7 +219,7 @@ export default function SiteLayout() {
         </div>
       </header>
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
 

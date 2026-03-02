@@ -94,10 +94,11 @@ const copy = {
 };
 
 export default function GalleryPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const years = useMemo(() => ["All", ...new Set(galleryData.map((item) => String(item.year)))], []);
   const [selectedYear, setSelectedYear] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const allOptionLabel = language === "ko" ? "전체" : "All";
 
   const filtered = useMemo(() => {
     return galleryData.filter((item) => {
@@ -108,32 +109,42 @@ export default function GalleryPage() {
   }, [selectedCategory, selectedYear]);
 
   return (
-    <section style={styles.section}>
+    <section style={styles.section} aria-labelledby="gallery-title">
       <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
-      <h1 style={styles.title}>{t(copy.title)}</h1>
+      <h1 id="gallery-title" style={styles.title}>
+        {t(copy.title)}
+      </h1>
       <p style={styles.description}>{t(copy.description)}</p>
 
       <div style={styles.filterRow}>
-        <label>
-          {t(copy.year)}{" "}
-          <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)} style={styles.select}>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t(copy.category)}{" "}
-          <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} style={styles.select}>
-            {galleryCategories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </label>
+        <label htmlFor="gallery-year-filter">{t(copy.year)}</label>
+        <select
+          id="gallery-year-filter"
+          value={selectedYear}
+          onChange={(event) => setSelectedYear(event.target.value)}
+          style={styles.select}
+          aria-label={t(copy.year)}
+        >
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {year === "All" ? allOptionLabel : year}
+            </option>
+          ))}
+        </select>
+        <label htmlFor="gallery-category-filter">{t(copy.category)}</label>
+        <select
+          id="gallery-category-filter"
+          value={selectedCategory}
+          onChange={(event) => setSelectedCategory(event.target.value)}
+          style={styles.select}
+          aria-label={t(copy.category)}
+        >
+          {galleryCategories.map((category) => (
+            <option key={category} value={category}>
+              {category === "All" ? allOptionLabel : category}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div style={styles.grid}>
@@ -147,7 +158,13 @@ export default function GalleryPage() {
               </p>
               <h2 style={styles.cardTitle}>{t(item.title)}</h2>
               <p style={styles.body}>{t(item.description)}</p>
-              <a href={item.sourcePage} target="_blank" rel="noreferrer" style={styles.source}>
+              <a
+                href={item.sourcePage}
+                target="_blank"
+                rel="noreferrer"
+                style={styles.source}
+                aria-label={`${t(copy.source)}: ${t(item.title)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+              >
                 {t(copy.source)}
               </a>
             </article>

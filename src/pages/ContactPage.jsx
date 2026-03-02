@@ -70,12 +70,14 @@ const copy = {
 };
 
 export default function ContactPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
-    <section style={styles.section}>
+    <section style={styles.section} aria-labelledby="contact-title">
       <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
-      <h1 style={styles.title}>{t(copy.title)}</h1>
+      <h1 id="contact-title" style={styles.title}>
+        {t(copy.title)}
+      </h1>
 
       <div style={styles.grid}>
         <article style={styles.card}>
@@ -85,13 +87,18 @@ export default function ContactPage() {
         </article>
         <article style={styles.card}>
           <h2 style={styles.cardTitle}>{t(contactData.emailTitle)}</h2>
-          <p style={styles.cardBody}>{contactData.email}</p>
+          <a href={`mailto:${contactData.email}`} style={styles.quickLink}>
+            {contactData.email}
+          </a>
         </article>
         <article style={styles.card}>
           <h2 style={styles.cardTitle}>{t(contactData.phoneTitle)}</h2>
           {contactData.phones.map((phone) => (
             <p key={phone.value} style={styles.cardBody}>
-              {t(phone.label)}: {phone.value}
+              {t(phone.label)}:{" "}
+              <a href={`tel:${phone.value.replace(/[^+\d]/g, "")}`} style={styles.quickLink}>
+                {phone.value}
+              </a>
             </p>
           ))}
         </article>
@@ -114,7 +121,14 @@ export default function ContactPage() {
           }
 
           return (
-            <a key={item.url} href={item.url} target="_blank" rel="noreferrer" style={styles.quickLink}>
+            <a
+              key={item.url}
+              href={item.url}
+              target="_blank"
+              rel="noreferrer"
+              style={styles.quickLink}
+              aria-label={`${t(item.label)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+            >
               {t(item.label)}
             </a>
           );

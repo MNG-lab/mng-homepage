@@ -106,12 +106,14 @@ const copy = {
 };
 
 export default function ResearchPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
-    <section style={styles.section}>
+    <section style={styles.section} aria-labelledby="research-title">
       <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
-      <h1 style={styles.title}>{t(copy.title)}</h1>
+      <h1 id="research-title" style={styles.title}>
+        {t(copy.title)}
+      </h1>
       <p style={styles.description}>{t(copy.description)}</p>
 
       <div style={styles.grid}>
@@ -129,10 +131,16 @@ export default function ResearchPage() {
               ))}
             </div>
 
-            <Link to={getResearchDetailPath(area.slug)} style={styles.link}>
+            <Link to={getResearchDetailPath(area.slug)} style={styles.link} aria-label={`${t(copy.detailLink)}: ${t(area.title)}`}>
               {t(copy.detailLink)}
             </Link>
-            <a href={area.legacyPath} target="_blank" rel="noreferrer" style={styles.sourceLink}>
+            <a
+              href={area.legacyPath}
+              target="_blank"
+              rel="noreferrer"
+              style={styles.sourceLink}
+              aria-label={`${t(copy.source)}: ${t(area.title)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+            >
               {t(copy.source)}
             </a>
           </article>
