@@ -46,3 +46,5 @@ Branch: `codex/p3-content-migration`
 - Gallery migration baseline (2026-03-03): 22 image items extracted with caption metadata.
 - Member verification baseline (2026-03-03): `PASS 5 / WARN 3 / INFO 17`.
   - WARN targets: `ksjsjj2000@naver.com`, `yeonalex1@yonsei.ac.kr`, `c223jin@yonsei.ac.kr` (legacy Members page data differs from migrated current roster).
+- Redirect validation baseline (2026-03-03): `PASS 6 / WARN 0 / FAIL 2 / SKIP 1` (`content/redirect-validation-report.md`).
+  - FAIL targets: `/publications/publications` (no redirect), `/publications` (404 on current legacy host).

@@ -26,6 +26,7 @@ Branch: `codex/p5-pages-stabilization`
 - [ ] `/gallery`
 - [ ] `/contact`
 - [ ] `/join-us`
+- [x] Run redirect baseline checker (`npm run validate:redirects`) and review `content/redirect-validation-report.md`
 
 ## 4) Custom Domain Cutover
 
