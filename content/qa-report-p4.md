@@ -1,7 +1,7 @@
 # P4 QA Report
 
 Date: 2026-03-03  
-Branch: `codex/p4-qa-matrix`
+Branch: `codex/p4-rc-link-sanity`
 
 ## 1) Automated Checks
 
@@ -28,4 +28,10 @@ Branch: `codex/p4-qa-matrix`
 - [ ] Responsive matrix execution with screenshots (mobile/tablet/desktop)
 - [ ] Cross-browser run (Chrome/Edge/Safari)
 - [ ] Final accessibility review (heading order, alt text, contrast)
-- [ ] Content-level external link sanity checks during release candidate run
+- [x] Content-level external link sanity checks during release candidate run (`npm run preflight:p5` includes `npm run validate:content:urls`)
+
+## 5) External Link Sanity Baseline (RC)
+
+- Command: `npm run preflight:p5`
+- Result: pass (`8/8`)
+- URL health summary: `content/p3-validation-report.md` (`38/39` passed, one known `403` from `onlinelibrary.wiley.com`)

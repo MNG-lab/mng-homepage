@@ -12,6 +12,7 @@ const TASKS = [
   { label: "Generate SEO assets", command: "npm run generate:seo" },
   { label: "Build production bundle", command: "npm run build" },
   { label: "Validate content schema", command: "npm run validate:content" },
+  { label: "External link sanity check", command: "npm run validate:content:urls" },
   { label: "Run smoke test", command: "npm run qa:smoke" },
   { label: "Validate redirect mapping", command: "npm run validate:redirects" },
   { label: "Verify published routes", command: "npm run verify:routes:published" },

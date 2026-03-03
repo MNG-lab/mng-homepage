@@ -54,7 +54,7 @@ npm run build
 - `npm run verify:routes:published`: 배포 URL 라우트/레거시 진입 경로 검증
 - `npm run verify:rollback:deploy -- --sha <commit-sha>`: 특정 SHA의 롤백 배포 반영 여부 검증
 - `npm run check:pages:status`: 최신 Pages 배포 상태/롤백 SHA 리포트 생성
-- `npm run preflight:p5`: P5 배포 전 점검(SEO/빌드/검증/배포상태) 일괄 실행
+- `npm run preflight:p5`: P5 배포 전 점검(SEO/빌드/콘텐츠/외부 링크/스모크/리다이렉트/배포상태) 일괄 실행
 - `npm run generate:seo`: sitemap/robots 수동 생성
 
 ## 5) 사이트 URL(SEO) 설정

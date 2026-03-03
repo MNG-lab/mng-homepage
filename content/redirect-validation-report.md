@@ -1,6 +1,6 @@
 # Redirect Validation Report
 
-Generated at: 2026-03-03T01:20:04.889Z
+Generated at: 2026-03-03T01:55:02.587Z
 Base URL: https://dglab.yonsei.ac.kr
 Routes map: /Users/user/Desktop/mng-homepage/routes-map.md
 
