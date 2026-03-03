@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { ROUTES, getResearchDetailPath } from "../config/site-routes";
 import { homeContent } from "../content/home-content";
+import { professorData } from "../content/professor-data";
+import { publicationsData } from "../content/publications-data";
+import { researchAreas } from "../content/research-data";
 import { useLanguage } from "../context/LanguageContext";
 
 const AUTO_ROTATE_MS = 5000;
+const HOME_NEWS_LIMIT = 4;
 
 const styles = {
   hero: {
@@ -329,13 +333,41 @@ function newsTypeColor(typeEn) {
 }
 
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [activeSlide, setActiveSlide] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [hoveredResearch, setHoveredResearch] = useState(null);
 
   const slides = homeContent.hero.slides;
   const currentSlide = slides[activeSlide];
+  const newsItems = useMemo(() => {
+    return [...publicationsData]
+      .sort((a, b) => b.year - a.year || Number(b.featured) - Number(a.featured) || a.title.localeCompare(b.title))
+      .slice(0, HOME_NEWS_LIMIT)
+      .map((item) => ({
+        id: item.id,
+        type: { ko: "Publication", en: "Publication" },
+        year: String(item.year),
+        title: { ko: item.title, en: item.title },
+        description: { ko: `저자: ${item.authors}`, en: `Authors: ${item.authors}` },
+      }));
+  }, []);
+  const quickStats = useMemo(() => {
+    const establishedYear = Number(homeContent.metrics?.establishedYear) || 2010;
+    const currentYear = new Date().getFullYear();
+    const yearsOfResearch = Math.max(1, currentYear - establishedYear);
+    const publicationCount = publicationsData.length;
+    const researchAreaCount = researchAreas.length;
+
+    return [
+      { value: String(establishedYear), label: { ko: "연구실 설립", en: "Lab Established" } },
+      { value: `${yearsOfResearch}+`, label: { ko: "연구 경력", en: "Years of Research" } },
+      { value: `${publicationCount}+`, label: { ko: "논문 수", en: "Publications" } },
+      { value: String(researchAreaCount), label: { ko: "핵심 연구축", en: "Research Areas" } },
+    ];
+  }, []);
+  const researchThemePill = language === "ko" ? `${researchAreas.length}개 테마` : `${researchAreas.length} themes`;
+  const primaryProfileOverview = t(professorData.overview?.[0] ?? { ko: "", en: "" });
 
   useEffect(() => {
     setMounted(true);
@@ -381,8 +413,8 @@ export default function HomePage() {
 
       <div style={styles.statsWrap}>
         <div style={styles.statsGrid} aria-label="Quick stats">
-          {homeContent.stats.map((item) => (
-            <article key={item.value} style={styles.statCard}>
+          {quickStats.map((item) => (
+            <article key={`${item.value}-${item.label.en}`} style={styles.statCard}>
               <div style={styles.statValue}>{item.value}</div>
               <div style={styles.statLabel}>{t(item.label)}</div>
             </article>
@@ -412,12 +444,12 @@ export default function HomePage() {
 
             <aside style={styles.profile}>
               <div style={styles.profileLabel}>{t(homeContent.profile.label)}</div>
-              <h3 style={styles.profileName}>{t(homeContent.profile.name)}</h3>
-              <div style={styles.profileTitle}>{t(homeContent.profile.title)}</div>
-              <p style={{ ...styles.paragraph, marginTop: spacing[3], marginBottom: 0 }}>{t(homeContent.profile.bio)}</p>
+              <h3 style={styles.profileName}>{t(professorData.profile.name)}</h3>
+              <div style={styles.profileTitle}>{t(professorData.profile.title)}</div>
+              <p style={{ ...styles.paragraph, marginTop: spacing[3], marginBottom: 0 }}>{primaryProfileOverview}</p>
               <div style={styles.ctaRow}>
                 <a
-                  href="https://scholar.google.com/citations?user=vZtD7W0AAAAJ"
+                  href={professorData.contact.scholarUrl}
                   target="_blank"
                   rel="noreferrer"
                   style={styles.ctaPrimary}
@@ -436,7 +468,7 @@ export default function HomePage() {
       <section id="research-summary" style={{ ...styles.section, ...styles.sectionOff }}>
         <div style={styles.sectionInner}>
           <h2 style={styles.sectionTitle}>
-            {t(homeContent.research.title)} <span style={styles.pill}>{t(homeContent.research.pill)}</span>
+            {t(homeContent.research.title)} <span style={styles.pill}>{researchThemePill}</span>
           </h2>
 
           <div style={styles.researchGrid}>
@@ -497,11 +529,11 @@ export default function HomePage() {
           </h2>
 
           <div style={styles.newsGrid}>
-            {homeContent.news.items.map((item) => {
+            {newsItems.map((item) => {
               const typeEn = item.type.en;
               const dotColor = newsTypeColor(typeEn);
               return (
-                <article key={`${item.year}-${typeEn}-${item.title.en}`} style={styles.newsCard}>
+                <article key={item.id} style={styles.newsCard}>
                   <div style={styles.badge}>
                     <span style={{ ...styles.badgeDot, background: dotColor }} />
                     <span>

@@ -26,8 +26,8 @@ export const uiCopy = {
     pagesTitle: { ko: "페이지", en: "Pages" },
     anchorsTitle: { ko: "홈 섹션", en: "Home Anchors" },
     copyright: {
-      ko: "(c) 2026 Molecular NeuroGenetics Lab, Yonsei University.",
-      en: "(c) 2026 Molecular NeuroGenetics Lab, Yonsei University.",
+      ko: "(c) {year} Molecular NeuroGenetics Lab, Yonsei University.",
+      en: "(c) {year} Molecular NeuroGenetics Lab, Yonsei University.",
     },
   },
 };

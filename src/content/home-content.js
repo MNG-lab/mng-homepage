@@ -69,12 +69,9 @@ export const homeContent = {
       },
     ],
   },
-  stats: [
-    { value: "2010", label: { ko: "연구실 설립", en: "Lab Established" } },
-    { value: "15+", label: { ko: "연구 경력", en: "Years of Research" } },
-    { value: "50+", label: { ko: "논문 수", en: "Publications" } },
-    { value: "3", label: { ko: "핵심 연구축", en: "Research Areas" } },
-  ],
+  metrics: {
+    establishedYear: 2010,
+  },
   about: {
     title: { ko: "Welcome to MNG Lab", en: "Welcome to MNG Lab" },
     pill: { ko: "소개", en: "About" },
@@ -93,18 +90,11 @@ export const homeContent = {
   },
   profile: {
     label: { ko: "Principal Investigator", en: "Principal Investigator" },
-    name: { ko: "Hyuk Wan Ko, Ph.D.", en: "Hyuk Wan Ko, Ph.D." },
-    title: { ko: "Professor, Dept. of Biochemistry", en: "Professor, Dept. of Biochemistry" },
-    bio: {
-      ko: "Rutgers University 신경과학 박사 학위를 취득했으며 Princeton University에서 박사후연구를 수행했습니다.",
-      en: "Ph.D. in Neuroscience from Rutgers University. Postdoctoral training at Princeton University.",
-    },
     ctaScholar: { ko: "Google Scholar", en: "Google Scholar" },
     ctaContact: { ko: "Contact", en: "Contact" },
   },
   research: {
     title: { ko: "Research Areas", en: "Research Areas" },
-    pill: { ko: "3 themes", en: "3 themes" },
     cards: [
       {
         id: "research-1",
@@ -166,56 +156,6 @@ export const homeContent = {
   news: {
     title: { ko: "Lab News", en: "Lab News" },
     pill: { ko: "Timeline", en: "Timeline" },
-    items: [
-      {
-        type: { ko: "Publication", en: "Publication" },
-        year: "2025",
-        title: {
-          ko: "Cilk1 is essential for mesenchymal cilia maintenance and epithelial-mesenchymal crosstalk in intestinal villus morphogenesis",
-          en: "Cilk1 is essential for mesenchymal cilia maintenance and epithelial-mesenchymal crosstalk in intestinal villus morphogenesis",
-        },
-        description: {
-          ko: "저자: Song J., Je S.Y., Lee B., Ko H.W.",
-          en: "Authors: Song J., Je S.Y., Lee B., Ko H.W.",
-        },
-      },
-      {
-        type: { ko: "Publication", en: "Publication" },
-        year: "2025",
-        title: {
-          ko: "Ebastine-mediated destabilization of E3 ligase MKRN1 protects against metabolic dysfunction-associated steatohepatitis",
-          en: "Ebastine-mediated destabilization of E3 ligase MKRN1 protects against metabolic dysfunction-associated steatohepatitis",
-        },
-        description: {
-          ko: "저자: Kim S., Han H.J., Rho H. 외",
-          en: "Authors: Kim S., Han H.J., Rho H. et al.",
-        },
-      },
-      {
-        type: { ko: "Publication", en: "Publication" },
-        year: "2025",
-        title: {
-          ko: "Ebastine-mediated SHANK2 establishes auditory hair bundle architecture essential for mammalian hearing steatohepatitis",
-          en: "Ebastine-mediated SHANK2 establishes auditory hair bundle architecture essential for mammalian hearing steatohepatitis",
-        },
-        description: {
-          ko: "저자: Choi H.S., Park H., Min H. 외",
-          en: "Authors: Choi H.S., Park H., Min H. et al.",
-        },
-      },
-      {
-        type: { ko: "Publication", en: "Publication" },
-        year: "2024",
-        title: {
-          ko: "Distinct roles of centriole distal appendage proteins in ciliary assembly and disassembly",
-          en: "Distinct roles of centriole distal appendage proteins in ciliary assembly and disassembly",
-        },
-        description: {
-          ko: "저자: Su-yeon Je, Hyuk Wan Ko",
-          en: "Authors: Su-yeon Je, Hyuk Wan Ko",
-        },
-      },
-    ],
   },
   join: {
     title: { ko: "Join Our Lab", en: "Join Our Lab" },

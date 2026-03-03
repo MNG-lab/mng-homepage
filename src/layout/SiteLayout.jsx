@@ -168,9 +168,14 @@ function languageButtonStyle(isActive) {
   };
 }
 
+function resolveCopyright(text, year) {
+  return String(text || "").replace("{year}", String(year));
+}
+
 export default function SiteLayout() {
   const { language, setLanguage, t } = useLanguage();
   const [skipFocused, setSkipFocused] = useState(false);
+  const currentYear = new Date().getFullYear();
 
   const skipToMainLabel = language === "ko" ? "본문으로 건너뛰기" : "Skip to main content";
   const primaryNavLabel = language === "ko" ? "주요 메뉴" : "Primary navigation";
@@ -269,7 +274,7 @@ export default function SiteLayout() {
           </div>
         </div>
 
-        <div style={styles.footerBottom}>{t(uiCopy.footer.copyright)}</div>
+        <div style={styles.footerBottom}>{resolveCopyright(t(uiCopy.footer.copyright), currentYear)}</div>
       </footer>
     </div>
   );

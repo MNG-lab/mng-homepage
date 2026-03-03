@@ -716,15 +716,4 @@ export const publicationsData = [
   }
 ];
 
-export const publicationThemes = [
-  "All",
-  "Cilia Biology",
-  "Metabolic Disease",
-  "Archive",
-  "Aging & Fibrosis",
-  "Drug Discovery",
-  "Sensory Biology",
-  "Neurodegeneration",
-  "Circadian Biology",
-  "Neuroscience"
-];
+export const publicationThemes = ["All", ...new Set(publicationsData.map((item) => item.theme).filter(Boolean))];

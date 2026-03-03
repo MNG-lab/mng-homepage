@@ -1,21 +1,16 @@
+import { professorData } from "./professor-data.js";
+
+const piProfile = {
+  name: professorData.profile.name,
+  title: professorData.profile.title,
+  bio: professorData.profile.intro,
+  email: professorData.contact.email,
+  scholarUrl: professorData.contact.scholarUrl,
+  photo: professorData.profile.photo,
+};
+
 export const membersData = {
-  "pi": {
-    "name": {
-      "ko": "고혁완",
-      "en": "Hyuk Wan Ko, Ph.D."
-    },
-    "title": {
-      "ko": "교수, 생화학과",
-      "en": "Professor, Department of Biochemistry"
-    },
-    "bio": {
-      "ko": "연세대학교 생화학과 Development and Genetic Diseases Laboratory 책임교수",
-      "en": "Principal Investigator, Development and Genetic Diseases Laboratory, Yonsei University"
-    },
-    "email": "kohw@yonsei.ac.kr",
-    "scholarUrl": "https://scholar.google.com/citations?user=vZtD7W0AAAAJ",
-    "photo": "https://static.wixstatic.com/media/aff8cf_74d33387bb08452688d0e50f6efa6ab6~mv2.jpg/v1/crop/x_0,y_45,w_551,h_732/fill/w_196,h_259,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_74d33387bb08452688d0e50f6efa6ab6~mv2.jpg"
-  },
+  "pi": piProfile,
   "current": [
     {
       "id": "m1",

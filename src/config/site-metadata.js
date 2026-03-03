@@ -16,13 +16,13 @@ export const PAGE_SEO = {
   home: {
     ko: {
       title: "MNG Lab | 연세대학교",
-      description: "MNG Lab은 연세대학교 산업공학과 데이터 기반 의사결정 연구실입니다.",
-      keywords: "MNG Lab, 연세대학교, 산업공학, 데이터 기반 의사결정, 연구실",
+      description: "MNG Lab은 연세대학교 생화학과에서 일차섬모, 희귀질환, 대사질환을 연구하는 분자신경유전학 연구실입니다.",
+      keywords: "MNG Lab, 연세대학교, 생화학과, 분자신경유전학, 일차섬모, 희귀질환, 대사질환",
     },
     en: {
       title: "MNG Lab | Yonsei University",
-      description: "MNG Lab is a data-driven decision science lab in Industrial Engineering at Yonsei University.",
-      keywords: "MNG Lab, Yonsei University, Industrial Engineering, Data-driven Decision Science, Research Lab",
+      description: "MNG Lab is a Molecular NeuroGenetics laboratory at Yonsei University studying primary cilia, rare diseases, and metabolic disorders.",
+      keywords: "MNG Lab, Yonsei University, Biochemistry, Molecular NeuroGenetics, Primary Cilia, Rare Disease, Metabolic Disease",
     },
   },
   research: {
