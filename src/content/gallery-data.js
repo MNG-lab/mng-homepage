@@ -9,9 +9,8 @@ export const galleryData = [
     },
     "description": {
       "ko": "기존 사이트 갤러리 메인 페이지에서 연도별/카테고리별 항목으로 진입합니다.",
-      "en": "Entry page from the legacy site with year/category sub-sections."
+      "en": "Archive entry page grouped by year and category."
     },
-    "sourcePage": "https://dglab.yonsei.ac.kr/gallery",
     "images": []
   },
   {
@@ -24,9 +23,8 @@ export const galleryData = [
     },
     "description": {
       "ko": "기존 갤러리의 2023년 이전 활동 모음 페이지",
-      "en": "Legacy activity archive page for years up to 2023."
+      "en": "Activity archive page for years up to 2023."
     },
-    "sourcePage": "https://dglab.yonsei.ac.kr/2023-1",
     "images": [
       {
         "id": "legacy-gallery-2023-img-1",
@@ -36,8 +34,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_014238051_09_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 014238051 09",
-          "en": "KakaoTalk 20241119 014238051 09"
+          "ko": "JEJU KSMCB",
+          "en": "JEJU KSMCB"
         }
       },
       {
@@ -48,8 +46,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241121_003815216_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241121 003815216",
-          "en": "KakaoTalk 20241121 003815216"
+          "ko": "KMPC 워크숍",
+          "en": "KMPC 워크숍"
         }
       },
       {
@@ -60,8 +58,8 @@ export const galleryData = [
           "en": "KakaoTalk_20171130_154155616_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20171130 154155616",
-          "en": "KakaoTalk 20171130 154155616"
+          "ko": "JEJU KSBMB",
+          "en": "JEJU KSBMB"
         }
       },
       {
@@ -72,8 +70,8 @@ export const galleryData = [
           "en": "KakaoTalk_20171130_153916987.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20171130 153916987",
-          "en": "KakaoTalk 20171130 153916987"
+          "ko": "KSMCB",
+          "en": "KSMCB"
         }
       },
       {
@@ -84,8 +82,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241121_004237384_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241121 004237384",
-          "en": "KakaoTalk 20241121 004237384"
+          "ko": "송별회",
+          "en": "Farewell"
         }
       },
       {
@@ -96,8 +94,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241121_003529522_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241121 003529522",
-          "en": "KakaoTalk 20241121 003529522"
+          "ko": "BUSAN KSBMB",
+          "en": "BUSAN KSBMB"
         }
       },
       {
@@ -108,8 +106,8 @@ export const galleryData = [
           "en": "2018-송년회_edited.jpg"
         },
         "caption": {
-          "ko": "2018 송년회",
-          "en": "2018 송년회"
+          "ko": "송년회",
+          "en": "Year-end Party"
         }
       },
       {
@@ -120,8 +118,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_014238051.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 014238051",
-          "en": "KakaoTalk 20241119 014238051"
+          "ko": "졸업 (시현 & 지연)",
+          "en": "Graduation (Sihyeon & Jiyeon)"
         }
       },
       {
@@ -132,8 +130,8 @@ export const galleryData = [
           "en": "photo_0 (1)_edited_edited.jpg"
         },
         "caption": {
-          "ko": "photo 0 (1)",
-          "en": "photo 0 (1)"
+          "ko": "송별회",
+          "en": "Farewell"
         }
       },
       {
@@ -144,8 +142,8 @@ export const galleryData = [
           "en": "2018-경혜윤지 졸업_edited.jpg"
         },
         "caption": {
-          "ko": "2018 경혜윤지 졸업",
-          "en": "2018 경혜윤지 졸업"
+          "ko": "졸업 (경혜 & 윤지)",
+          "en": "Graduation (Kyounghye & Yoonji)"
         }
       }
     ]
@@ -160,9 +158,8 @@ export const galleryData = [
     },
     "description": {
       "ko": "기존 갤러리의 2024년 활동 모음 페이지",
-      "en": "Legacy activity archive page for 2024."
+      "en": "Activity archive page for 2024."
     },
-    "sourcePage": "https://dglab.yonsei.ac.kr/2024",
     "images": [
       {
         "id": "legacy-gallery-2024-img-1",
@@ -172,8 +169,8 @@ export const galleryData = [
           "en": "24-10 생신_edited.jpg"
         },
         "caption": {
-          "ko": "24 10 생신",
-          "en": "24 10 생신"
+          "ko": "교수님 생신",
+          "en": "Professor's Birthday"
         }
       },
       {
@@ -184,8 +181,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_014238051_12_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 014238051 12",
-          "en": "KakaoTalk 20241119 014238051 12"
+          "ko": "KALAS",
+          "en": "KALAS"
         }
       },
       {
@@ -196,8 +193,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241121_002237948_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241121 002237948",
-          "en": "KakaoTalk 20241121 002237948"
+          "ko": "KSBMB 섬유화연구분과 심포지움",
+          "en": "KSBMB Fibrosis Division Symposium"
         }
       },
       {
@@ -208,8 +205,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_014238051_11_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 014238051 11",
-          "en": "KakaoTalk 20241119 014238051 11"
+          "ko": "경민 송별회",
+          "en": "Farewell for Gyeongmin"
         }
       },
       {
@@ -220,8 +217,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_014238051_13_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 014238051 13",
-          "en": "KakaoTalk 20241119 014238051 13"
+          "ko": "연경 송별회",
+          "en": "Farewell for Yeonggyeong"
         }
       }
     ]
@@ -232,13 +229,12 @@ export const galleryData = [
     "category": "Lab Life",
     "title": {
       "ko": "와글와글",
-      "en": "Lab Life (WagleWagle)"
+      "en": "Lab Moments"
     },
     "description": {
       "ko": "연구실 활동 중심의 별도 갤러리 섹션",
-      "en": "A separate section focused on lab-life activities."
+      "en": "A separate section focused on lab moments."
     },
-    "sourcePage": "https://dglab.yonsei.ac.kr/%EC%99%80%EA%B8%80%EC%99%80%EA%B8%80",
     "images": [
       {
         "id": "legacy-gallery-wagle-img-1",
@@ -248,8 +244,8 @@ export const galleryData = [
           "en": "ㅎㅎ.jpg"
         },
         "caption": {
-          "ko": "ㅎㅎ",
-          "en": "ㅎㅎ"
+          "ko": "와글와글 스냅샷 1",
+          "en": "Lab Moments Snapshot 1"
         }
       },
       {
@@ -260,8 +256,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_011501700_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 011501700",
-          "en": "KakaoTalk 20241119 011501700"
+          "ko": "와글와글 스냅샷 2",
+          "en": "Lab Moments Snapshot 2"
         }
       },
       {
@@ -272,8 +268,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_014238051_07_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 014238051 07",
-          "en": "KakaoTalk 20241119 014238051 07"
+          "ko": "와글와글 스냅샷 3",
+          "en": "Lab Moments Snapshot 3"
         }
       },
       {
@@ -284,8 +280,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241119_014238051_01.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241119 014238051 01",
-          "en": "KakaoTalk 20241119 014238051 01"
+          "ko": "와글와글 스냅샷 4",
+          "en": "Lab Moments Snapshot 4"
         }
       },
       {
@@ -296,8 +292,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241121_003512215_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241121 003512215",
-          "en": "KakaoTalk 20241121 003512215"
+          "ko": "와글와글 스냅샷 5",
+          "en": "Lab Moments Snapshot 5"
         }
       },
       {
@@ -308,8 +304,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241121_000639836_05_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241121 000639836 05",
-          "en": "KakaoTalk 20241121 000639836 05"
+          "ko": "와글와글 스냅샷 6",
+          "en": "Lab Moments Snapshot 6"
         }
       },
       {
@@ -320,8 +316,8 @@ export const galleryData = [
           "en": "KakaoTalk_20241121_000639836_02_edited.jpg"
         },
         "caption": {
-          "ko": "KakaoTalk 20241121 000639836 02",
-          "en": "KakaoTalk 20241121 000639836 02"
+          "ko": "와글와글 스냅샷 7",
+          "en": "Lab Moments Snapshot 7"
         }
       }
     ]

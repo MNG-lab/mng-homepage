@@ -43,10 +43,10 @@ const GALLERY_SOURCES = [
     id: "legacy-gallery-wagle",
     year: 2024,
     category: "Lab Life",
-    title: { ko: "와글와글", en: "Lab Life (WagleWagle)" },
+    title: { ko: "와글와글", en: "Lab Moments" },
     description: {
       ko: "연구실 활동 중심의 별도 갤러리 섹션",
-      en: "A separate section focused on lab-life activities.",
+      en: "A separate section focused on lab moments.",
     },
     sourcePage: "https://dglab.yonsei.ac.kr/%EC%99%80%EA%B8%80%EC%99%80%EA%B8%80",
     collectImages: true,
@@ -55,11 +55,40 @@ const GALLERY_SOURCES = [
 
 const EXCLUDED_ALTS = new Set(["logo_header.png", "KakaoTalk_20241117_174010675.png"]);
 
+function cleanCaption(value) {
+  return value
+    .replace(/\u200b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isValidCaption(value) {
+  if (!value) return false;
+  if (value.length > 80) return false;
+  if (/(Molecular NeuroGenetics Lab|Science Building|TEL\.|E-MAIL|서울특별시)/i.test(value)) return false;
+  return true;
+}
+
+function toPlainText(html) {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function extractImageTags(html) {
-  const tags = html.match(/<img\b[^>]*>/gi) ?? [];
+  const tags = [...html.matchAll(/<img\b[^>]*>/gi)];
   const results = [];
 
-  for (const tag of tags) {
+  for (const match of tags) {
+    const tag = match[0];
     const srcMatch = tag.match(/\ssrc="([^"]+)"/i);
     const altMatch = tag.match(/\salt="([^"]*)"/i);
     const src = srcMatch?.[1] ?? "";
@@ -67,7 +96,10 @@ function extractImageTags(html) {
     if (!src || !alt) continue;
     if (!src.includes("static.wixstatic.com/media/")) continue;
     if (EXCLUDED_ALTS.has(alt)) continue;
-    results.push({ src, alt });
+    const near = html.slice(match.index, match.index + 7000);
+    const textMatch = near.match(/<div[^>]*data-testid="richTextElement"[^>]*>([\s\S]*?)<\/div>/i);
+    const detected = cleanCaption(textMatch ? toPlainText(textMatch[1]) : "");
+    results.push({ src, alt, caption: isValidCaption(detected) ? detected : "" });
   }
 
   const deduped = [];
@@ -89,6 +121,72 @@ function normalizeCaption(filename) {
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function decodeSafe(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function fallbackCaptionBySource(sourceId, index) {
+  if (sourceId === "legacy-gallery-wagle") return `와글와글 스냅샷 ${index + 1}`;
+  if (sourceId === "legacy-gallery-2024") return `2024 활동 사진 ${index + 1}`;
+  return `2023 이전 활동 사진 ${index + 1}`;
+}
+
+function captionLooksLikeFilename(value) {
+  if (!value) return true;
+  const token = value.toLowerCase();
+  if (/(kakaotalk|photo\s*\d|img\s*\d|snapshot\s*\d)/i.test(token)) return true;
+  if (/^\d{6,}/.test(token)) return true;
+  return false;
+}
+
+function deriveReadableCaption(alt, sourceId, index) {
+  const base = normalizeCaption(decodeSafe(alt))
+    .replace(/\b(kakaotalk|photo|img)\b/gi, " ")
+    .replace(/\b\d{6,}\b/g, " ")
+    .replace(/\b\d{1,2}\b/g, " ")
+    .replace(/[()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!base) return fallbackCaptionBySource(sourceId, index);
+
+  const hasHangul = /[가-힣]/.test(base);
+  if (hasHangul && !captionLooksLikeFilename(base)) return base;
+
+  return fallbackCaptionBySource(sourceId, index);
+}
+
+function toEnglishCaption(koCaption, fallback) {
+  const map = new Map([
+    ["교수님 생신", "Professor's Birthday"],
+    ["KSBMB 섬유화연구분과 심포지움", "KSBMB Fibrosis Division Symposium"],
+    ["경민 송별회", "Farewell for Gyeongmin"],
+    ["연경 송별회", "Farewell for Yeonggyeong"],
+    ["송별회", "Farewell"],
+    ["송년회", "Year-end Party"],
+    ["졸업 (시현 & 지연)", "Graduation (Sihyeon & Jiyeon)"],
+    ["졸업 (경혜 & 윤지)", "Graduation (Kyounghye & Yoonji)"],
+  ]);
+  if (map.has(koCaption)) return map.get(koCaption);
+  if (/^2024 활동 사진 \d+$/.test(koCaption)) {
+    const number = koCaption.split(" ").at(-1);
+    return `2024 Activity Photo ${number}`;
+  }
+  if (/^2023 이전 활동 사진 \d+$/.test(koCaption)) {
+    const number = koCaption.split(" ").at(-1);
+    return `Pre-2023 Activity Photo ${number}`;
+  }
+  if (/^와글와글 스냅샷 \d+$/.test(koCaption)) {
+    const number = koCaption.split(" ").at(-1);
+    return `Lab Moments Snapshot ${number}`;
+  }
+  return fallback || koCaption;
 }
 
 async function fetchText(url) {
@@ -114,12 +212,13 @@ async function run() {
     if (source.collectImages) {
       const html = await fetchText(source.sourcePage);
       const images = extractImageTags(html).map((img, index) => {
-        const caption = normalizeCaption(img.alt);
+        const caption = img.caption || deriveReadableCaption(img.alt, source.id, index);
+        const captionEn = toEnglishCaption(caption, caption);
         return {
           id: `${source.id}-img-${index + 1}`,
           src: img.src,
           alt: { ko: img.alt, en: img.alt },
-          caption: { ko: caption, en: caption },
+          caption: { ko: caption, en: captionEn },
         };
       });
       item.images = images;

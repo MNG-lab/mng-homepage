@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { colors, spacing, typography } from "../design-tokens";
-import { galleryCategories, galleryData } from "../content/gallery-data";
+import { galleryData } from "../content/gallery-data";
 import { useLanguage } from "../context/LanguageContext";
 
 const styles = {
@@ -29,115 +28,244 @@ const styles = {
     color: colors.text.secondary,
     lineHeight: typography.lineHeight.relaxed,
   },
-  filterRow: {
-    marginTop: spacing[6],
-    display: "flex",
-    gap: spacing[3],
-    flexWrap: "wrap",
-  },
-  select: {
-    border: `1px solid ${colors.border.strong}`,
-    borderRadius: 8,
-    background: colors.surface.card,
-    color: colors.text.primary,
-    padding: "0.45rem 0.65rem",
-    fontSize: typography.fontSize.sm,
-  },
-  grid: {
+  albumGrid: {
     marginTop: spacing[6],
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: spacing[4],
   },
-  card: {
+  albumCard: {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
-    borderRadius: 12,
-    padding: spacing[5],
+    borderRadius: 14,
+    padding: spacing[4],
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing[3],
+    cursor: "pointer",
+    textAlign: "left",
   },
-  imageFrame: {
-    marginTop: spacing[3],
+  albumCardActive: {
+    borderColor: colors.brand.accent,
+    boxShadow: "0 10px 26px rgba(11,29,58,0.08)",
+  },
+  albumCoverWrap: {
     borderRadius: 10,
     overflow: "hidden",
     border: `1px solid ${colors.border.soft}`,
-    background: colors.surface.subtle,
     aspectRatio: "4 / 3",
+    background: colors.surface.subtle,
   },
-  image: {
+  albumCover: {
     width: "100%",
     height: "100%",
     objectFit: "cover",
     display: "block",
   },
-  meta: {
+  albumMeta: {
     margin: 0,
-    fontSize: typography.fontSize.xs,
     color: colors.brand.accent,
+    fontSize: typography.fontSize.xs,
   },
-  cardTitle: {
-    marginTop: spacing[2],
-    marginBottom: spacing[2],
-    fontFamily: typography.fontFamily.serif,
+  albumTitle: {
+    margin: 0,
     color: colors.brand.navy,
+    fontFamily: typography.fontFamily.serif,
+    fontSize: typography.fontSize.lg,
   },
-  body: {
+  viewerSection: {
+    marginTop: spacing[8],
+    background: colors.surface.card,
+    border: `1px solid ${colors.border.soft}`,
+    borderRadius: 14,
+    padding: spacing[5],
+  },
+  viewerHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing[3],
+    flexWrap: "wrap",
+  },
+  viewerTitle: {
     margin: 0,
-    color: colors.text.secondary,
-    fontSize: typography.fontSize.sm,
-    lineHeight: typography.lineHeight.relaxed,
+    color: colors.brand.navy,
+    fontFamily: typography.fontFamily.serif,
+    fontSize: typography.fontSize.xl,
   },
-  captionList: {
-    margin: `${spacing[3]} 0 0`,
-    paddingLeft: spacing[5],
+  photoGrid: {
+    marginTop: spacing[5],
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: spacing[4],
+  },
+  photoCard: {
+    background: colors.surface.base,
+    border: `1px solid ${colors.border.soft}`,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  photoWrap: {
+    aspectRatio: "4 / 3",
+    background: colors.surface.subtle,
+    position: "relative",
+  },
+  photoButton: {
+    width: "100%",
+    height: "100%",
+    border: 0,
+    padding: 0,
+    margin: 0,
+    background: "transparent",
+    cursor: "zoom-in",
+    display: "block",
+  },
+  photo: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+  },
+  caption: {
+    margin: 0,
+    padding: spacing[2],
     color: colors.text.secondary,
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.relaxed,
   },
-  captionItem: {
-    marginBottom: spacing[1],
+  lightboxOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(9, 12, 18, 0.82)",
+    zIndex: 1000,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing[5],
   },
-  source: {
-    display: "inline-block",
-    marginTop: spacing[2],
-    color: colors.brand.accent,
+  lightboxPanel: {
+    position: "relative",
+    maxWidth: "min(94vw, 1600px)",
+    maxHeight: "90vh",
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing[3],
+    alignItems: "center",
+  },
+  lightboxImage: {
+    maxWidth: "100%",
+    maxHeight: "84vh",
+    width: "auto",
+    height: "auto",
+    borderRadius: 10,
+    boxShadow: "0 20px 56px rgba(0,0,0,0.42)",
+    background: "#111",
+  },
+  lightboxCaption: {
+    margin: 0,
+    color: "rgba(255,255,255,0.88)",
     fontSize: typography.fontSize.sm,
-    textDecoration: "none",
+    textAlign: "center",
+  },
+  lightboxClose: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    width: 34,
+    height: 34,
+    borderRadius: 9999,
+    border: "1px solid rgba(255,255,255,0.35)",
+    background: "rgba(0,0,0,0.62)",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 18,
+    lineHeight: "1",
   },
 };
 
 const copy = {
   eyebrow: { ko: "갤러리", en: "Gallery" },
-  title: { ko: "연도/카테고리 갤러리", en: "Year and Category Gallery" },
+  title: { ko: "활동 아카이브", en: "Activity Archive" },
   description: {
-    ko: "활동 기록을 연도와 카테고리로 분류해 확인할 수 있습니다.",
-    en: "Browse lab activities grouped by year and category.",
+    ko: "사진첩 카드를 눌러 바로 해당 아카이브를 확인할 수 있습니다.",
+    en: "Click an album card to directly view its archive.",
   },
-  year: { ko: "연도", en: "Year" },
-  category: { ko: "카테고리", en: "Category" },
   photos: { ko: "사진", en: "photos" },
-  none: { ko: "조건에 맞는 항목이 없습니다.", en: "No gallery items match current filters." },
-  source: { ko: "원본 보기", en: "View Source" },
+  none: { ko: "표시할 갤러리 데이터가 없습니다.", en: "No gallery data available." },
 };
+
+function toLightboxSrc(src) {
+  return src.replace(/w_\d+,h_\d+,/i, "w_1280,h_1280,").replace(/q_\d+/i, "q_80");
+}
 
 export default function GalleryPage() {
   const { language, t } = useLanguage();
-  const [searchParams] = useSearchParams();
-  const years = useMemo(() => ["All", ...new Set(galleryData.map((item) => String(item.year)))], []);
+  const albums = useMemo(() => {
+    const withImages = galleryData.filter((item) => (item.images?.length ?? 0) > 0);
+    const order = {
+      "legacy-gallery-2024": 0,
+      "legacy-gallery-2023": 1,
+      "legacy-gallery-wagle": 2,
+    };
+    return withImages.sort((a, b) => (order[a.id] ?? 99) - (order[b.id] ?? 99));
+  }, []);
+  const [activeAlbumId, setActiveAlbumId] = useState(albums[0]?.id ?? null);
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxDisplaySrc, setLightboxDisplaySrc] = useState("");
+  const highResCacheRef = useRef(new Set());
 
-  const normalizeYear = (value) => (value && years.includes(value) ? value : "All");
-  const normalizeCategory = (value) => (value && galleryCategories.includes(value) ? value : "All");
+  function openLightbox(image) {
+    setLightboxImage(image);
+    setLightboxDisplaySrc(image.src);
+  }
 
-  const [selectedYear, setSelectedYear] = useState(() => normalizeYear(searchParams.get("year")));
-  const [selectedCategory, setSelectedCategory] = useState(() => normalizeCategory(searchParams.get("category")));
-  const allOptionLabel = language === "ko" ? "전체" : "All";
+  useEffect(() => {
+    if (!lightboxImage) return undefined;
 
-  const filtered = useMemo(() => {
-    return galleryData.filter((item) => {
-      const byYear = selectedYear === "All" || String(item.year) === selectedYear;
-      const byCategory = selectedCategory === "All" || item.category === selectedCategory;
-      return byYear && byCategory;
-    });
-  }, [selectedCategory, selectedYear]);
+    const hiResSrc = toLightboxSrc(lightboxImage.src);
+    if (highResCacheRef.current.has(hiResSrc)) {
+      setLightboxDisplaySrc(hiResSrc);
+    } else {
+      let active = true;
+      const preloader = new Image();
+      preloader.decoding = "async";
+      preloader.src = hiResSrc;
+      preloader.onload = () => {
+        if (!active) return;
+        highResCacheRef.current.add(hiResSrc);
+        setLightboxDisplaySrc(hiResSrc);
+      };
+      return () => {
+        active = false;
+      };
+    }
+
+    return undefined;
+  }, [lightboxImage]);
+
+  useEffect(() => {
+    if (!lightboxImage) return undefined;
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setLightboxImage(null);
+      }
+    }
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [lightboxImage]);
+
+  if (albums.length === 0) {
+    return (
+      <section style={styles.section}>
+        <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
+        <h1 style={styles.title}>{t(copy.title)}</h1>
+        <p style={styles.description}>{t(copy.none)}</p>
+      </section>
+    );
+  }
+
+  const activeAlbum = albums.find((item) => item.id === activeAlbumId) ?? albums[0];
+  const hidePhotoCaption = activeAlbum.id === "legacy-gallery-wagle";
 
   return (
     <section style={styles.section} aria-labelledby="gallery-title">
@@ -147,76 +275,83 @@ export default function GalleryPage() {
       </h1>
       <p style={styles.description}>{t(copy.description)}</p>
 
-      <div style={styles.filterRow}>
-        <label htmlFor="gallery-year-filter">{t(copy.year)}</label>
-        <select
-          id="gallery-year-filter"
-          value={selectedYear}
-          onChange={(event) => setSelectedYear(event.target.value)}
-          style={styles.select}
-          aria-label={t(copy.year)}
-        >
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year === "All" ? allOptionLabel : year}
-            </option>
-          ))}
-        </select>
-        <label htmlFor="gallery-category-filter">{t(copy.category)}</label>
-        <select
-          id="gallery-category-filter"
-          value={selectedCategory}
-          onChange={(event) => setSelectedCategory(event.target.value)}
-          style={styles.select}
-          aria-label={t(copy.category)}
-        >
-          {galleryCategories.map((category) => (
-            <option key={category} value={category}>
-              {category === "All" ? allOptionLabel : category}
-            </option>
-          ))}
-        </select>
+      <div style={styles.albumGrid} role="tablist" aria-label={language === "ko" ? "사진첩 선택" : "Album selection"}>
+        {albums.map((album) => {
+          const selected = album.id === activeAlbum.id;
+          return (
+            <button
+              key={album.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls={`gallery-album-${album.id}`}
+              onClick={() => setActiveAlbumId(album.id)}
+              style={{ ...styles.albumCard, ...(selected ? styles.albumCardActive : {}) }}
+            >
+              <div style={styles.albumCoverWrap}>
+                <img src={album.images[0].src} alt={t(album.images[0].alt)} style={styles.albumCover} loading="lazy" />
+              </div>
+              <p style={styles.albumMeta}>
+                {album.year} · {album.images.length} {t(copy.photos)}
+              </p>
+              <h2 style={styles.albumTitle}>{t(album.title)}</h2>
+            </button>
+          );
+        })}
       </div>
 
-      <div style={styles.grid}>
-        {filtered.length === 0 ? (
-          <article style={styles.card}>{t(copy.none)}</article>
-        ) : (
-          filtered.map((item) => (
-            <article key={item.id} style={styles.card}>
-              <p style={styles.meta}>
-                {item.year} - {item.category}
-                {item.images?.length ? ` · ${item.images.length} ${t(copy.photos)}` : ""}
-              </p>
-              {item.images?.[0] ? (
-                <div style={styles.imageFrame}>
-                  <img src={item.images[0].src} alt={t(item.images[0].alt)} style={styles.image} loading="lazy" />
-                </div>
-              ) : null}
-              <h2 style={styles.cardTitle}>{t(item.title)}</h2>
-              <p style={styles.body}>{t(item.description)}</p>
-              {item.images?.length ? (
-                <ul style={styles.captionList}>
-                  {item.images.slice(0, 3).map((image) => (
-                    <li key={image.id} style={styles.captionItem}>
-                      {t(image.caption)}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <a
-                href={item.sourcePage}
-                target="_blank"
-                rel="noreferrer"
-                style={styles.source}
-                aria-label={`${t(copy.source)}: ${t(item.title)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
-              >
-                {t(copy.source)}
-              </a>
-            </article>
-          ))
-        )}
-      </div>
+      <section id={`gallery-album-${activeAlbum.id}`} style={styles.viewerSection} role="tabpanel">
+        <div style={styles.viewerHeader}>
+          <h2 style={styles.viewerTitle}>{t(activeAlbum.title)}</h2>
+        </div>
+
+        <div style={styles.photoGrid}>
+          {activeAlbum.images.map((image) => (
+            <figure key={image.id} style={styles.photoCard}>
+              <div style={styles.photoWrap}>
+                <button
+                  type="button"
+                  style={styles.photoButton}
+                  aria-label={language === "ko" ? "사진 확대 보기" : "Open full-size image"}
+                  onClick={() => openLightbox(image)}
+                >
+                  <img src={image.src} alt={t(image.alt)} style={styles.photo} loading="lazy" />
+                </button>
+              </div>
+              {hidePhotoCaption ? null : <figcaption style={styles.caption}>{t(image.caption)}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      {lightboxImage ? (
+        <div
+          style={styles.lightboxOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label={language === "ko" ? "이미지 확대 보기" : "Image preview"}
+          onClick={() => setLightboxImage(null)}
+        >
+          <div style={styles.lightboxPanel} onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              style={styles.lightboxClose}
+              aria-label={language === "ko" ? "닫기" : "Close"}
+              onClick={() => setLightboxImage(null)}
+            >
+              ×
+            </button>
+            <img
+              src={lightboxDisplaySrc || lightboxImage.src}
+              alt={t(lightboxImage.alt)}
+              style={styles.lightboxImage}
+              loading="eager"
+              decoding="async"
+            />
+            {hidePhotoCaption ? null : <p style={styles.lightboxCaption}>{t(lightboxImage.caption)}</p>}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
