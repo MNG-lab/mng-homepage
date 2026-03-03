@@ -25,6 +25,7 @@ Branch: `codex/p3-content-migration`
 - [x] Publications full archive migrated across 14 legacy pages with metadata enrichment.
 - [x] Gallery categories linked to legacy archive routes (`~2023`, `2024`, `waglewagle`).
 - [x] Per-page source links added for auditability.
+- [x] Automated content validation script added (`npm run validate:content:urls`) and baseline report generated.
 
 ## Pending Items
 
@@ -40,3 +41,5 @@ Branch: `codex/p3-content-migration`
   - `02-2123-2699` (Office)
   - `+82-2-2123-7286` (Footer variant)
 - Membership emails extracted directly from legacy HTML `mailto:` links.
+- URL validation baseline (2026-03-03): `38/39` passed.
+  - One external URL (`onlinelibrary.wiley.com`) returns `403` to automated probes.
