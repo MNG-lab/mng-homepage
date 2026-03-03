@@ -42,6 +42,7 @@ Goal: migrate to the new information architecture without losing legacy URL valu
 
 - On staging (`github.io`), SPA fallback behavior is limited.
 - Strategy fixed: `BrowserRouter + 404 fallback` (`dist/index.html` copied to `dist/404.html` in deploy workflow).
+- Router basename is auto-detected at runtime from built asset path to support both `github.io/<repo>` and custom-domain root.
 - Implement client-side legacy route aliases in app router (`src/config/site-routes.js`) for historical entry paths.
 - After custom-domain cutover, switch to `BrowserRouter + server 301`.
 
