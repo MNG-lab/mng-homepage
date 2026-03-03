@@ -41,7 +41,7 @@ Goal: migrate to the new information architecture without losing legacy URL valu
 ## 4) GitHub Pages Staging Policy
 
 - On staging (`github.io`), SPA fallback behavior is limited.
-- Lock one of these strategies first: `HashRouter` or `404 fallback`.
+- Strategy fixed: `BrowserRouter + 404 fallback` (`dist/index.html` copied to `dist/404.html` in deploy workflow).
 - After custom-domain cutover, switch to `BrowserRouter + server 301`.
 
 ## 5) Validation Checklist
