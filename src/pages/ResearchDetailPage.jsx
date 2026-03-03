@@ -23,12 +23,6 @@ const styles = {
     color: colors.brand.navy,
     lineHeight: typography.lineHeight.tight,
   },
-  summary: {
-    margin: 0,
-    color: colors.text.secondary,
-    lineHeight: typography.lineHeight.relaxed,
-    fontSize: typography.fontSize.md,
-  },
   panel: {
     marginTop: spacing[8],
     background: colors.surface.card,
@@ -48,27 +42,47 @@ const styles = {
     color: colors.text.secondary,
     lineHeight: typography.lineHeight.relaxed,
   },
-  list: {
-    margin: `${spacing[4]} 0 0`,
-    paddingLeft: spacing[5],
-    color: colors.text.secondary,
-    lineHeight: typography.lineHeight.relaxed,
+  figureGrid: {
+    marginTop: spacing[6],
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: spacing[4],
   },
-  sourceLink: {
-    display: "inline-block",
-    marginTop: spacing[5],
-    color: colors.brand.accent,
-    textDecoration: "none",
-    fontSize: typography.fontSize.sm,
+  figureCard: {
+    background: colors.surface.card,
+    border: `1px solid ${colors.border.soft}`,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  figureMedia: {
+    aspectRatio: "16 / 10",
+    background: colors.surface.base,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing[2],
+  },
+  figureImage: {
+    width: "100%",
+    height: "100%",
+    display: "block",
+    objectFit: "contain",
+    objectPosition: "center",
+    background: colors.surface.base,
+  },
+  figureCaption: {
+    margin: 0,
+    padding: spacing[3],
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.xs,
+    lineHeight: typography.lineHeight.relaxed,
   },
 };
 
 const copy = {
   back: { ko: "연구 목록으로", en: "Back to Research" },
   overview: { ko: "개요", en: "Overview" },
-  focus: { ko: "핵심 목표", en: "Focus" },
   notFound: { ko: "요청한 연구 항목이 없습니다.", en: "Research item not found." },
-  source: { ko: "기존 연구 페이지", en: "Legacy Research Page" },
 };
 
 export default function ResearchDetailPage() {
@@ -96,31 +110,29 @@ export default function ResearchDetailPage() {
       <h1 id="research-detail-title" style={styles.title}>
         {t(area.title)}
       </h1>
-      <p style={styles.summary}>{t(area.summary)}</p>
 
       <article style={styles.panel}>
         <h2 style={styles.panelTitle}>{t(copy.overview)}</h2>
-        <p style={styles.panelText}>{t(area.overview)}</p>
+        {(Array.isArray(area.details) ? area.details : [area.overview]).map((paragraph, index) => (
+          <p key={`${area.id}-overview-${index}`} style={styles.panelText}>
+            {t(paragraph)}
+          </p>
+        ))}
       </article>
 
-      <article style={styles.panel}>
-        <h2 style={styles.panelTitle}>{t(copy.focus)}</h2>
-        <ul style={styles.list}>
-          {area.focus.map((item) => (
-            <li key={item.en}>{t(item)}</li>
+      {area.figures?.length ? (
+        <section style={styles.figureGrid} aria-label={language === "ko" ? "연구 도해" : "Research figures"}>
+          {area.figures.map((figure, index) => (
+            <figure key={`${area.id}-figure-${index}`} style={styles.figureCard}>
+              <div style={styles.figureMedia}>
+                <img src={figure.src} alt={t(figure.caption)} style={styles.figureImage} loading="lazy" />
+              </div>
+              <figcaption style={styles.figureCaption}>{t(figure.caption)}</figcaption>
+            </figure>
           ))}
-        </ul>
-      </article>
+        </section>
+      ) : null}
 
-      <a
-        href={area.legacyPath}
-        target="_blank"
-        rel="noreferrer"
-        style={styles.sourceLink}
-        aria-label={`${t(copy.source)}: ${t(area.title)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
-      >
-        {t(copy.source)}
-      </a>
     </section>
   );
 }
