@@ -143,12 +143,11 @@ function buildOutput(records, totalPages) {
     url: item.url || item.sourcePage,
   }));
 
-  const publicationThemes = ["All", ...new Set(publicationsData.map((item) => item.theme))];
   const verifiedItems = publicationsData.filter((item) => item.verified).length;
 
   const output = `export const publicationsData = ${JSON.stringify(publicationsData, null, 2)};
 
-export const publicationThemes = ${JSON.stringify(publicationThemes, null, 2)};
+export const publicationThemes = ["All", ...new Set(publicationsData.map((item) => item.theme).filter(Boolean))];
 
 export const publicationMigrationStatus = ${JSON.stringify(
     {

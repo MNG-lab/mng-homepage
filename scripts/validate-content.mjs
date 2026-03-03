@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { contactData } from "../src/content/contact-data.js";
 import { galleryData } from "../src/content/gallery-data.js";
+import { homeContent } from "../src/content/home-content.js";
 import { membersData } from "../src/content/members-data.js";
 import { professorData } from "../src/content/professor-data.js";
 import { publicationsData } from "../src/content/publications-data.js";
@@ -99,6 +100,30 @@ function validateResearch() {
   });
 }
 
+function validateHome() {
+  assert(isObject(homeContent), "homeContent must be an object");
+  assert(Array.isArray(homeContent.hero?.slides) && homeContent.hero.slides.length > 0, "homeContent.hero.slides must be non-empty array");
+  assert(
+    Number.isFinite(Number(homeContent.metrics?.establishedYear)),
+    "homeContent.metrics.establishedYear must be a valid number"
+  );
+
+  if (Array.isArray(homeContent.stats) && homeContent.stats.length > 0) {
+    pushWarning("homeContent.stats is populated. Home stats should be data-driven from content datasets.");
+  }
+  if (Array.isArray(homeContent.news?.items) && homeContent.news.items.length > 0) {
+    pushWarning("homeContent.news.items is populated. Home news should be data-driven from publications.");
+  }
+
+  const researchSlugs = new Set(researchAreas.map((item) => item.slug));
+  const homeCards = Array.isArray(homeContent.research?.cards) ? homeContent.research.cards : [];
+  homeCards.forEach((card, index) => {
+    if (!researchSlugs.has(card.id)) {
+      pushWarning(`homeContent.research.cards[${index}].id (${card.id}) does not match researchAreas slug`);
+    }
+  });
+}
+
 function validateProfessor() {
   assert(isObject(professorData), "professorData must be an object");
   assertLocalized(professorData.profile?.name, "professorData.profile.name");
@@ -134,6 +159,14 @@ function validateMembers() {
 
   const dupIds = findDuplicates([...current, ...alumni].map((item) => item.id));
   if (dupIds.length) pushError(`membersData contains duplicate id(s): ${dupIds.join(", ")}`);
+  const dupEmails = findDuplicates(
+    [...current, ...alumni]
+      .map((item) => String(item.email || "").trim().toLowerCase())
+      .filter(Boolean)
+  );
+  if (dupEmails.length) {
+    pushWarning(`membersData contains duplicate email(s): ${dupEmails.join(", ")}`);
+  }
 
   current.forEach((member, index) => {
     assert(typeof member.id === "string" && member.id.trim(), `membersData.current[${index}].id must be non-empty string`);
@@ -168,6 +201,7 @@ function validatePublications() {
     assert(typeof item.title === "string" && item.title.trim(), `publicationsData[${index}].title must be non-empty string`);
     assert(typeof item.authors === "string" && item.authors.trim(), `publicationsData[${index}].authors must be non-empty string`);
     assert(typeof item.journal === "string" && item.journal.trim(), `publicationsData[${index}].journal must be non-empty string`);
+    assert(typeof item.theme === "string" && item.theme.trim(), `publicationsData[${index}].theme must be non-empty string`);
     if (item.url && !isAbsoluteHttpUrl(item.url)) {
       pushError(`publicationsData[${index}].url must be absolute URL`);
     }
@@ -178,6 +212,11 @@ function validateGallery() {
   assert(Array.isArray(galleryData) && galleryData.length > 0, "galleryData must be non-empty array");
   const dupIds = findDuplicates(galleryData.map((item) => item.id));
   if (dupIds.length) pushError(`galleryData contains duplicate id(s): ${dupIds.join(", ")}`);
+  const displayOrderItems = galleryData.filter((item) => Number.isFinite(item.displayOrder));
+  const dupDisplayOrders = findDuplicates(displayOrderItems.map((item) => item.displayOrder));
+  if (dupDisplayOrders.length) {
+    pushWarning(`galleryData contains duplicate displayOrder value(s): ${dupDisplayOrders.join(", ")}`);
+  }
 
   galleryData.forEach((item, index) => {
     assert(typeof item.id === "string" && item.id.trim(), `galleryData[${index}].id must be non-empty string`);
@@ -185,6 +224,24 @@ function validateGallery() {
     assert(typeof item.category === "string" && item.category.trim(), `galleryData[${index}].category must be non-empty string`);
     assertLocalized(item.title, `galleryData[${index}].title`);
     assertLocalized(item.description, `galleryData[${index}].description`);
+    if ("displayOrder" in item) {
+      assert(Number.isFinite(item.displayOrder), `galleryData[${index}].displayOrder must be a number`);
+    }
+    if ("hideCaptions" in item) {
+      assert(typeof item.hideCaptions === "boolean", `galleryData[${index}].hideCaptions must be boolean`);
+    }
+    if ("legacyQuery" in item && item.legacyQuery !== undefined) {
+      assert(isObject(item.legacyQuery), `galleryData[${index}].legacyQuery must be an object`);
+      if (item.legacyQuery?.year !== undefined) {
+        assert(Number.isFinite(item.legacyQuery.year), `galleryData[${index}].legacyQuery.year must be number`);
+      }
+      if (item.legacyQuery?.category !== undefined) {
+        assert(
+          typeof item.legacyQuery.category === "string" && item.legacyQuery.category.trim(),
+          `galleryData[${index}].legacyQuery.category must be non-empty string`
+        );
+      }
+    }
 
     if (Array.isArray(item.images)) {
       const imageIds = item.images.map((img) => img.id);
@@ -362,6 +419,7 @@ function renderMarkdownReport() {
 }
 
 async function main() {
+  validateHome();
   validateResearch();
   validateProfessor();
   validateMembers();
