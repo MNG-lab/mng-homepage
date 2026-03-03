@@ -19,9 +19,12 @@ jobs:
       github.event.issue.user.type != 'Bot' &&
       (
         contains(join(github.event.issue.labels.*.name, ','), 'rollback-request') ||
-        contains(join(github.event.issue.labels.*.name, ','), 'rollback-simple-request')
+        contains(join(github.event.issue.labels.*.name, ','), 'rollback-simple-request') ||
+        startsWith(github.event.issue.title, '[롤백요청]') ||
+        startsWith(github.event.issue.title, '[간단롤백요청]')
       ) &&
       (github.event.issue.author_association == 'COLLABORATOR' ||
+       github.event.issue.author_association == 'CONTRIBUTOR' ||
        github.event.issue.author_association == 'MEMBER' ||
        github.event.issue.author_association == 'OWNER')
     runs-on: ubuntu-latest
@@ -77,8 +80,9 @@ jobs:
           BODY_FILE="/tmp/rollback-issue-body.md"
           jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" > "$BODY_FILE"
           LABELS_CSV="$(jq -r '[.issue.labels[].name] | join(",")' "$GITHUB_EVENT_PATH")"
+          ISSUE_TITLE="$(jq -r '.issue.title // \"\"' "$GITHUB_EVENT_PATH")"
           IS_SIMPLE="false"
-          if echo "$LABELS_CSV" | grep -Eq '(^|,)rollback-simple-request(,|$)'; then
+          if echo "$LABELS_CSV" | grep -Eq '(^|,)rollback-simple-request(,|$)' || [[ "$ISSUE_TITLE" == "[간단롤백요청]"* ]]; then
             IS_SIMPLE="true"
           fi
 
