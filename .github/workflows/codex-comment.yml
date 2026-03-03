@@ -41,10 +41,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.MNG_AI_CODE_BOT_APP_ID }}
+          private-key: ${{ secrets.MNG_AI_CODE_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Checkout (base)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -68,6 +77,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gh jq
 
+      - name: Resolve app bot identity
+        id: app-bot
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          APP_SLUG="${{ steps.app-token.outputs.app-slug }}"
+          BOT_LOGIN="${APP_SLUG}[bot]"
+          BOT_USER_ID="$(gh api "/users/${BOT_LOGIN}" --jq '.id')"
+
+          echo "login=${BOT_LOGIN}" >> "$GITHUB_OUTPUT"
+          echo "email=${BOT_USER_ID}+${BOT_LOGIN}@users.noreply.github.com" >> "$GITHUB_OUTPUT"
+
       - name: Restore CODEX auth.json
         env:
           CODEX_CLI_KEY: ${{ secrets.CODEX_CLI_KEY }}
@@ -84,7 +106,7 @@ jobs:
 
       - name: Determine target (Issue vs PR) and checkout branch
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
 
@@ -139,9 +161,20 @@ jobs:
             git checkout "$HEAD_REF"
           fi
 
+      - name: Assign issue to app bot
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          if ! gh issue edit "$ISSUE_NUMBER" --add-assignee "${{ steps.app-bot.outputs.login }}"; then
+            echo "::warning::Failed to assign issue #${ISSUE_NUMBER} to ${{ steps.app-bot.outputs.login }}."
+          fi
+
       - name: Build Codex prompt (with context)
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
 
@@ -212,7 +245,7 @@ jobs:
 
       - name: Commit & push changes
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
 
@@ -221,8 +254,8 @@ jobs:
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "${{ steps.app-bot.outputs.login }}"
+          git config user.email "${{ steps.app-bot.outputs.email }}"
 
           git add -A
           git commit -m "codex: apply request (#${NUMBER})"
@@ -231,7 +264,7 @@ jobs:
       - name: Create PR (only when Issue comment)
         if: env.TARGET_KIND == 'issue' && env.NO_CHANGES != 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           ISSUE_NUMBER="${{ github.event.issue.number }}"
@@ -250,7 +283,7 @@ jobs:
       - name: Comment result (Issue, no changes)
         if: env.TARGET_KIND == 'issue' && env.NO_CHANGES == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           ISSUE_NUMBER="${{ github.event.issue.number }}"
@@ -261,7 +294,7 @@ jobs:
       - name: Comment result (PR)
         if: env.TARGET_KIND == 'pr'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           PR_NUMBER="${PR_NUMBER:?}"

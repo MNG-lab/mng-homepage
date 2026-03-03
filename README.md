@@ -73,6 +73,14 @@ npm run preview
 - `.github/workflows/codex-comment.yml`
 - `.github/workflows/deploy-pages.yml`
 - 두 워크플로 모두 lockfile(`package-lock.json`/`npm-shrinkwrap.json`)이 있으면 `npm ci`, 없으면 `npm install`로 자동 분기
+- `codex-comment.yml`은 GitHub App 토큰을 사용해 이슈 할당/커밋/PR 생성 주체를 앱 봇으로 통일함
+
+## GitHub App 설정 (Codex 자동화)
+
+`codex-comment.yml` 실행 전 아래 Repository Secrets가 필요합니다.
+
+- `MNG_AI_CODE_BOT_APP_ID`
+- `MNG_AI_CODE_BOT_PRIVATE_KEY`
 
 ## 운영 문서
 
