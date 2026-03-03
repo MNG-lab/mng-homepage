@@ -238,10 +238,10 @@ jobs:
         run: |
           set -euo pipefail
           codex exec \
-            -a never \
+            --dangerously-bypass-approvals-and-sandbox \
             --model "gpt-5.3-codex" \
-            --prompt-file /tmp/codex_prompt.txt \
-            --output stdout | tee /tmp/codex_out.txt
+            -o /tmp/codex_last_message.txt \
+            - < /tmp/codex_prompt.txt | tee /tmp/codex_out.txt
 
       - name: Commit & push changes
         env:
