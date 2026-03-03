@@ -1,7 +1,7 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p5-published-route-verification`
+Branch: `codex/p5-deploy-status-rollback`
 
 ## 1) Workflow Baseline
 
@@ -13,8 +13,8 @@ Branch: `codex/p5-published-route-verification`
 ## 2) GitHub Settings
 
 - [ ] Repository -> Settings -> Pages -> Source = `GitHub Actions`
-- [ ] Confirm latest `Deploy to GitHub Pages` workflow run is green
-- [ ] Confirm published URL opens from Actions deployment summary
+- [x] Confirm latest `Deploy to GitHub Pages` workflow run is green (`npm run check:pages:status`, `content/p5-deployment-status-report.md`)
+- [x] Confirm published URL opens (`npm run check:pages:status`, `content/p5-deployment-status-report.md`)
 
 ## 3) Route Verification (Published Site)
 
@@ -36,9 +36,10 @@ Branch: `codex/p5-published-route-verification`
 - [ ] Domain connected in Pages settings
 - [ ] HTTPS enabled and certificate issued
 - [ ] Canonical URL / sitemap base URL updated if domain changes
+- Guide: `content/p5-custom-domain-guide.md`
 
 ## 5) Rollback Plan
 
-- [ ] Keep last known good commit hash documented
-- [ ] If critical issue occurs, revert main to previous deploy commit and push
+- [x] Keep last known good commit hash documented (`content/p5-deployment-status-report.md`)
+- [x] If critical issue occurs, revert main to previous deploy commit and push (command template in `content/p5-deployment-status-report.md`)
 - [ ] Verify rollback deployment from Actions history

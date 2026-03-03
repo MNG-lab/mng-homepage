@@ -12,6 +12,7 @@
     "migrate:gallery": "node scripts/migrate-gallery.mjs",
     "verify:members": "node scripts/verify-members.mjs",
     "verify:routes:published": "node scripts/verify-published-routes.mjs --write-report",
+    "check:pages:status": "node scripts/check-pages-status.mjs",
     "validate:redirects": "node scripts/validate-redirects.mjs --write-report",
     "validate:content": "node scripts/validate-content.mjs --write-report",
     "validate:content:urls": "node scripts/validate-content.mjs --check-urls --write-report"
