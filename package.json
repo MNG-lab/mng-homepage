@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "generate:seo": "node scripts/generate-seo-assets.mjs",
     "qa:smoke": "node scripts/qa-smoke.mjs",
+    "qa:matrix:responsive": "node scripts/qa-responsive-matrix.mjs",
     "migrate:publications": "node scripts/migrate-publications.mjs",
     "migrate:gallery": "node scripts/migrate-gallery.mjs",
     "verify:members": "node scripts/verify-members.mjs",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
+    "playwright": "^1.56.1",
     "vite": "^5.4.19"
   }
 }

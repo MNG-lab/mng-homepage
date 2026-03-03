@@ -1,13 +1,15 @@
 # P4 QA Report
 
 Date: 2026-03-03  
-Branch: `codex/p4-rc-link-sanity`
+Branch: `codex/p4-responsive-matrix-capture`
 
 ## 1) Automated Checks
 
 - Build: `npm run build` -> pass
 - Route smoke: `npm run qa:smoke` -> pass (`8/8`)
 - Smoke report: `content/qa-smoke-p4.md`
+- Responsive matrix: `npm run qa:matrix:responsive` -> pass (`24/24`)
+- Responsive matrix report: `content/qa-responsive-matrix-report.md`
 
 ## 2) Performance Baseline
 
@@ -25,7 +27,7 @@ Branch: `codex/p4-rc-link-sanity`
 
 ## 4) Remaining Manual QA (P4 Exit Criteria)
 
-- [ ] Responsive matrix execution with screenshots (mobile/tablet/desktop)
+- [x] Responsive matrix execution with screenshots (mobile/tablet/desktop)
 - [ ] Cross-browser run (Chrome/Edge/Safari)
 - [ ] Final accessibility review (heading order, alt text, contrast)
 - [x] Content-level external link sanity checks during release candidate run (`npm run preflight:p5` includes `npm run validate:content:urls`)
@@ -35,3 +37,9 @@ Branch: `codex/p4-rc-link-sanity`
 - Command: `npm run preflight:p5`
 - Result: pass (`8/8`)
 - URL health summary: `content/p3-validation-report.md` (`38/39` passed, one known `403` from `onlinelibrary.wiley.com`)
+
+## 6) Responsive Matrix Baseline
+
+- Command: `npm run qa:matrix:responsive`
+- Result: pass (`24/24`)
+- Screenshots: `content/qa-screenshots/{mobile,tablet,desktop}/*.png`
