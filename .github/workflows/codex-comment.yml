@@ -313,16 +313,103 @@ jobs:
         if: env.TARGET_KIND == 'issue' && env.NO_CHANGES != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CODEX_HOME: ${{ runner.temp }}/codex-home
         run: |
           set -euo pipefail
           ISSUE_NUMBER="${NUMBER:?}"
           DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          ISSUE_TITLE="$(gh issue view "$ISSUE_NUMBER" --json title -q .title)"
+          ISSUE_BODY="$(gh issue view "$ISSUE_NUMBER" --json body -q '.body // ""')"
+          ISSUE_URL="https://github.com/${{ github.repository }}/issues/${ISSUE_NUMBER}"
+          PR_TITLE="[#${ISSUE_NUMBER}] ${ISSUE_TITLE}"
+
+          CHANGED_FILES="$(git show --name-status --pretty=format: HEAD | sed '/^$/d')"
+          DIFF_STAT="$(git show --stat --pretty=format: HEAD)"
+          CODEX_EXEC_SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
+          CODEX_LAST_MESSAGE="$(cat /tmp/codex_last_message.txt 2>/dev/null || true)"
+
+          PR_DRAFT_PROMPT="/tmp/codex_pr_body_prompt.txt"
+          cat > "$PR_DRAFT_PROMPT" <<'EOF'
+          아래 정보를 바탕으로 GitHub PR 본문을 한국어 마크다운으로 작성해줘.
+
+          필수 조건:
+          - 한국어로 작성
+          - 아래 섹션 제목을 반드시 포함:
+            1) ## 관련 이슈
+            2) ## 변경 내용 (개발자용)
+            3) ## 검증
+          - "## 관련 이슈"에는 어떤 이슈로 생성된 PR인지 한 줄로 명확히 적어줘.
+          - "## 변경 내용 (개발자용)"에는 코드/설정 변경 사항을 파일 단위로 요약해줘.
+          - "## 검증"에는 실행한 검증 내용과 결과(PASS/FAIL 또는 미실행 사유)를 bullet로 적어줘.
+          - 불필요한 인삿말/서론/결론 없이, PR 본문으로 바로 사용할 수 있는 내용만 출력해줘.
+          EOF
+
+          {
+            echo ""
+            echo "[메타데이터]"
+            echo "- Repository: ${{ github.repository }}"
+            echo "- Issue number: #${ISSUE_NUMBER}"
+            echo "- Issue title: ${ISSUE_TITLE}"
+            echo "- Issue URL: ${ISSUE_URL}"
+            echo ""
+            echo "[Issue body]"
+            echo "${ISSUE_BODY}"
+            echo ""
+            echo "[Changed files]"
+            echo "${CHANGED_FILES}"
+            echo ""
+            echo "[Diff stat]"
+            echo "${DIFF_STAT}"
+            echo ""
+            echo "[Codex execution summary]"
+            echo "${CODEX_EXEC_SUMMARY}"
+            echo ""
+            echo "[Codex last assistant message]"
+            echo "${CODEX_LAST_MESSAGE}"
+          } >> "$PR_DRAFT_PROMPT"
+
+          set +e
+          codex exec \
+            --dangerously-bypass-approvals-and-sandbox \
+            --model "gpt-5.3-codex" \
+            -o /tmp/codex_pr_body.md \
+            - < "$PR_DRAFT_PROMPT" > /tmp/codex_pr_body_run.txt
+          PR_DRAFT_EXIT=$?
+          set -e
+
+          if [[ $PR_DRAFT_EXIT -ne 0 || ! -s /tmp/codex_pr_body.md ]]; then
+            echo "::warning::Failed to generate PR body via Codex. Falling back to template."
+            cat > /tmp/codex_pr_body.md <<EOF
+          ## 관련 이슈
+          - #${ISSUE_NUMBER} (${ISSUE_TITLE}) 이슈를 해결하기 위해 생성된 PR입니다.
+          - 이슈 링크: ${ISSUE_URL}
+
+          ## 변경 내용 (개발자용)
+          - 자동화 실행 결과 생성된 변경사항을 반영했습니다.
+          - 변경 파일 목록:
+          \`\`\`text
+          ${CHANGED_FILES}
+          \`\`\`
+
+          ## 검증
+          - Codex 실행 로그를 기준으로 검증 결과를 확인하세요.
+          - 필요 시 Actions 로그에서 build/검증 단계를 확인하세요.
+          EOF
+          fi
 
           PR_URL="$(gh pr create \
             --base "$DEFAULT_BRANCH" \
             --head "${TARGET_REF}" \
-            --title "Codex: resolve #$ISSUE_NUMBER" \
-            --body "Automated changes requested for issue #$ISSUE_NUMBER.")"
+            --title "$PR_TITLE" \
+            --body-file /tmp/codex_pr_body.md)"
+          PR_NUMBER="$(gh pr view "$PR_URL" --json number -q .number)"
+
+          if ! gh pr edit "$PR_NUMBER" --add-label "codex-auto"; then
+            echo "::warning::Failed to add label 'codex-auto' to PR #${PR_NUMBER}."
+          fi
+          if ! gh pr edit "$PR_NUMBER" --add-reviewer "chominho96" --add-reviewer "ksy0ung"; then
+            echo "::warning::Failed to add reviewers (chominho96, ksy0ung) to PR #${PR_NUMBER}."
+          fi
 
           SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
           BODY=$'✅ Codex 작업 완료. PR 생성: '"$PR_URL"$'\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
