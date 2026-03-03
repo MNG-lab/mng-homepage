@@ -23,17 +23,20 @@ jobs:
       (
         github.event_name == 'issues' &&
         github.event.issue.user.type != 'Bot' &&
-        contains(github.event.issue.labels.*.name, 'codex-auto') &&
-        (github.event.issue.author_association == 'COLLABORATOR' ||
-         github.event.issue.author_association == 'MEMBER' ||
-         github.event.issue.author_association == 'OWNER')
+        contains(join(github.event.issue.labels.*.name, ','), 'codex-auto')
       ) || (
-        github.event_name != 'issues' &&
+        github.event_name == 'issue_comment' &&
         github.event.comment.user.type != 'Bot' &&
-        (contains(github.event.comment.body, '@codex') || startsWith(github.event.comment.body, '/codex')) &&
-        (github.event.comment.author_association == 'COLLABORATOR' ||
-         github.event.comment.author_association == 'MEMBER' ||
-         github.event.comment.author_association == 'OWNER')
+        (contains(github.event.comment.body, '@codex') || contains(github.event.comment.body, '/codex')) &&
+        (
+          (github.event.issue.pull_request == null &&
+           contains(join(github.event.issue.labels.*.name, ','), 'codex-auto')) ||
+          (github.event.issue.pull_request != null)
+        )
+      ) || (
+        github.event_name == 'pull_request_review_comment' &&
+        github.event.comment.user.type != 'Bot' &&
+        (contains(github.event.comment.body, '@codex') || contains(github.event.comment.body, '/codex'))
       )
     runs-on: ubuntu-latest
 
