@@ -36,6 +36,16 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install project dependencies (lockfile-aware)
+        run: |
+          set -euo pipefail
+          if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+            npm ci
+          else
+            echo "::warning::No npm lockfile found. Falling back to npm install."
+            npm install
+          fi
+
       - name: Install tools (codex, gh, jq)
         run: |
           set -euo pipefail
@@ -86,7 +96,7 @@ jobs:
               git checkout "$DEFAULT_BRANCH"
               git pull --ff-only
 
-              NEW_BRANCH="codex/issue-${ISSUE_NUMBER}"
+              NEW_BRANCH="codex/issue-${ISSUE_NUMBER}-${GITHUB_RUN_ID}"
               echo "TARGET_REF=$NEW_BRANCH" >> "$GITHUB_ENV"
               git checkout -b "$NEW_BRANCH"
             fi
@@ -147,8 +157,11 @@ jobs:
           printf "%s\n" "- Do not modify unrelated files." >> "$PROMPT_FILE"
           printf "%s\n" "- If there are existing tests, update/add the smallest test needed." >> "$PROMPT_FILE"
           printf "%s\n" "- Do not ask for confirmation; proceed autonomously." >> "$PROMPT_FILE"
-          printf "%s\n" "- If you run commands, keep them minimal (e.g., lint/test only if quick)." >> "$PROMPT_FILE"
-          printf "%s\n\n" "- At the end, write a short summary of what you changed (for a GitHub comment)." >> "$PROMPT_FILE"
+          printf "%s\n" "- Prefer deterministic verification commands over ad-hoc checks." >> "$PROMPT_FILE"
+          printf "%s\n" "- Run npm run -s build after code changes." >> "$PROMPT_FILE"
+          printf "%s\n" "- If content/data files changed, run npm run -s validate:content." >> "$PROMPT_FILE"
+          printf "%s\n" "- If a command fails, either fix and rerun, or explain clearly why it could not be resolved." >> "$PROMPT_FILE"
+          printf "%s\n\n" "- End with sections: Change Summary, Validation (PASS/FAIL), Remaining Risks." >> "$PROMPT_FILE"
 
           printf "%s\n\n" "$CONTEXT" >> "$PROMPT_FILE"
           printf "%s\n" "User request:" >> "$PROMPT_FILE"
@@ -198,7 +211,19 @@ jobs:
             --title "Codex: resolve #$ISSUE_NUMBER" \
             --body "Automated changes requested via comment on issue #$ISSUE_NUMBER.")"
 
-          gh issue comment "$ISSUE_NUMBER" --body "✅ Codex 작업 완료. PR 생성: $PR_URL"
+          SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
+          gh issue comment "$ISSUE_NUMBER" --body "$(cat <<EOF
+✅ Codex 작업 완료. PR 생성: $PR_URL
+
+<details><summary>Codex 실행 요약 (마지막 120줄)</summary>
+
+\`\`\`text
+$SUMMARY
+\`\`\`
+
+</details>
+EOF
+)"
 
       - name: Comment result (PR)
         if: env.TARGET_KIND == 'pr'
@@ -207,10 +232,33 @@ jobs:
         run: |
           set -euo pipefail
           PR_NUMBER="${PR_NUMBER:?}"
+          SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
 
           if [[ "${NO_CHANGES:-}" == "true" ]]; then
-            gh pr comment "$PR_NUMBER" --body "ℹ️ Codex가 실행됐지만 변경사항이 없어서 커밋/푸시는 하지 않았어요."
+            gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+ℹ️ Codex가 실행됐지만 변경사항이 없어서 커밋/푸시는 하지 않았어요.
+
+<details><summary>Codex 실행 요약 (마지막 120줄)</summary>
+
+\`\`\`text
+$SUMMARY
+\`\`\`
+
+</details>
+EOF
+)"
             exit 0
           fi
 
-          gh pr comment "$PR_NUMBER" --body "✅ Codex 작업 완료. 변경사항을 \`${TARGET_REF}\` 브랜치에 반영해서 push 했어요."
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+✅ Codex 작업 완료. 변경사항을 \`${TARGET_REF}\` 브랜치에 반영해서 push 했어요.
+
+<details><summary>Codex 실행 요약 (마지막 120줄)</summary>
+
+\`\`\`text
+$SUMMARY
+\`\`\`
+
+</details>
+EOF
+)"
