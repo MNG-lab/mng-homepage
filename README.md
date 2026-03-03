@@ -51,13 +51,34 @@ MNG Lab 홈페이지 저장소입니다.
 - PR 댓글: 해당 PR 브랜치에 직접 커밋/푸시
 - 워크플로가 실행되면 변경 후 검증(`build`, 필요 시 `validate:content`)을 수행하도록 지시됨
 
-### 3) 결과 확인하기
+### 3) PR 확인 및 머지하기 (비개발자용)
+
+PR(Pull Request)은 개발자 작업 결과를 올려두는 **검토용 제안서**입니다.  
+머지(승인)하기 전에는 실제 운영 페이지에 반영되지 않습니다.
+
+1. 저장소 상단에서 `Pull requests` 탭을 눌러 생성된 PR을 엽니다.
+
+![GitHub Pull requests 탭 예시](https://docs.github.com/assets/cb-51156/images/help/repository/repo-tabs-pull-requests-global-nav-update.png)
+
+2. PR 안에서 `Files changed` 탭을 눌러 수정 파일/변경 내용을 확인합니다.
+
+![GitHub Files changed 탭 예시](https://docs.github.com/assets/cb-23571/images/help/pull_requests/pull-request-tabs-changed-files.png)
+
+3. 페이지 아래쪽에서 머지 버튼 영역을 확인합니다.
+
+- 체크(검증)가 실패면 머지하지 말고 이슈에 코멘트 남기기
+- 체크가 통과했고 문제 없어 보이면 `Merge pull request` 진행
+
+![GitHub Merge 옵션 예시](https://docs.github.com/assets/cb-165497/images/help/pull_requests/merge-pull-request-options.png)
+
+4. `Confirm merge`까지 누르면 반영이 시작됩니다.
+
+### 4) 결과 확인하기
 
 - GitHub `Actions` 탭에서 실행 로그 확인
-- 생성된 PR에서 변경 파일/미리보기 확인
-- 이상 없으면 `main`으로 머지
+- 머지된 PR 상태 확인
 
-### 4) 배포 확인하기
+### 5) 배포 확인하기
 
 `main`에 머지되면 GitHub Pages가 자동 배포됩니다.
 
