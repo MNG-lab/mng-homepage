@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "qa:smoke": "node scripts/qa-smoke.mjs",
     "migrate:publications": "node scripts/migrate-publications.mjs",
+    "migrate:gallery": "node scripts/migrate-gallery.mjs",
     "validate:content": "node scripts/validate-content.mjs --write-report",
     "validate:content:urls": "node scripts/validate-content.mjs --check-urls --write-report"
   },

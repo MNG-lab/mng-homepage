@@ -205,6 +205,27 @@ function validateGallery() {
     if (!isAbsoluteHttpUrl(item.sourcePage)) {
       pushError(`galleryData[${index}].sourcePage must be absolute URL`);
     }
+
+    if (Array.isArray(item.images)) {
+      const imageIds = item.images.map((img) => img.id);
+      const dupImageIds = findDuplicates(imageIds);
+      if (dupImageIds.length) {
+        pushError(`galleryData[${index}] contains duplicate image id(s): ${dupImageIds.join(", ")}`);
+      }
+
+      item.images.forEach((img, imgIndex) => {
+        assert(typeof img.id === "string" && img.id.trim(), `galleryData[${index}].images[${imgIndex}].id must be non-empty string`);
+        if (!isAbsoluteHttpUrl(img.src)) {
+          pushError(`galleryData[${index}].images[${imgIndex}].src must be absolute URL`);
+        }
+        assertLocalized(img.alt, `galleryData[${index}].images[${imgIndex}].alt`);
+        assertLocalized(img.caption, `galleryData[${index}].images[${imgIndex}].caption`);
+      });
+
+      if (item.category !== "Gallery" && item.images.length === 0) {
+        pushWarning(`galleryData[${index}] has no image items for category ${item.category}`);
+      }
+    }
   });
 }
 
@@ -261,31 +282,36 @@ function collectExternalUrls() {
   return [...urls];
 }
 
-async function checkUrl(url) {
-  const timeoutMs = 8000;
+async function fetchWithTimeout(url, method = "HEAD", timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    let response = await fetch(url, {
-      method: "HEAD",
+    return await fetch(url, {
+      method,
       redirect: "follow",
       signal: controller.signal,
       headers: { "user-agent": "dglab-content-validator/1.0" },
     });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function checkUrl(url) {
+  try {
+    let response = await fetchWithTimeout(url, "HEAD", 10000);
     if (response.status === 405 || response.status === 501) {
-      response = await fetch(url, {
-        method: "GET",
-        redirect: "follow",
-        signal: controller.signal,
-        headers: { "user-agent": "dglab-content-validator/1.0" },
-      });
+      response = await fetchWithTimeout(url, "GET", 12000);
     }
     return { url, ok: response.ok, status: response.status };
   } catch (error) {
-    return { url, ok: false, status: "ERR", error: error.message };
-  } finally {
-    clearTimeout(timer);
+    try {
+      // Retry once with GET. Some hosts intermittently fail HEAD or slow-start.
+      const retryResponse = await fetchWithTimeout(url, "GET", 15000);
+      return { url, ok: retryResponse.ok, status: retryResponse.status, retried: true };
+    } catch (retryError) {
+      return { url, ok: false, status: "ERR", error: retryError.message || error.message };
+    }
   }
 }
 

@@ -30,7 +30,7 @@ Branch: `codex/p3-content-migration`
 ## Pending Items
 
 - [ ] Full member role/status verification for all extracted emails.
-- [ ] Gallery item-level caption/image migration (currently category-level baseline).
+- [x] Gallery item-level caption/image migration (archive pages `2023-1`, `2024`, `와글와글`).
 - [ ] Legacy-to-new URL redirection behavior validation in production environment.
 
 ## Validation Notes
@@ -43,3 +43,4 @@ Branch: `codex/p3-content-migration`
 - Membership emails extracted directly from legacy HTML `mailto:` links.
 - URL validation baseline (2026-03-03): `38/39` passed.
   - One external URL (`onlinelibrary.wiley.com`) returns `403` to automated probes.
+- Gallery migration baseline (2026-03-03): 22 image items extracted with caption metadata.

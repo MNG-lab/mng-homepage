@@ -54,6 +54,20 @@ const styles = {
     borderRadius: 12,
     padding: spacing[5],
   },
+  imageFrame: {
+    marginTop: spacing[3],
+    borderRadius: 10,
+    overflow: "hidden",
+    border: `1px solid ${colors.border.soft}`,
+    background: colors.surface.subtle,
+    aspectRatio: "4 / 3",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+  },
   meta: {
     margin: 0,
     fontSize: typography.fontSize.xs,
@@ -70,6 +84,16 @@ const styles = {
     color: colors.text.secondary,
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.relaxed,
+  },
+  captionList: {
+    margin: `${spacing[3]} 0 0`,
+    paddingLeft: spacing[5],
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.xs,
+    lineHeight: typography.lineHeight.relaxed,
+  },
+  captionItem: {
+    marginBottom: spacing[1],
   },
   source: {
     display: "inline-block",
@@ -89,6 +113,7 @@ const copy = {
   },
   year: { ko: "연도", en: "Year" },
   category: { ko: "카테고리", en: "Category" },
+  photos: { ko: "사진", en: "photos" },
   none: { ko: "조건에 맞는 항목이 없습니다.", en: "No gallery items match current filters." },
   source: { ko: "원본 보기", en: "View Source" },
 };
@@ -155,9 +180,24 @@ export default function GalleryPage() {
             <article key={item.id} style={styles.card}>
               <p style={styles.meta}>
                 {item.year} - {item.category}
+                {item.images?.length ? ` · ${item.images.length} ${t(copy.photos)}` : ""}
               </p>
+              {item.images?.[0] ? (
+                <div style={styles.imageFrame}>
+                  <img src={item.images[0].src} alt={t(item.images[0].alt)} style={styles.image} loading="lazy" />
+                </div>
+              ) : null}
               <h2 style={styles.cardTitle}>{t(item.title)}</h2>
               <p style={styles.body}>{t(item.description)}</p>
+              {item.images?.length ? (
+                <ul style={styles.captionList}>
+                  {item.images.slice(0, 3).map((image) => (
+                    <li key={image.id} style={styles.captionItem}>
+                      {t(image.caption)}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               <a
                 href={item.sourcePage}
                 target="_blank"
