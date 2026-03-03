@@ -1,0 +1,70 @@
+name: "⏪ 롤백 요청 (자동 PR 생성)"
+description: "문제가 생긴 커밋/PR을 되돌리는 롤백 PR을 자동으로 생성합니다."
+title: "[롤백요청] "
+labels:
+  - rollback-request
+body:
+  - type: markdown
+    attributes:
+      value: |
+        이 템플릿은 **롤백 브랜치 + 롤백 PR 자동 생성**용입니다.
+
+        작성 규칙:
+        - `commit` 또는 `pr` 중 하나를 선택
+        - 대상은 1개만 입력
+        - 왜 롤백하는지 명확히 작성
+
+  - type: dropdown
+    id: rollback_type
+    attributes:
+      label: 롤백 유형
+      description: 되돌릴 대상을 선택하세요.
+      options:
+        - commit
+        - pr
+    validations:
+      required: true
+
+  - type: input
+    id: rollback_target
+    attributes:
+      label: 롤백 대상
+      description: 유형에 맞는 값을 입력하세요.
+      placeholder: "commit이면 SHA(예: a1b2c3d), pr이면 번호(예: 123 또는 #123)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback_reason
+    attributes:
+      label: 롤백 사유
+      description: 장애/회귀 등 롤백이 필요한 이유를 구체적으로 작성하세요.
+      placeholder: |
+        예)
+        - 배포 후 members 페이지에서 렌더링 오류 발생
+        - 원인 커밋 확인: xxxx
+        - 서비스 영향: 모바일/데스크톱 모두 영향
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_result
+    attributes:
+      label: 기대 결과
+      description: 롤백 후 확인할 기대 상태를 작성하세요.
+      placeholder: |
+        - [ ] 문제 증상 재현되지 않음
+        - [ ] 주요 페이지 빌드/접속 정상
+        - [ ] 기존 기능 회귀 없음
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 제출 전 확인
+      options:
+        - label: 롤백 대상(커밋/PR) 1개를 정확히 입력했습니다.
+          required: true
+        - label: 롤백 사유와 기대 결과를 작성했습니다.
+          required: true
