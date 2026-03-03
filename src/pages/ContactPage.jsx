@@ -23,11 +23,6 @@ const styles = {
     fontSize: "clamp(2rem, 5vw, 3rem)",
     color: colors.brand.navy,
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: spacing[4],
-  },
   card: {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
@@ -36,37 +31,82 @@ const styles = {
   },
   cardTitle: {
     marginTop: 0,
-    marginBottom: spacing[2],
+    marginBottom: spacing[3],
     fontFamily: typography.fontFamily.serif,
     color: colors.brand.navy,
     fontSize: typography.fontSize.lg,
   },
-  cardBody: {
+  body: {
     margin: 0,
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.sm,
+    lineHeight: typography.lineHeight.relaxed,
+  },
+  mapFrame: {
+    width: "100%",
+    border: 0,
+    borderRadius: 10,
+    minHeight: 320,
+  },
+  transitTitle: {
+    marginTop: spacing[4],
+    marginBottom: spacing[2],
+    color: colors.brand.navy,
+    fontFamily: typography.fontFamily.serif,
+    fontSize: typography.fontSize.md,
+  },
+  transitList: {
+    margin: 0,
+    paddingLeft: spacing[5],
     color: colors.text.secondary,
     lineHeight: typography.lineHeight.relaxed,
     fontSize: typography.fontSize.sm,
   },
-  links: {
-    marginTop: spacing[6],
+  coloredText: {
+    fontWeight: typography.fontWeight.semibold,
+  },
+  infoCard: {
+    marginTop: spacing[5],
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 12,
     padding: spacing[5],
-    display: "grid",
+  },
+  infoRow: {
+    marginTop: spacing[2],
+  },
+  label: {
+    color: colors.brand.navy,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  linkText: {
+    color: colors.brand.accent,
+    textDecoration: "none",
+    fontWeight: typography.fontWeight.semibold,
+  },
+  linksWrap: {
+    marginTop: spacing[5],
+    display: "flex",
+    flexWrap: "wrap",
     gap: spacing[3],
   },
-  quickLink: {
+  pillLink: {
+    display: "inline-block",
     textDecoration: "none",
     color: colors.brand.accent,
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
+    border: `1px solid ${colors.border.strong}`,
+    background: colors.surface.base,
+    borderRadius: 9999,
+    padding: "0.4rem 0.85rem",
   },
 };
 
 const copy = {
   eyebrow: { ko: "연락처", en: "Contact" },
   title: { ko: "연락 및 방문 안내", en: "Contact and Visit" },
+  infoTitle: { ko: "연구실 정보", en: "Lab Information" },
 };
 
 export default function ContactPage() {
@@ -79,60 +119,96 @@ export default function ContactPage() {
         {t(copy.title)}
       </h1>
 
-      <div style={styles.grid}>
-        <article style={styles.card}>
-          <h2 style={styles.cardTitle}>{t(contactData.locationTitle)}</h2>
-          <p style={styles.cardBody}>{t(contactData.address)}</p>
-          <p style={{ ...styles.cardBody, marginTop: spacing[2] }}>{t(contactData.altAddress)}</p>
-        </article>
-        <article style={styles.card}>
-          <h2 style={styles.cardTitle}>{t(contactData.emailTitle)}</h2>
-          <a href={`mailto:${contactData.email}`} style={styles.quickLink}>
+      <article style={styles.card}>
+        <h2 style={styles.cardTitle}>{t(contactData.mapTitle)}</h2>
+        <iframe
+          title={t(contactData.mapTitle)}
+          src={contactData.mapEmbedUrl}
+          style={styles.mapFrame}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+
+        <h3 style={styles.transitTitle}>{t(contactData.transitTitle)}</h3>
+        <ul style={styles.transitList}>
+          {contactData.transit.map((item) => {
+            if (item.line) {
+              return (
+                <li key={item.mode.en}>
+                  <strong>{t(item.mode)}:</strong>{" "}
+                  <span style={{ ...styles.coloredText, color: item.lineColor }}>{t(item.line)}</span> {t(item.detail)}
+                </li>
+              );
+            }
+
+            return (
+              <li key={item.mode.en}>
+                <strong>{t(item.mode)}:</strong>
+                <ul style={{ ...styles.transitList, marginTop: spacing[1] }}>
+                  {item.groups.map((group) => (
+                    <li key={group.label.en}>
+                      <span style={{ ...styles.coloredText, color: group.color }}>{t(group.label)}:</span> {group.routes}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            );
+          })}
+        </ul>
+      </article>
+
+      <article style={styles.infoCard}>
+        <h2 style={styles.cardTitle}>{t(copy.infoTitle)}</h2>
+        <p style={styles.body}>
+          <span style={styles.label}>{t(contactData.locationTitle)}:</span> {t(contactData.address)}
+        </p>
+        <p style={{ ...styles.body, ...styles.infoRow }}>{t(contactData.altAddress)}</p>
+        <p style={{ ...styles.body, ...styles.infoRow }}>
+          <span style={styles.label}>{t(contactData.emailTitle)}:</span>{" "}
+          <a href={`mailto:${contactData.email}`} style={styles.linkText}>
             {contactData.email}
           </a>
-        </article>
-        <article style={styles.card}>
-          <h2 style={styles.cardTitle}>{t(contactData.phoneTitle)}</h2>
-          {contactData.phones.map((phone) => (
-            <p key={phone.value} style={styles.cardBody}>
-              {t(phone.label)}:{" "}
-              <a href={`tel:${phone.value.replace(/[^+\d]/g, "")}`} style={styles.quickLink}>
+        </p>
+        <p style={{ ...styles.body, ...styles.infoRow }}>
+          <span style={styles.label}>{t(contactData.phoneTitle)}:</span>{" "}
+          {contactData.phones.map((phone, index) => (
+            <span key={phone.value}>
+              {index > 0 ? " / " : ""}
+              {t(phone.label)}{" "}
+              <a href={`tel:${phone.value.replace(/[^+\d]/g, "")}`} style={styles.linkText}>
                 {phone.value}
               </a>
-            </p>
+            </span>
           ))}
-        </article>
-        <article style={styles.card}>
-          <h2 style={styles.cardTitle}>{t(contactData.officeHoursTitle)}</h2>
-          <p style={styles.cardBody}>{t(contactData.officeHours)}</p>
-        </article>
-      </div>
+        </p>
+        <p style={{ ...styles.body, ...styles.infoRow }}>
+          <span style={styles.label}>{t(contactData.officeHoursTitle)}:</span> {t(contactData.officeHours)}
+        </p>
 
-      <article style={styles.links}>
-        <h2 style={styles.cardTitle}>{t(contactData.linksTitle)}</h2>
-        {contactData.links.map((item) => {
-          const isInternal = item.url.startsWith("/");
-          if (isInternal) {
+        <div style={styles.linksWrap}>
+          {contactData.links.map((item) => {
+            const isInternal = item.url.startsWith("/");
+            if (isInternal) {
+              return (
+                <Link key={item.url} to={item.url} style={styles.pillLink}>
+                  {t(item.label)}
+                </Link>
+              );
+            }
             return (
-              <Link key={item.url} to={item.url} style={styles.quickLink}>
+              <a
+                key={item.url}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                style={styles.pillLink}
+                aria-label={`${t(item.label)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+              >
                 {t(item.label)}
-              </Link>
+              </a>
             );
-          }
-
-          return (
-            <a
-              key={item.url}
-              href={item.url}
-              target="_blank"
-              rel="noreferrer"
-              style={styles.quickLink}
-              aria-label={`${t(item.label)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
-            >
-              {t(item.label)}
-            </a>
-          );
-        })}
+          })}
+        </div>
       </article>
     </section>
   );
