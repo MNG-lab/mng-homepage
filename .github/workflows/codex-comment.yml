@@ -411,9 +411,40 @@ jobs:
             echo "::warning::Failed to add reviewers (chominho96, ksy0ung) to PR #${PR_NUMBER}."
           fi
 
-          SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
-          BODY=$'✅ Codex 작업 완료. PR 생성: '"$PR_URL"$'\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
-          gh issue comment "$ISSUE_NUMBER" --body "$BODY"
+          # Keep issue comment concise, and post full execution logs on PR comments.
+          gh issue comment "$ISSUE_NUMBER" --body "✅ Codex 작업 완료. PR 생성: $PR_URL"
+
+          LOG_FILE="/tmp/codex_out.txt"
+          if [[ ! -s "$LOG_FILE" ]]; then
+            gh pr comment "$PR_NUMBER" --body $'ℹ️ Codex 실행 로그가 비어 있습니다.'
+            exit 0
+          fi
+
+          rm -f /tmp/codex_out_part_*
+          split -b 50000 -d -a 3 "$LOG_FILE" /tmp/codex_out_part_
+          mapfile -t LOG_PARTS < <(ls /tmp/codex_out_part_* 2>/dev/null | sort)
+          TOTAL_PARTS="${#LOG_PARTS[@]}"
+
+          INDEX=1
+          for PART in "${LOG_PARTS[@]}"; do
+            COMMENT_FILE="/tmp/codex_pr_exec_log_${INDEX}.md"
+            {
+              if [[ "$INDEX" -eq 1 ]]; then
+                echo "✅ Codex 작업 완료. 변경사항을 \`${TARGET_REF}\` 브랜치에 반영해서 PR을 생성했습니다: $PR_URL"
+                echo ""
+              fi
+              echo "<details><summary>Codex 실행 로그 (전체, ${INDEX}/${TOTAL_PARTS})</summary>"
+              echo ""
+              echo '```text'
+              sed 's/\r$//' "$PART"
+              echo '```'
+              echo ""
+              echo "</details>"
+            } > "$COMMENT_FILE"
+
+            gh pr comment "$PR_NUMBER" --body-file "$COMMENT_FILE"
+            INDEX=$((INDEX + 1))
+          done
 
       - name: Comment result (Issue, no changes)
         if: env.TARGET_KIND == 'issue' && env.NO_CHANGES == 'true'
