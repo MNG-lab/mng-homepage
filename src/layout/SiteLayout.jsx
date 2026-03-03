@@ -17,7 +17,7 @@ const styles = {
     left: spacing[4],
     top: -100,
     zIndex: 1000,
-    borderRadius: 8,
+    borderRadius: 10,
     textDecoration: "none",
     background: colors.brand.gold,
     color: colors.brand.navy,
@@ -32,16 +32,16 @@ const styles = {
     position: "sticky",
     top: 0,
     zIndex: 100,
-    background: colors.brand.navy,
-    borderBottom: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(11,29,58,0.92)",
+    backdropFilter: "blur(10px)",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
   },
   headerInner: {
-    maxWidth: 1160,
+    maxWidth: 1100,
     margin: "0 auto",
-    minHeight: 68,
-    padding: `${spacing[4]} ${spacing[6]}`,
+    padding: "14px 20px",
     display: "flex",
-    gap: spacing[5],
+    gap: 16,
     alignItems: "center",
     justifyContent: "space-between",
     flexWrap: "wrap",
@@ -50,36 +50,32 @@ const styles = {
     textDecoration: "none",
     color: colors.text.inverse,
     display: "flex",
-    alignItems: "center",
-    gap: spacing[3],
+    flexDirection: "column",
+    gap: 2,
+    lineHeight: 1.15,
   },
-  brandMark: {
-    width: 30,
-    height: 30,
-    borderRadius: 9999,
-    background: `linear-gradient(135deg, ${colors.brand.accent}, ${colors.brand.gold})`,
-    display: "grid",
-    placeItems: "center",
-    fontFamily: typography.fontFamily.serif,
-    fontWeight: typography.fontWeight.bold,
-    fontSize: typography.fontSize.xs,
-  },
-  brandName: {
-    fontFamily: typography.fontFamily.serif,
+  brandTitle: {
     fontSize: typography.fontSize.md,
-    lineHeight: 1.1,
+    fontWeight: typography.fontWeight.semibold,
+    letterSpacing: "0.01em",
+    color: colors.text.inverse,
+  },
+  brandSub: {
+    fontSize: typography.fontSize.xs,
+    color: "rgba(255,255,255,0.65)",
   },
   controls: {
     display: "flex",
     alignItems: "center",
-    gap: spacing[4],
+    gap: spacing[3],
     flexWrap: "wrap",
   },
   nav: {
     display: "flex",
-    alignItems: "center",
-    gap: spacing[4],
+    gap: spacing[2],
     flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   languageWrap: {
     display: "inline-flex",
@@ -93,33 +89,32 @@ const styles = {
     border: 0,
     background: "transparent",
     borderRadius: 9999,
-    color: "rgba(255,255,255,0.92)",
+    color: "rgba(255,255,255,0.8)",
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.semibold,
-    padding: "0.3rem 0.65rem",
+    padding: "0.32rem 0.66rem",
     cursor: "pointer",
   },
   footer: {
     background: colors.brand.navy,
-    color: "rgba(255,255,255,0.78)",
-    marginTop: spacing[16],
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 24,
   },
   footerInner: {
-    maxWidth: 1160,
+    maxWidth: 1100,
     margin: "0 auto",
-    padding: `${spacing[12]} ${spacing[6]}`,
+    padding: `${spacing[10]} ${spacing[5]} ${spacing[8]}`,
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: spacing[8],
+    gap: spacing[6],
   },
   footerTitle: {
     margin: 0,
     color: colors.text.inverse,
-    fontFamily: typography.fontFamily.serif,
     fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
   },
   footerText: {
-    fontFamily: typography.fontFamily.sans,
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.relaxed,
   },
@@ -130,26 +125,36 @@ const styles = {
   },
   footerBottom: {
     borderTop: "1px solid rgba(255,255,255,0.14)",
-    padding: `${spacing[4]} ${spacing[6]} ${spacing[6]}`,
-    maxWidth: 1160,
+    padding: `${spacing[4]} ${spacing[5]} ${spacing[6]}`,
+    maxWidth: 1100,
     margin: "0 auto",
     fontSize: typography.fontSize.xs,
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(255,255,255,0.62)",
   },
 };
 
-function navStyle(isActive) {
+function navStyle(isActive, isJoin) {
   return {
-    color: isActive ? colors.text.inverse : "rgba(255,255,255,0.7)",
     textDecoration: "none",
-    fontSize: typography.fontSize.sm,
-    fontWeight: isActive ? typography.fontWeight.semibold : typography.fontWeight.medium,
+    fontSize: typography.fontSize.xs,
+    padding: "0.5rem 0.75rem",
+    borderRadius: 9999,
+    border: `1px solid ${isActive ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.14)"}`,
+    color: isJoin
+      ? isActive
+        ? colors.text.inverse
+        : colors.brand.gold
+      : isActive
+        ? colors.text.inverse
+        : "rgba(255,255,255,0.72)",
+    background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
+    transition: "all 0.2s ease",
   };
 }
 
 function footerLinkStyle() {
   return {
-    color: "rgba(255,255,255,0.72)",
+    color: "rgba(255,255,255,0.82)",
     textDecoration: "none",
     fontSize: typography.fontSize.sm,
   };
@@ -158,8 +163,8 @@ function footerLinkStyle() {
 function languageButtonStyle(isActive) {
   return {
     ...styles.langButton,
-    background: isActive ? colors.brand.gold : "transparent",
-    color: isActive ? colors.text.inverse : "rgba(255,255,255,0.92)",
+    background: isActive ? "rgba(255,255,255,0.16)" : "transparent",
+    color: isActive ? colors.text.inverse : "rgba(255,255,255,0.78)",
   };
 }
 
@@ -184,15 +189,20 @@ export default function SiteLayout() {
       <header style={styles.header}>
         <div style={styles.headerInner}>
           <Link to={ROUTES.home} style={styles.brand}>
-            <span style={styles.brandMark}>M</span>
-            <span style={styles.brandName}>MNG Lab</span>
+            <span style={styles.brandTitle}>MNG Lab</span>
+            <span style={styles.brandSub}>Yonsei University</span>
           </Link>
 
           <div style={styles.controls}>
             <nav style={styles.nav} aria-label={primaryNavLabel}>
               {PRIMARY_NAV_ITEMS.map((item) => (
-                <NavLink key={item.key} to={item.path} style={({ isActive }) => navStyle(isActive)} end={item.path === ROUTES.home}>
-                  {t(uiCopy.nav[item.key])}
+                <NavLink
+                  key={item.key}
+                  to={item.path}
+                  style={({ isActive }) => navStyle(isActive, item.key === "join")}
+                  end={item.path === ROUTES.home}
+                >
+                  {uiCopy.nav[item.key].en}
                 </NavLink>
               ))}
             </nav>
