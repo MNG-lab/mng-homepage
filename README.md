@@ -48,6 +48,7 @@ npm run build
 - `npm run preview`: 빌드 결과 미리보기
 - `npm run qa:smoke`: 주요 라우트 스모크 테스트
 - `npm run qa:matrix:responsive`: 반응형 QA 매트릭스(모바일/태블릿/데스크톱) 스크린샷 수집 + 리포트 생성
+- `npm run qa:cross-browser`: 크로스브라우저 라우트 스모크(Chromium/Firefox/WebKit) 리포트 생성
 - `npm run validate:content`: 콘텐츠 구조 검증
 - `npm run validate:content:urls`: 콘텐츠 + 외부 URL 상태 검증
 - `npm run verify:members`: 레거시 멤버 데이터 정합 리포트 생성
@@ -62,6 +63,12 @@ npm run build
 
 ```bash
 npx playwright install chromium
+```
+
+`qa:cross-browser`까지 포함하려면:
+
+```bash
+npx playwright install chromium firefox webkit
 ```
 
 ## 5) 사이트 URL(SEO) 설정

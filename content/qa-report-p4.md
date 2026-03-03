@@ -1,7 +1,7 @@
 # P4 QA Report
 
 Date: 2026-03-03  
-Branch: `codex/p4-responsive-matrix-capture`
+Branch: `codex/p4-cross-browser-smoke`
 
 ## 1) Automated Checks
 
@@ -10,6 +10,8 @@ Branch: `codex/p4-responsive-matrix-capture`
 - Smoke report: `content/qa-smoke-p4.md`
 - Responsive matrix: `npm run qa:matrix:responsive` -> pass (`24/24`)
 - Responsive matrix report: `content/qa-responsive-matrix-report.md`
+- Cross-browser smoke: `npm run qa:cross-browser` -> pass (`24/24`)
+- Cross-browser report: `content/qa-cross-browser-report.md`
 
 ## 2) Performance Baseline
 
@@ -28,7 +30,7 @@ Branch: `codex/p4-responsive-matrix-capture`
 ## 4) Remaining Manual QA (P4 Exit Criteria)
 
 - [x] Responsive matrix execution with screenshots (mobile/tablet/desktop)
-- [ ] Cross-browser run (Chrome/Edge/Safari)
+- [x] Cross-browser run (Chrome/Edge/Safari baseline via Chromium/Firefox/WebKit)
 - [ ] Final accessibility review (heading order, alt text, contrast)
 - [x] Content-level external link sanity checks during release candidate run (`npm run preflight:p5` includes `npm run validate:content:urls`)
 
@@ -43,3 +45,9 @@ Branch: `codex/p4-responsive-matrix-capture`
 - Command: `npm run qa:matrix:responsive`
 - Result: pass (`24/24`)
 - Screenshots: `content/qa-screenshots/{mobile,tablet,desktop}/*.png`
+
+## 7) Cross-Browser Baseline
+
+- Command: `npm run qa:cross-browser`
+- Result: pass (`24/24`)
+- Browser mapping: Chromium(Chrome/Edge), Firefox, WebKit(Safari)
