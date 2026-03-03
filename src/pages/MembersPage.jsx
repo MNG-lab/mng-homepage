@@ -1,5 +1,7 @@
+import { Link } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { membersData } from "../content/members-data";
+import { ROUTES } from "../config/site-routes";
 import { useLanguage } from "../context/LanguageContext";
 
 const styles = {
@@ -22,46 +24,17 @@ const styles = {
     fontSize: "clamp(2rem, 5vw, 3rem)",
     color: colors.brand.navy,
   },
-  piCard: {
-    background: colors.surface.card,
-    border: `1px solid ${colors.border.soft}`,
-    borderLeft: `4px solid ${colors.brand.gold}`,
-    borderRadius: 12,
-    padding: spacing[6],
-    marginBottom: spacing[8],
-  },
-  piName: {
-    margin: 0,
-    fontFamily: typography.fontFamily.serif,
-    fontSize: typography.fontSize["2xl"],
-    color: colors.brand.navy,
-  },
-  piTitle: {
-    marginTop: spacing[2],
-    marginBottom: spacing[3],
-    color: colors.text.secondary,
-    fontSize: typography.fontSize.sm,
-  },
-  piBio: {
-    margin: 0,
-    color: colors.text.secondary,
-    lineHeight: typography.lineHeight.relaxed,
-  },
-  linkRow: {
-    marginTop: spacing[4],
-    display: "flex",
-    gap: spacing[3],
-    flexWrap: "wrap",
-  },
-  pillLink: {
+  professorLink: {
     display: "inline-block",
+    marginTop: spacing[2],
+    marginBottom: spacing[8],
     borderRadius: 9999,
     textDecoration: "none",
     fontSize: typography.fontSize.sm,
-    padding: "0.4rem 0.85rem",
-    background: colors.surface.base,
-    border: `1px solid ${colors.border.strong}`,
-    color: colors.brand.navy,
+    padding: "0.45rem 0.95rem",
+    background: colors.brand.navy,
+    border: `1px solid ${colors.brand.navy}`,
+    color: colors.text.inverse,
   },
   heading: {
     marginTop: spacing[8],
@@ -117,18 +90,16 @@ const styles = {
 
 const copy = {
   eyebrow: { ko: "구성원", en: "Members" },
-  title: { ko: "교수진, 구성원, 동문", en: "PI, Members, and Alumni" },
-  pi: { ko: "책임교수", en: "Principal Investigator" },
+  title: { ko: "현재 구성원 및 동문", en: "Current Members and Alumni" },
+  professorLink: { ko: "교수 상세 보기", en: "View Professor Profile" },
   current: { ko: "현재 구성원", en: "Current Members" },
   alumni: { ko: "동문", en: "Alumni" },
-  email: { ko: "이메일", en: "Email" },
-  scholar: { ko: "Google Scholar", en: "Google Scholar" },
   source: { ko: "원본 멤버 페이지", en: "Legacy Members Page" },
 };
 
 export default function MembersPage() {
   const { language, t } = useLanguage();
-  const { pi, current, alumni } = membersData;
+  const { current, alumni } = membersData;
 
   return (
     <section style={styles.section} aria-labelledby="members-title">
@@ -137,26 +108,9 @@ export default function MembersPage() {
         {t(copy.title)}
       </h1>
 
-      <article style={styles.piCard}>
-        <h2 style={styles.heading}>{t(copy.pi)}</h2>
-        <h3 style={styles.piName}>{t(pi.name)}</h3>
-        <p style={styles.piTitle}>{t(pi.title)}</p>
-        <p style={styles.piBio}>{t(pi.bio)}</p>
-        <div style={styles.linkRow}>
-          <a href={`mailto:${pi.email}`} style={styles.pillLink} aria-label={`${t(copy.email)}: ${pi.email}`}>
-            {t(copy.email)}: {pi.email}
-          </a>
-          <a
-            href={pi.scholarUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={styles.pillLink}
-            aria-label={`${t(copy.scholar)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
-          >
-            {t(copy.scholar)}
-          </a>
-        </div>
-      </article>
+      <Link to={ROUTES.professor} style={styles.professorLink}>
+        {t(copy.professorLink)}
+      </Link>
 
       <h2 style={styles.heading}>{t(copy.current)}</h2>
       <div style={styles.grid}>

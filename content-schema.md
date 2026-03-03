@@ -10,6 +10,7 @@ Principle: separate content from presentation, and manage user-facing text as `k
   "site": {},
   "home": {},
   "research": [],
+  "professor": {},
   "members": {
     "pi": {},
     "current": [],
@@ -55,6 +56,15 @@ Principle: separate content from presentation, and manage user-facing text as `k
       "alt": "LocalizedText"
     },
     "order": "number"
+  },
+  "ProfessorProfile": {
+    "name": "LocalizedText",
+    "title": "LocalizedText",
+    "intro": "LocalizedText",
+    "focusAreas": ["LocalizedText"],
+    "responsibilities": ["LocalizedText"],
+    "email": "string",
+    "scholarUrl": "string"
   },
   "MemberItem": {
     "id": "string",
@@ -114,6 +124,7 @@ content/
   site.json
   home.json
   research.json
+  professor.json
   members.json
   publications.json
   gallery.json

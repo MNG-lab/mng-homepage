@@ -7,6 +7,7 @@ const SiteLayout = lazy(() => import("./layout/SiteLayout"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const ResearchPage = lazy(() => import("./pages/ResearchPage"));
 const ResearchDetailPage = lazy(() => import("./pages/ResearchDetailPage"));
+const ProfessorPage = lazy(() => import("./pages/ProfessorPage"));
 const MembersPage = lazy(() => import("./pages/MembersPage"));
 const PublicationsPage = lazy(() => import("./pages/PublicationsPage"));
 const GalleryPage = lazy(() => import("./pages/GalleryPage"));
@@ -62,6 +63,7 @@ export default function App() {
             <Route path={ROUTES.home} element={<HomePage />} />
             <Route path={ROUTES.research} element={<ResearchPage />} />
             <Route path={ROUTES.researchDetail} element={<ResearchDetailPage />} />
+            <Route path={ROUTES.professor} element={<ProfessorPage />} />
             <Route path={ROUTES.members} element={<MembersPage />} />
             <Route path={ROUTES.publications} element={<PublicationsPage />} />
             <Route path={ROUTES.gallery} element={<GalleryPage />} />

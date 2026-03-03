@@ -40,6 +40,7 @@ function resolveSeoKey(pathname) {
   if (pathname === ROUTES.home) return "home";
   if (pathname === ROUTES.research) return "research";
   if (pathname.startsWith("/research/")) return "researchDetail";
+  if (pathname === ROUTES.professor) return "professor";
   if (pathname === ROUTES.members) return "members";
   if (pathname === ROUTES.publications || pathname === "/publications/publications") return "publications";
   if (pathname === ROUTES.gallery) return "gallery";

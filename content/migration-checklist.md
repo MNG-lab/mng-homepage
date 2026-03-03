@@ -20,6 +20,7 @@ Branch: `codex/p3-content-migration`
 
 - [x] Contact address/email/phone migrated from legacy Contact/Footer text.
 - [x] Research section mapped to legacy Research 1/2/3 topics and source links.
+- [x] Professor route/template added (`/professor`) with dedicated profile content and source link.
 - [x] Members page updated with legacy PI info and multiple verified member emails.
 - [x] Publications full archive migrated across 14 legacy pages with metadata enrichment.
 - [x] Gallery categories linked to legacy archive routes (`~2023`, `2024`, `waglewagle`).

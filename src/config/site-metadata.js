@@ -42,6 +42,18 @@ export const PAGE_SEO = {
       keywords: "Research Topic, Research Detail, MNG Lab",
     },
   },
+  professor: {
+    ko: {
+      title: "Professor | MNG Lab",
+      description: "DGLab 책임교수 소개와 연구 방향을 안내합니다.",
+      keywords: "MNG Lab Professor, DGLab PI, 고혁완, Hyuk Wan Ko",
+    },
+    en: {
+      title: "Professor | MNG Lab",
+      description: "Professor profile and research direction of DGLab.",
+      keywords: "MNG Lab Professor, DGLab PI, Hyuk Wan Ko",
+    },
+  },
   members: {
     ko: {
       title: "Members | MNG Lab",

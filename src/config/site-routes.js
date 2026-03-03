@@ -2,6 +2,7 @@ export const ROUTES = {
   home: "/",
   research: "/research",
   researchDetail: "/research/:slug",
+  professor: "/professor",
   members: "/members",
   publications: "/publications",
   gallery: "/gallery",
@@ -16,6 +17,7 @@ export function getResearchDetailPath(slug) {
 export const PRIMARY_NAV_ITEMS = [
   { key: "home", path: ROUTES.home },
   { key: "research", path: ROUTES.research },
+  { key: "professor", path: ROUTES.professor },
   { key: "members", path: ROUTES.members },
   { key: "publications", path: ROUTES.publications },
   { key: "gallery", path: ROUTES.gallery },

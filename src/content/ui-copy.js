@@ -2,6 +2,7 @@ export const uiCopy = {
   nav: {
     home: { ko: "홈", en: "Home" },
     research: { ko: "연구", en: "Research" },
+    professor: { ko: "교수", en: "Professor" },
     members: { ko: "구성원", en: "Members" },
     publications: { ko: "논문", en: "Publications" },
     gallery: { ko: "갤러리", en: "Gallery" },

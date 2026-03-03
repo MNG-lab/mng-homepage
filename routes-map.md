@@ -9,7 +9,8 @@ Goal: migrate to the new information architecture without losing legacy URL valu
 | --- | --- | --- |
 | home | `/` | Home |
 | research | `/research` | Research overview + detail entry |
-| members | `/members` | PI / Current / Alumni |
+| professor | `/professor` | PI profile |
+| members | `/members` | Current / Alumni |
 | publications | `/publications` | Year and filter support |
 | gallery | `/gallery` | Year and category |
 | contact | `/contact` | Address / email / map |
@@ -21,6 +22,7 @@ Goal: migrate to the new information architecture without losing legacy URL valu
 | --- | --- | --- | --- |
 | `/` | `/` | keep | P0 |
 | `/research` | `/research` | keep | P0 |
+| `/professor` | `/professor` | keep | P0 |
 | `/members` | `/members` | keep | P0 |
 | `/publications/publications` | `/publications` | 301 redirect | P0 |
 | `/publications` | `/publications` | keep | P0 |
