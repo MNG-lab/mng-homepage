@@ -212,18 +212,8 @@ jobs:
             --body "Automated changes requested via comment on issue #$ISSUE_NUMBER.")"
 
           SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
-          gh issue comment "$ISSUE_NUMBER" --body "$(cat <<EOF
-✅ Codex 작업 완료. PR 생성: $PR_URL
-
-<details><summary>Codex 실행 요약 (마지막 120줄)</summary>
-
-\`\`\`text
-$SUMMARY
-\`\`\`
-
-</details>
-EOF
-)"
+          BODY=$'✅ Codex 작업 완료. PR 생성: '"$PR_URL"$'\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
+          gh issue comment "$ISSUE_NUMBER" --body "$BODY"
 
       - name: Comment result (PR)
         if: env.TARGET_KIND == 'pr'
@@ -235,30 +225,11 @@ EOF
           SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
 
           if [[ "${NO_CHANGES:-}" == "true" ]]; then
-            gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
-ℹ️ Codex가 실행됐지만 변경사항이 없어서 커밋/푸시는 하지 않았어요.
-
-<details><summary>Codex 실행 요약 (마지막 120줄)</summary>
-
-\`\`\`text
-$SUMMARY
-\`\`\`
-
-</details>
-EOF
-)"
+            BODY=$'ℹ️ Codex가 실행됐지만 변경사항이 없어서 커밋/푸시는 하지 않았어요.\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
+            gh pr comment "$PR_NUMBER" --body "$BODY"
             exit 0
           fi
 
-          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
-✅ Codex 작업 완료. 변경사항을 \`${TARGET_REF}\` 브랜치에 반영해서 push 했어요.
-
-<details><summary>Codex 실행 요약 (마지막 120줄)</summary>
-
-\`\`\`text
-$SUMMARY
-\`\`\`
-
-</details>
-EOF
-)"
+          BODY="✅ Codex 작업 완료. 변경사항을 \`${TARGET_REF}\` 브랜치에 반영해서 push 했어요."
+          BODY+=$'\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
+          gh pr comment "$PR_NUMBER" --body "$BODY"
