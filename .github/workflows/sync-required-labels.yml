@@ -1,0 +1,64 @@
+name: Sync Required Labels
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/ISSUE_TEMPLATE/*.yml"
+      - ".github/workflows/sync-required-labels.yml"
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure rollback labels exist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const required = [
+              {
+                name: "rollback-simple-request",
+                color: "FF8A00",
+                description: "비개발자용 간단 롤백 요청"
+              },
+              {
+                name: "rollback-request",
+                color: "D73A49",
+                description: "개발자용 대상 지정 롤백 요청"
+              }
+            ];
+
+            for (const label of required) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name
+                });
+                await github.rest.issues.updateLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description
+                });
+                core.info(`Updated label: ${label.name}`);
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description
+                  });
+                  core.info(`Created label: ${label.name}`);
+                } else {
+                  throw error;
+                }
+              }
+            }
