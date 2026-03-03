@@ -14,6 +14,7 @@
     "migrate:gallery": "node scripts/migrate-gallery.mjs",
     "verify:members": "node scripts/verify-members.mjs",
     "verify:routes:published": "node scripts/verify-published-routes.mjs --write-report",
+    "verify:rollback:deploy": "node scripts/verify-rollback-deploy.mjs",
     "check:pages:status": "node scripts/check-pages-status.mjs",
     "preflight:p5": "node scripts/p5-preflight.mjs",
     "validate:redirects": "node scripts/validate-redirects.mjs --write-report",

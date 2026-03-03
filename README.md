@@ -52,6 +52,7 @@ npm run build
 - `npm run verify:members`: 레거시 멤버 데이터 정합 리포트 생성
 - `npm run validate:redirects`: 레거시->신규 URL 매핑 검증 리포트 생성
 - `npm run verify:routes:published`: 배포 URL 라우트/레거시 진입 경로 검증
+- `npm run verify:rollback:deploy -- --sha <commit-sha>`: 특정 SHA의 롤백 배포 반영 여부 검증
 - `npm run check:pages:status`: 최신 Pages 배포 상태/롤백 SHA 리포트 생성
 - `npm run preflight:p5`: P5 배포 전 점검(SEO/빌드/검증/배포상태) 일괄 실행
 - `npm run generate:seo`: sitemap/robots 수동 생성

@@ -1,7 +1,7 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p4-ci-quality-gate`
+Branch: `codex/p5-rollback-verify-script`
 
 ## 1) Workflow Baseline
 
@@ -45,4 +45,5 @@ Branch: `codex/p4-ci-quality-gate`
 
 - [x] Keep last known good commit hash documented (`content/p5-deployment-status-report.md`)
 - [x] If critical issue occurs, revert main to previous deploy commit and push (command template in `content/p5-deployment-status-report.md`)
-- [ ] Verify rollback deployment from Actions history
+- [x] Rollback verification command added (`npm run verify:rollback:deploy -- --sha <commit-sha>`)
+- [ ] Verify rollback deployment from Actions history (execute command with actual rollback SHA)
