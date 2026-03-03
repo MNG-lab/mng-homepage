@@ -45,14 +45,30 @@ const styles = {
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: spacing[4],
   },
   memberCard: {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 12,
-    padding: spacing[5],
+    padding: spacing[4],
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing[2],
+  },
+  photoWrap: {
+    borderRadius: 10,
+    overflow: "hidden",
+    border: `1px solid ${colors.border.soft}`,
+    aspectRatio: "4 / 5",
+    background: colors.surface.subtle,
+  },
+  photo: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
   },
   memberName: {
     margin: 0,
@@ -61,30 +77,16 @@ const styles = {
     color: colors.text.primary,
   },
   meta: {
-    marginTop: spacing[1],
-    marginBottom: spacing[2],
+    margin: 0,
     color: colors.brand.accent,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
+    lineHeight: typography.lineHeight.relaxed,
   },
   desc: {
     margin: 0,
     color: colors.text.secondary,
     lineHeight: typography.lineHeight.relaxed,
     fontSize: typography.fontSize.sm,
-  },
-  sourceBox: {
-    marginTop: spacing[8],
-    background: colors.surface.card,
-    border: `1px dashed ${colors.border.strong}`,
-    borderRadius: 10,
-    padding: spacing[4],
-    fontSize: typography.fontSize.sm,
-    color: colors.text.secondary,
-    lineHeight: typography.lineHeight.relaxed,
-  },
-  sourceLink: {
-    color: colors.brand.accent,
-    textDecoration: "none",
   },
 };
 
@@ -94,12 +96,22 @@ const copy = {
   professorLink: { ko: "교수 상세 보기", en: "View Professor Profile" },
   current: { ko: "현재 구성원", en: "Current Members" },
   alumni: { ko: "동문", en: "Alumni" },
-  source: { ko: "원본 멤버 페이지", en: "Legacy Members Page" },
 };
 
+function extractRecentYear(period) {
+  const matches = String(period || "").match(/\b(19|20)\d{2}\b/g) || [];
+  if (!matches.length) return 0;
+  return Math.max(...matches.map((value) => Number(value)));
+}
+
 export default function MembersPage() {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const { current, alumni } = membersData;
+  const sortedAlumni = [...alumni].sort((a, b) => {
+    const yearDiff = extractRecentYear(b.period) - extractRecentYear(a.period);
+    if (yearDiff !== 0) return yearDiff;
+    return a.name.ko.localeCompare(b.name.ko, "ko");
+  });
 
   return (
     <section style={styles.section} aria-labelledby="members-title">
@@ -116,9 +128,13 @@ export default function MembersPage() {
       <div style={styles.grid}>
         {current.map((member) => (
           <article key={member.id} style={styles.memberCard}>
+            {member.photo ? (
+              <div style={styles.photoWrap}>
+                <img src={member.photo} alt={t(member.name)} style={styles.photo} loading="lazy" />
+              </div>
+            ) : null}
             <h3 style={styles.memberName}>{t(member.name)}</h3>
-            <p style={styles.meta}>{t(member.role)}</p>
-            <p style={styles.desc}>{t(member.interests)}</p>
+            {member.role ? <p style={styles.meta}>{t(member.role)}</p> : null}
             {member.email ? <p style={{ ...styles.desc, marginTop: spacing[2] }}>{member.email}</p> : null}
           </article>
         ))}
@@ -126,25 +142,18 @@ export default function MembersPage() {
 
       <h2 style={styles.heading}>{t(copy.alumni)}</h2>
       <div style={styles.grid}>
-        {alumni.map((member) => (
+        {sortedAlumni.map((member) => (
           <article key={member.id} style={styles.memberCard}>
+            {member.photo ? (
+              <div style={styles.photoWrap}>
+                <img src={member.photo} alt={t(member.name)} style={styles.photo} loading="lazy" />
+              </div>
+            ) : null}
             <h3 style={styles.memberName}>{t(member.name)}</h3>
             <p style={styles.meta}>{member.period}</p>
-            <p style={styles.desc}>{t(member.now)}</p>
+            {member.email ? <p style={{ ...styles.desc, marginTop: spacing[2] }}>{member.email}</p> : null}
           </article>
         ))}
-      </div>
-
-      <div style={styles.sourceBox}>
-        <a
-          href={membersData.source.membersPage}
-          target="_blank"
-          rel="noreferrer"
-          style={styles.sourceLink}
-          aria-label={`${t(copy.source)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
-        >
-          {t(copy.source)}
-        </a>
       </div>
     </section>
   );

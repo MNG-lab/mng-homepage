@@ -5,12 +5,12 @@ Source pages: https://dglab.yonsei.ac.kr/members, https://dglab.yonsei.ac.kr/pro
 
 ## Summary
 
-- Expected current-member emails: 7
+- Expected current-member emails: 8
 - Extracted current-member emails from legacy page: 24
-- Target rows (current + PI): 8
-- PASS rows: 5
-- WARN rows: 3
-- INFO rows (legacy extra emails): 17
+- Target rows (current + PI): 9
+- PASS rows: 9
+- WARN rows: 0
+- INFO rows (legacy extra emails): 16
 
 ## Extra Emails Found in Legacy
 
@@ -22,7 +22,6 @@ Source pages: https://dglab.yonsei.ac.kr/members, https://dglab.yonsei.ac.kr/pro
 - jjo9803@naver.com
 - kohw@yonsei.ac.kr
 - kyk4863@yonsei.ac.kr
-- lin0239@naver.com
 - qkrwlgus2004@gmail.com
 - shinaeoh315@gmail.com
 - ssaysj0407@yonsei.ac.kr
@@ -40,9 +39,10 @@ Source pages: https://dglab.yonsei.ac.kr/members, https://dglab.yonsei.ac.kr/pro
 | hjji6739@naver.com | current | 황보고은 / Koeun Hwangbo | matched | Integrated M.S./Ph.D. | Integrated M.S./Ph.D. | PASS |
 | ksy0ung@yonsei.ac.kr | current | 김서영 / Seoyoung Kim | matched | Integrated M.S./Ph.D. | Integrated M.S./Ph.D. | PASS |
 | ejin0930@yonsei.ac.kr | current | 남이진 / Yijin Nam | matched | Integrated M.S./Ph.D. | Integrated M.S./Ph.D. | PASS |
-| ksjsjj2000@naver.com | current | 김수정 / Sujeong Kim | matched | Graduate Student | Integrated M.S./Ph.D. | WARN |
-| yeonalex1@yonsei.ac.kr | current | 한연수 / Yeonsoo Han | matched | Graduate Student | Integrated M.S./Ph.D. | WARN |
-| c223jin@yonsei.ac.kr | current | 이준서 / Junseo Lee | not found | Graduate Student | Integrated M.S./Ph.D. | WARN |
+| ksjsjj2000@naver.com | current | 김수정 / Sujeong Kim | matched | Integrated M.S./Ph.D. | Integrated M.S./Ph.D. | PASS |
+| yeonalex1@yonsei.ac.kr | current | 한연수 / Yeonsoo Han | matched | Integrated M.S./Ph.D. | Integrated M.S./Ph.D. | PASS |
+| c223jin@yonsei.ac.kr | current | 임현진 / Hyunjin Lim | matched | Integrated M.S./Ph.D. | Integrated M.S./Ph.D. | PASS |
+| lin0239@naver.com | current | 이준서 / Junseo Lee | matched | Integrated M.S./Ph.D. | Integrated M.S./Ph.D. | PASS |
 | ask657@naver.com | legacy-extra | - | - | - | Unknown | INFO |
 | hgu202@naver.com | legacy-extra | - | - | - | Unknown | INFO |
 | hjmooon@ubixrx.com | legacy-extra | - | - | - | Unknown | INFO |
@@ -51,7 +51,6 @@ Source pages: https://dglab.yonsei.ac.kr/members, https://dglab.yonsei.ac.kr/pro
 | jjo9803@naver.com | legacy-extra | - | - | - | Unknown | INFO |
 | kohw@yonsei.ac.kr | legacy-extra | - | - | - | Unknown | INFO |
 | kyk4863@yonsei.ac.kr | legacy-extra | - | - | - | Unknown | INFO |
-| lin0239@naver.com | legacy-extra | - | - | - | Integrated M.S./Ph.D. | INFO |
 | qkrwlgus2004@gmail.com | legacy-extra | - | - | - | Unknown | INFO |
 | shinaeoh315@gmail.com | legacy-extra | - | - | - | Unknown | INFO |
 | ssaysj0407@yonsei.ac.kr | legacy-extra | - | - | - | Unknown | INFO |

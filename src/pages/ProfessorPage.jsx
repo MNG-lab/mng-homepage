@@ -1,6 +1,9 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { colors, spacing, typography } from "../design-tokens";
 import { professorData } from "../content/professor-data";
 import { useLanguage } from "../context/LanguageContext";
+
+const EXPERIENCE_PREVIEW_ITEMS = 2;
 
 const styles = {
   section: {
@@ -35,7 +38,20 @@ const styles = {
     border: `1px solid ${colors.border.soft}`,
     borderLeft: `4px solid ${colors.brand.gold}`,
     borderRadius: 12,
-    padding: spacing[6],
+    padding: spacing[5],
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 180px) minmax(0, 1fr)",
+    gap: spacing[5],
+  },
+  profilePhoto: {
+    width: "100%",
+    borderRadius: 10,
+    border: `1px solid ${colors.border.soft}`,
+    objectFit: "cover",
+    aspectRatio: "3 / 4",
+  },
+  profileBody: {
+    minWidth: 0,
   },
   name: {
     margin: 0,
@@ -45,7 +61,7 @@ const styles = {
   },
   role: {
     marginTop: spacing[2],
-    marginBottom: spacing[4],
+    marginBottom: spacing[2],
     color: colors.text.secondary,
     fontSize: typography.fontSize.sm,
   },
@@ -71,14 +87,18 @@ const styles = {
   grid: {
     marginTop: spacing[6],
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: spacing[4],
+    alignItems: "start",
   },
   card: {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 12,
     padding: spacing[5],
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing[2],
   },
   cardTitle: {
     margin: 0,
@@ -87,11 +107,41 @@ const styles = {
     fontSize: typography.fontSize.xl,
   },
   list: {
-    margin: `${spacing[3]} 0 0`,
-    paddingLeft: spacing[5],
+    margin: `${spacing[1]} 0 0`,
+    paddingLeft: 0,
+    listStyle: "none",
     color: colors.text.secondary,
     lineHeight: typography.lineHeight.relaxed,
     fontSize: typography.fontSize.sm,
+  },
+  listItem: {
+    padding: `${spacing[2]} 0`,
+    borderBottom: `1px solid ${colors.border.soft}`,
+  },
+  listPeriod: {
+    margin: 0,
+    color: colors.brand.accent,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  listText: {
+    margin: `${spacing[1]} 0 0`,
+    color: colors.text.secondary,
+  },
+  listViewport: {
+    overflow: "hidden",
+    transition: "max-height 0.35s ease",
+  },
+  moreButton: {
+    marginTop: spacing[2],
+    alignSelf: "flex-start",
+    borderRadius: 9999,
+    border: `1px solid ${colors.border.strong}`,
+    background: colors.surface.base,
+    color: colors.brand.navy,
+    fontSize: typography.fontSize.xs,
+    padding: "0.35rem 0.75rem",
+    cursor: "pointer",
   },
   links: {
     marginTop: spacing[6],
@@ -109,35 +159,39 @@ const styles = {
     border: `1px solid ${colors.border.strong}`,
     color: colors.brand.navy,
   },
-  source: {
-    marginTop: spacing[6],
-    background: colors.surface.card,
-    border: `1px dashed ${colors.border.strong}`,
-    borderRadius: 10,
-    padding: spacing[4],
-    color: colors.text.secondary,
-    fontSize: typography.fontSize.sm,
-    lineHeight: typography.lineHeight.relaxed,
-  },
-  sourceLink: {
-    color: colors.brand.accent,
-    textDecoration: "none",
-  },
 };
 
 const copy = {
   eyebrow: { ko: "교수 소개", en: "Professor" },
   pageTitle: { ko: "책임교수 소개", en: "Professor Profile" },
-  programTitle: { ko: "연구 방향", en: "Research Programs" },
-  responsibilityTitle: { ko: "주요 역할", en: "Core Responsibilities" },
+  affiliation: { ko: "소속", en: "Affiliation" },
+  address: { ko: "연구실 주소", en: "Office Address" },
+  educationTitle: { ko: "학력", en: "Education" },
+  experienceTitle: { ko: "연구 및 경력", en: "Research and Professional Experience" },
+  honorsTitle: { ko: "수상 및 장학", en: "Awards and Honors" },
   email: { ko: "이메일", en: "Email" },
+  officePhone: { ko: "교수실", en: "Office" },
   scholar: { ko: "Google Scholar", en: "Google Scholar" },
-  source: { ko: "기존 Professor 페이지", en: "Legacy Professor Page" },
+  more: { ko: "더보기", en: "Show More" },
+  less: { ko: "접기", en: "Show Less" },
 };
 
 export default function ProfessorPage() {
   const { language, t } = useLanguage();
-  const { profile, overview, focusAreas, responsibilities, keywords, contact, source } = professorData;
+  const { profile, affiliation, address, overview, education, experience, honors, keywords, contact } = professorData;
+  const [showAllExperience, setShowAllExperience] = useState(false);
+  const experienceCardRef = useRef(null);
+  const [cardHeight, setCardHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!experienceCardRef.current) return;
+    const measured = Math.ceil(experienceCardRef.current.getBoundingClientRect().height);
+    if (measured > 0) setCardHeight(measured);
+  }, [language, showAllExperience, experience.length]);
+
+  const equalHeightStyle = cardHeight > 0 ? { minHeight: cardHeight } : {};
+  const hasExpandableExperience = experience.length > EXPERIENCE_PREVIEW_ITEMS;
+  const visibleExperience = showAllExperience ? experience : experience.slice(0, EXPERIENCE_PREVIEW_ITEMS);
 
   return (
     <section style={styles.section} aria-labelledby="professor-title">
@@ -148,43 +202,83 @@ export default function ProfessorPage() {
       <p style={styles.subtitle}>{t(profile.intro)}</p>
 
       <article style={styles.profileCard}>
-        <h2 style={styles.name}>{t(profile.name)}</h2>
-        <p style={styles.role}>{t(profile.title)}</p>
-        {overview.map((item, index) => (
-          <p key={index} style={{ ...styles.body, marginTop: index === 0 ? 0 : spacing[3] }}>
-            {t(item)}
+        <img src={profile.photo} alt={t(profile.name)} style={styles.profilePhoto} loading="lazy" />
+        <div style={styles.profileBody}>
+          <h2 style={styles.name}>{t(profile.name)}</h2>
+          <p style={styles.role}>{t(profile.title)}</p>
+          <p style={styles.body}>
+            <strong>{t(copy.affiliation)}:</strong> {t(affiliation)}
           </p>
-        ))}
-        <div style={styles.keywordWrap}>
-          {keywords.map((item) => (
-            <span key={item} style={styles.keyword}>
-              {item}
-            </span>
+          <p style={{ ...styles.body, marginTop: spacing[2] }}>
+            <strong>{t(copy.address)}:</strong> {t(address)}
+          </p>
+          {overview.map((item, index) => (
+            <p key={index} style={{ ...styles.body, marginTop: spacing[2] }}>
+              {t(item)}
+            </p>
           ))}
+          <div style={styles.keywordWrap}>
+            {keywords.map((item) => (
+              <span key={item} style={styles.keyword}>
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
       </article>
 
       <div style={styles.grid}>
-        <article style={styles.card}>
-          <h2 style={styles.cardTitle}>{t(copy.programTitle)}</h2>
+        <article style={{ ...styles.card, ...equalHeightStyle }}>
+          <h2 style={styles.cardTitle}>{t(copy.educationTitle)}</h2>
           <ul style={styles.list}>
-            {focusAreas.map((item) => (
-              <li key={item.en}>{t(item)}</li>
+            {education.map((item) => (
+              <li key={`${item.period}-${item.en}`} style={styles.listItem}>
+                <p style={styles.listPeriod}>{item.period}</p>
+                <p style={styles.listText}>{t({ ko: item.ko, en: item.en })}</p>
+              </li>
             ))}
           </ul>
         </article>
 
-        <article style={styles.card}>
-          <h2 style={styles.cardTitle}>{t(copy.responsibilityTitle)}</h2>
+        <article ref={experienceCardRef} style={styles.card}>
+          <h2 style={styles.cardTitle}>{t(copy.experienceTitle)}</h2>
           <ul style={styles.list}>
-            {responsibilities.map((item) => (
-              <li key={item.en}>{t(item)}</li>
+            {visibleExperience.map((item) => (
+              <li key={`${item.period}-${item.en}`} style={styles.listItem}>
+                <p style={styles.listPeriod}>{item.period}</p>
+                <p style={styles.listText}>{t({ ko: item.ko, en: item.en })}</p>
+              </li>
+            ))}
+          </ul>
+          {hasExpandableExperience ? (
+            <button
+              type="button"
+              style={styles.moreButton}
+              onClick={() => setShowAllExperience((prev) => !prev)}
+              aria-expanded={showAllExperience}
+            >
+              {showAllExperience ? t(copy.less) : t(copy.more)}
+            </button>
+          ) : null}
+        </article>
+
+        <article style={{ ...styles.card, ...equalHeightStyle }}>
+          <h2 style={styles.cardTitle}>{t(copy.honorsTitle)}</h2>
+          <ul style={styles.list}>
+            {honors.map((item) => (
+              <li key={`${item.period}-${item.en}`} style={styles.listItem}>
+                <p style={styles.listPeriod}>{item.period}</p>
+                <p style={styles.listText}>{t({ ko: item.ko, en: item.en })}</p>
+              </li>
             ))}
           </ul>
         </article>
       </div>
 
       <div style={styles.links}>
+        <a href={`tel:${contact.officePhone.replace(/[^+\d]/g, "")}`} style={styles.pillLink}>
+          {t(copy.officePhone)}: {contact.officePhone}
+        </a>
         <a href={`mailto:${contact.email}`} style={styles.pillLink} aria-label={`${t(copy.email)}: ${contact.email}`}>
           {t(copy.email)}: {contact.email}
         </a>
@@ -199,17 +293,6 @@ export default function ProfessorPage() {
         </a>
       </div>
 
-      <div style={styles.source}>
-        <a
-          href={source.professorPage}
-          target="_blank"
-          rel="noreferrer"
-          style={styles.sourceLink}
-          aria-label={`${t(copy.source)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
-        >
-          {t(copy.source)}
-        </a>
-      </div>
     </section>
   );
 }
