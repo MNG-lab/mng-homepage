@@ -53,6 +53,7 @@ npm run build
 - `npm run validate:redirects`: 레거시->신규 URL 매핑 검증 리포트 생성
 - `npm run verify:routes:published`: 배포 URL 라우트/레거시 진입 경로 검증
 - `npm run check:pages:status`: 최신 Pages 배포 상태/롤백 SHA 리포트 생성
+- `npm run preflight:p5`: P5 배포 전 점검(SEO/빌드/검증/배포상태) 일괄 실행
 - `npm run generate:seo`: sitemap/robots 수동 생성
 
 ## 5) 사이트 URL(SEO) 설정

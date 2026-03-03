@@ -1,7 +1,7 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p5-seo-url-config`
+Branch: `codex/p5-preflight-automation`
 
 ## 1) Workflow Baseline
 
@@ -9,6 +9,7 @@ Branch: `codex/p5-seo-url-config`
 - [x] Build uses deterministic install (`npm ci`)
 - [x] SPA fallback prepared (`dist/404.html` from `dist/index.html`)
 - [x] `.nojekyll` artifact included
+- [x] Run integrated preflight (`npm run preflight:p5`) and review `content/p5-preflight-report.md`
 
 ## 2) GitHub Settings
 
