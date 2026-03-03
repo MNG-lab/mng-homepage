@@ -2,7 +2,7 @@ name: "🛠️ 홈페이지 수정 요청 (AI 실행용)"
 description: "비개발자용 템플릿입니다. 항목을 채우면 Codex가 바로 코드 수정하기 쉬워집니다."
 title: "[수정요청] "
 labels:
-  - needs-triage
+  - codex-auto
 body:
   - type: markdown
     attributes:
