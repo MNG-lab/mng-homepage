@@ -1,7 +1,7 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p5-deploy-status-rollback`
+Branch: `codex/p4-legacy-route-aliases`
 
 ## 1) Workflow Baseline
 
@@ -28,6 +28,7 @@ Branch: `codex/p5-deploy-status-rollback`
 - [x] `/join-us`
 - [x] Run redirect baseline checker (`npm run validate:redirects`) and review `content/redirect-validation-report.md`
 - [x] Run published route checker (`npm run verify:routes:published`) and review `content/p5-route-verification-report.md`
+- [x] Confirm legacy entry routes are reachable in published site (`/research-1`, `/research-2`, `/research-3`, `/2023-1`, `/2024`, `/와글와글`, etc.)
 - Note: on `github.io`, direct access to non-root routes is served via `404.html` SPA fallback (HTTP 404 + app HTML). This is expected before custom-domain/server redirect cutover.
 
 ## 4) Custom Domain Cutover

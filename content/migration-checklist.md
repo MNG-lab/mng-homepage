@@ -31,7 +31,7 @@ Branch: `codex/p3-content-migration`
 
 - [x] Full member role/status verification for all extracted emails (`content/member-verification-report.md`).
 - [x] Gallery item-level caption/image migration (archive pages `2023-1`, `2024`, `와글와글`).
-- [ ] Legacy-to-new URL redirection behavior validation in production environment.
+- [x] Legacy-to-new URL redirection behavior validation in published environment (`content/p5-route-verification-report.md`, `content/redirect-validation-report.md`).
 
 ## Validation Notes
 
@@ -48,3 +48,5 @@ Branch: `codex/p3-content-migration`
   - WARN targets: `ksjsjj2000@naver.com`, `yeonalex1@yonsei.ac.kr`, `c223jin@yonsei.ac.kr` (legacy Members page data differs from migrated current roster).
 - Redirect validation baseline (2026-03-03): `PASS 6 / WARN 0 / FAIL 2 / SKIP 1` (`content/redirect-validation-report.md`).
   - FAIL targets: `/publications/publications` (no redirect), `/publications` (404 on current legacy host).
+- Published route/legacy entry baseline (2026-03-03): `PASS 18 / FAIL 0` (`content/p5-route-verification-report.md`).
+  - Server-level `301` is still pending custom-domain infrastructure cutover.

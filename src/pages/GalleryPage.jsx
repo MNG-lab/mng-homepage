@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { galleryCategories, galleryData } from "../content/gallery-data";
 import { useLanguage } from "../context/LanguageContext";
@@ -120,9 +121,14 @@ const copy = {
 
 export default function GalleryPage() {
   const { language, t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const years = useMemo(() => ["All", ...new Set(galleryData.map((item) => String(item.year)))], []);
-  const [selectedYear, setSelectedYear] = useState("All");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  const normalizeYear = (value) => (value && years.includes(value) ? value : "All");
+  const normalizeCategory = (value) => (value && galleryCategories.includes(value) ? value : "All");
+
+  const [selectedYear, setSelectedYear] = useState(() => normalizeYear(searchParams.get("year")));
+  const [selectedCategory, setSelectedCategory] = useState(() => normalizeCategory(searchParams.get("category")));
   const allOptionLabel = language === "ko" ? "전체" : "All";
 
   const filtered = useMemo(() => {

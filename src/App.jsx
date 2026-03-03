@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { ROUTES } from "./config/site-routes";
+import { LEGACY_ROUTE_REDIRECTS, ROUTES } from "./config/site-routes";
 import SeoManager from "./components/SeoManager";
 
 const SiteLayout = lazy(() => import("./layout/SiteLayout"));
@@ -57,7 +57,9 @@ export default function App() {
       <ScrollManager />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/publications/publications" element={<Navigate to={ROUTES.publications} replace />} />
+          {LEGACY_ROUTE_REDIRECTS.map((route) => (
+            <Route key={route.from} path={route.from} element={<Navigate to={route.to} replace />} />
+          ))}
 
           <Route element={<SiteLayout />}>
             <Route path={ROUTES.home} element={<HomePage />} />
