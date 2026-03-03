@@ -53,6 +53,8 @@ const styles = {
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 12,
     padding: spacing[4],
+    width: "70%",
+    justifySelf: "center",
     display: "flex",
     flexDirection: "column",
     gap: spacing[2],
@@ -130,21 +132,12 @@ export default function MembersPage() {
           <article key={member.id} style={styles.memberCard}>
             {member.photo ? (
               <div style={styles.photoWrap}>
-                <img
-                  src={member.photo}
-                  alt={t(member.name)}
-                  style={styles.photo}
-                  loading="lazy"
-                />
+                <img src={member.photo} alt={t(member.name)} style={styles.photo} loading="lazy" />
               </div>
             ) : null}
             <h3 style={styles.memberName}>{t(member.name)}</h3>
             {member.role ? <p style={styles.meta}>{t(member.role)}</p> : null}
-            {member.email ? (
-              <p style={{ ...styles.desc, marginTop: spacing[2] }}>
-                {member.email}
-              </p>
-            ) : null}
+            {member.email ? <p style={{ ...styles.desc, marginTop: spacing[2] }}>{member.email}</p> : null}
           </article>
         ))}
       </div>
@@ -155,21 +148,12 @@ export default function MembersPage() {
           <article key={member.id} style={styles.memberCard}>
             {member.photo ? (
               <div style={styles.photoWrap}>
-                <img
-                  src={member.photo}
-                  alt={t(member.name)}
-                  style={styles.photo}
-                  loading="lazy"
-                />
+                <img src={member.photo} alt={t(member.name)} style={styles.photo} loading="lazy" />
               </div>
             ) : null}
             <h3 style={styles.memberName}>{t(member.name)}</h3>
             <p style={styles.meta}>{member.period}</p>
-            {member.email ? (
-              <p style={{ ...styles.desc, marginTop: spacing[2] }}>
-                {member.email}
-              </p>
-            ) : null}
+            {member.email ? <p style={{ ...styles.desc, marginTop: spacing[2] }}>{member.email}</p> : null}
           </article>
         ))}
       </div>
