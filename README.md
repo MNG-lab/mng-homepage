@@ -79,6 +79,7 @@ $env:VITE_SITE_URL="https://dglab.yonsei.ac.kr"; npm run build
 ## 6) GitHub Pages 배포
 
 - 워크플로: `.github/workflows/deploy-pages.yml`
+- PR 품질 게이트: `.github/workflows/ci-quality.yml`
 - `main` 브랜치 push 시 자동 배포
 - SPA fallback: `dist/index.html` -> `dist/404.html`
 

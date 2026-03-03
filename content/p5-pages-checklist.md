@@ -1,11 +1,12 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p5-preflight-automation`
+Branch: `codex/p4-ci-quality-gate`
 
 ## 1) Workflow Baseline
 
 - [x] Deploy workflow triggers on `main` push
+- [x] PR quality gate workflow added (`.github/workflows/ci-quality.yml`)
 - [x] Build uses deterministic install (`npm ci`)
 - [x] SPA fallback prepared (`dist/404.html` from `dist/index.html`)
 - [x] `.nojekyll` artifact included
