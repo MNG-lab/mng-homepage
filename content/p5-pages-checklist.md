@@ -1,7 +1,7 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p5-pages-stabilization`
+Branch: `codex/p5-published-route-verification`
 
 ## 1) Workflow Baseline
 
@@ -18,15 +18,17 @@ Branch: `codex/p5-pages-stabilization`
 
 ## 3) Route Verification (Published Site)
 
-- [ ] `/`
-- [ ] `/research`
-- [ ] `/professor`
-- [ ] `/members`
-- [ ] `/publications`
-- [ ] `/gallery`
-- [ ] `/contact`
-- [ ] `/join-us`
+- [x] `/`
+- [x] `/research`
+- [x] `/professor`
+- [x] `/members`
+- [x] `/publications`
+- [x] `/gallery`
+- [x] `/contact`
+- [x] `/join-us`
 - [x] Run redirect baseline checker (`npm run validate:redirects`) and review `content/redirect-validation-report.md`
+- [x] Run published route checker (`npm run verify:routes:published`) and review `content/p5-route-verification-report.md`
+- Note: on `github.io`, direct access to non-root routes is served via `404.html` SPA fallback (HTTP 404 + app HTML). This is expected before custom-domain/server redirect cutover.
 
 ## 4) Custom Domain Cutover
 
