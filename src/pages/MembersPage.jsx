@@ -58,11 +58,13 @@ const styles = {
     gap: spacing[2],
   },
   photoWrap: {
+    width: "70%",
     borderRadius: 10,
     overflow: "hidden",
     border: `1px solid ${colors.border.soft}`,
     aspectRatio: "4 / 5",
     background: colors.surface.subtle,
+    margin: "0 auto",
   },
   photo: {
     width: "100%",
