@@ -1,0 +1,150 @@
+name: "🛠️ 홈페이지 수정 요청 (AI 실행용)"
+description: "비개발자용 템플릿입니다. 항목을 채우면 Codex가 바로 코드 수정하기 쉬워집니다."
+title: "[수정요청] "
+labels:
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        아래 항목을 구체적으로 작성할수록 AI가 한 번에 정확하게 수정합니다.
+
+        작성 팁:
+        - `한 이슈 = 한 목표`로 작성
+        - "어디를", "무엇으로", "왜" 바꾸는지 분리해서 작성
+        - 가능하면 **수정 전/수정 후 문구**를 그대로 붙여넣기
+        - 기준 링크(기존 사이트/문서/이미지)를 반드시 포함
+
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: 수정 유형
+      description: 가장 가까운 유형 1개를 선택하세요.
+      options:
+        - 텍스트/문구 수정
+        - 링크 수정
+        - 이미지 교체/추가
+        - 레이아웃/스타일 수정
+        - 콘텐츠 신규 추가
+        - 버그 수정
+        - 기타
+    validations:
+      required: true
+
+  - type: input
+    id: page_url
+    attributes:
+      label: 대상 페이지 URL
+      description: 수정이 필요한 페이지 URL을 적어주세요. 여러 개면 줄바꿈으로 구분해도 됩니다.
+      placeholder: "예) https://mng-lab.github.io/mng-homepage/research"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_state
+    attributes:
+      label: 현재 상태 (문제)
+      description: 지금 어떤 점이 문제인지 화면 기준으로 설명해주세요.
+      placeholder: |
+        예)
+        - KR 홈에서 노화/섬유화 버튼 위치가 다른 버튼과 어긋남
+        - 모바일에서 카드 하단 여백이 너무 좁음
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_state
+    attributes:
+      label: 원하는 상태 (수정 결과)
+      description: 결과를 명확히 적어주세요. 가능하면 수정 전/수정 후 형태로 작성해주세요.
+      placeholder: |
+        예)
+        [수정 전]
+        노화/섬유화 버튼만 위치가 위로 올라감
+
+        [수정 후]
+        희귀질환/대사질환/노화·섬유화 3개 버튼의 위치와 크기 고정
+    validations:
+      required: true
+
+  - type: dropdown
+    id: language_scope
+    attributes:
+      label: 언어 반영 범위
+      description: 어떤 언어에 반영해야 하는지 선택해주세요.
+      options:
+        - 국문(KR)만
+        - 영문(EN)만
+        - 국문/영문 모두
+    validations:
+      required: true
+
+  - type: textarea
+    id: source_links
+    attributes:
+      label: 기준 자료/근거 링크
+      description: AI가 참조할 원본 사이트, 문서, 이미지 링크를 넣어주세요.
+      placeholder: |
+        예)
+        - 기존 사이트: https://dglab.yonsei.ac.kr/research-1
+        - 참고 시안: (링크)
+        - 텍스트 원문: (링크/파일)
+    validations:
+      required: true
+
+  - type: textarea
+    id: exact_text
+    attributes:
+      label: 정확한 문구 (있으면 필수)
+      description: 문구 수정이라면 실제로 들어갈 텍스트를 그대로 적어주세요.
+      placeholder: |
+        예)
+        KR: 일차섬모 대사를 기반으로 항노화 기술을 개발하고...
+        EN: We develop anti-aging technologies based on primary cilium metabolism...
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 완료 기준 (체크리스트)
+      description: 작업 완료를 판단할 조건을 적어주세요.
+      placeholder: |
+        - [ ] 데스크톱/모바일에서 레이아웃 깨짐 없음
+        - [ ] KR/EN 토글 시 내용 동일 기준 반영
+        - [ ] 내부/외부 링크 동작 확인
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: 하지 말아야 할 것 (선택)
+      description: 이번 작업에서 건드리면 안 되는 범위를 적어주세요.
+      placeholder: |
+        예)
+        - 다른 페이지 디자인 변경 금지
+        - 데이터 구조/파일명 변경 금지
+        - 배포 설정 변경 금지
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 추가 메모 (선택)
+      description: 우선순위, 일정, 참고사항 등을 자유롭게 적어주세요.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 제출 전 확인
+      options:
+        - label: 한 이슈에서 한 가지 목표를 다루고 있습니다.
+          required: true
+        - label: 기준 링크(또는 원문 문구)를 포함했습니다.
+          required: true
+        - label: 완료 기준(체크리스트)을 작성했습니다.
+          required: true
