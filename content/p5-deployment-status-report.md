@@ -1,6 +1,6 @@
 # P5 Deployment Status Report
 
-Generated at: 2026-03-03T01:55:13.287Z
+Generated at: 2026-03-03T02:10:21.111Z
 Repository: MNG-lab/mng-homepage
 Branch: main
 Workflow file: deploy-pages.yml
@@ -15,32 +15,32 @@ Published URL: https://mng-lab.github.io/mng-homepage/
 
 | Check | Result | Detail |
 | --- | --- | --- |
-| Latest deploy workflow run is green | PASS | run #28, conclusion=success |
-| Latest deploy run matches main HEAD | PASS | run sha=4f047e18dfda99ab966739215afc2af1d7302ef6, main sha=4f047e18dfda99ab966739215afc2af1d7302ef6 |
+| Latest deploy workflow run is green | PASS | run #31, conclusion=success |
+| Latest deploy run matches main HEAD | PASS | run sha=d7c450bd69311ed985cd52cead104ceb21a77b13, main sha=d7c450bd69311ed985cd52cead104ceb21a77b13 |
 | Published URL is reachable | PASS | status=200, root=yes |
-| Rollback target SHA is documented | PASS | 8bb6369370ae8b5ebf39440b7d7a3810657f10bc |
+| Rollback target SHA is documented | PASS | b3f75390e59aab4c197eef3543f763636975d865 |
 
 ## Latest Deploy Run
 
-- Run number: 28
+- Run number: 31
 - Status: completed
 - Conclusion: success
-- Head SHA: 4f047e18dfda99ab966739215afc2af1d7302ef6
-- Updated at: 2026-03-03T01:51:22Z
-- Run URL: https://github.com/MNG-lab/mng-homepage/actions/runs/22604574036
+- Head SHA: d7c450bd69311ed985cd52cead104ceb21a77b13
+- Updated at: 2026-03-03T02:04:31Z
+- Run URL: https://github.com/MNG-lab/mng-homepage/actions/runs/22604901074
 
 ## Rollback Target
 
-- Recommended rollback SHA: 8bb6369370ae8b5ebf39440b7d7a3810657f10bc
-- Source run: #27 (success)
-- Run URL: https://github.com/MNG-lab/mng-homepage/actions/runs/22604517006
+- Recommended rollback SHA: b3f75390e59aab4c197eef3543f763636975d865
+- Source run: #30 (success)
+- Run URL: https://github.com/MNG-lab/mng-homepage/actions/runs/22604816145
 
 ### Rollback Commands
 
 ```bash
 git checkout main
 git pull origin main
-git revert --no-edit 8bb6369370ae8b5ebf39440b7d7a3810657f10bc..HEAD
+git revert --no-edit b3f75390e59aab4c197eef3543f763636975d865..HEAD
 git push origin main
 ```
 

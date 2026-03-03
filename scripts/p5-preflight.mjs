@@ -14,6 +14,7 @@ const TASKS = [
   { label: "Validate content schema", command: "npm run validate:content" },
   { label: "External link sanity check", command: "npm run validate:content:urls" },
   { label: "Run smoke test", command: "npm run qa:smoke" },
+  { label: "Run accessibility audit", command: "npm run qa:accessibility" },
   { label: "Validate redirect mapping", command: "npm run validate:redirects" },
   { label: "Verify published routes", command: "npm run verify:routes:published" },
   { label: "Check pages deployment status", command: "npm run check:pages:status" },

@@ -1,7 +1,7 @@
 # P4 QA Report
 
 Date: 2026-03-03  
-Branch: `codex/p4-cross-browser-smoke`
+Branch: `codex/p4-accessibility-audit`
 
 ## 1) Automated Checks
 
@@ -12,6 +12,8 @@ Branch: `codex/p4-cross-browser-smoke`
 - Responsive matrix report: `content/qa-responsive-matrix-report.md`
 - Cross-browser smoke: `npm run qa:cross-browser` -> pass (`24/24`)
 - Cross-browser report: `content/qa-cross-browser-report.md`
+- Accessibility audit: `npm run qa:accessibility` -> pass (`PASS 8 / WARN 0 / FAIL 0`)
+- Accessibility report: `content/qa-accessibility-report.md`
 
 ## 2) Performance Baseline
 
@@ -31,13 +33,13 @@ Branch: `codex/p4-cross-browser-smoke`
 
 - [x] Responsive matrix execution with screenshots (mobile/tablet/desktop)
 - [x] Cross-browser run (Chrome/Edge/Safari baseline via Chromium/Firefox/WebKit)
-- [ ] Final accessibility review (heading order, alt text, contrast)
+- [x] Final accessibility review (heading order, alt text, contrast)
 - [x] Content-level external link sanity checks during release candidate run (`npm run preflight:p5` includes `npm run validate:content:urls`)
 
 ## 5) External Link Sanity Baseline (RC)
 
 - Command: `npm run preflight:p5`
-- Result: pass (`8/8`)
+- Result: pass (`9/9`)
 - URL health summary: `content/p3-validation-report.md` (`38/39` passed, one known `403` from `onlinelibrary.wiley.com`)
 
 ## 6) Responsive Matrix Baseline
@@ -51,3 +53,9 @@ Branch: `codex/p4-cross-browser-smoke`
 - Command: `npm run qa:cross-browser`
 - Result: pass (`24/24`)
 - Browser mapping: Chromium(Chrome/Edge), Firefox, WebKit(Safari)
+
+## 8) Accessibility Baseline
+
+- Command: `npm run qa:accessibility`
+- Result: pass (`PASS 8 / WARN 0 / FAIL 0`)
+- Scope: `heading-order`, `image-alt`, `color-contrast`

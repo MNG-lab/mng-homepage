@@ -45,7 +45,7 @@ const styles = {
   },
   ctaPrimary: {
     background: colors.brand.gold,
-    color: colors.brand.navy,
+    color: colors.text.inverse,
     textDecoration: "none",
     borderRadius: 9999,
     padding: `${spacing[3]} ${spacing[6]}`,

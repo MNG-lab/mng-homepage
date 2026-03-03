@@ -93,7 +93,7 @@ const styles = {
     border: 0,
     background: "transparent",
     borderRadius: 9999,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.92)",
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.semibold,
     padding: "0.3rem 0.65rem",
@@ -159,7 +159,7 @@ function languageButtonStyle(isActive) {
   return {
     ...styles.langButton,
     background: isActive ? colors.brand.gold : "transparent",
-    color: isActive ? colors.brand.navy : "rgba(255,255,255,0.72)",
+    color: isActive ? colors.text.inverse : "rgba(255,255,255,0.92)",
   };
 }
 

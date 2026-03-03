@@ -2,8 +2,8 @@ export const colors = {
   brand: {
     navy: "#0B1D3A",
     deep: "#162B4D",
-    accent: "#3B82C4",
-    gold: "#D4A853",
+    accent: "#1F5E97",
+    gold: "#7A5A16",
   },
   surface: {
     base: "#FAFAF7",
@@ -13,7 +13,7 @@ export const colors = {
   text: {
     primary: "#1A1A1A",
     secondary: "#3D3D3D",
-    muted: "#9CA3AF",
+    muted: "#5F6B7A",
     inverse: "#FFFFFF",
   },
   border: {
@@ -21,9 +21,9 @@ export const colors = {
     strong: "#D6D1C7",
   },
   research: {
-    cilia: "#3B82C4",
-    metabolic: "#6B8E5A",
-    aging: "#9B6B9E",
+    cilia: "#2E6FA8",
+    metabolic: "#4D7340",
+    aging: "#7B4E80",
   },
 } as const;
 

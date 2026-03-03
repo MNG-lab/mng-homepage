@@ -49,6 +49,7 @@ npm run build
 - `npm run qa:smoke`: 주요 라우트 스모크 테스트
 - `npm run qa:matrix:responsive`: 반응형 QA 매트릭스(모바일/태블릿/데스크톱) 스크린샷 수집 + 리포트 생성
 - `npm run qa:cross-browser`: 크로스브라우저 라우트 스모크(Chromium/Firefox/WebKit) 리포트 생성
+- `npm run qa:accessibility`: 접근성 점검(heading-order/image-alt/color-contrast) 리포트 생성
 - `npm run validate:content`: 콘텐츠 구조 검증
 - `npm run validate:content:urls`: 콘텐츠 + 외부 URL 상태 검증
 - `npm run verify:members`: 레거시 멤버 데이터 정합 리포트 생성
@@ -56,7 +57,7 @@ npm run build
 - `npm run verify:routes:published`: 배포 URL 라우트/레거시 진입 경로 검증
 - `npm run verify:rollback:deploy -- --sha <commit-sha>`: 특정 SHA의 롤백 배포 반영 여부 검증
 - `npm run check:pages:status`: 최신 Pages 배포 상태/롤백 SHA 리포트 생성
-- `npm run preflight:p5`: P5 배포 전 점검(SEO/빌드/콘텐츠/외부 링크/스모크/리다이렉트/배포상태) 일괄 실행
+- `npm run preflight:p5`: P5 배포 전 점검(SEO/빌드/콘텐츠/외부 링크/스모크/접근성/리다이렉트/배포상태) 일괄 실행
 - `npm run generate:seo`: sitemap/robots 수동 생성
 
 `qa:matrix:responsive` 최초 1회 실행 전 브라우저 설치:
