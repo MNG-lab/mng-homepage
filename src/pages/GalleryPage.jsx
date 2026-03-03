@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { galleryData } from "../content/gallery-data";
 import { useLanguage } from "../context/LanguageContext";
@@ -200,24 +201,62 @@ function toLightboxSrc(src) {
 
 export default function GalleryPage() {
   const { language, t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const albums = useMemo(() => {
-    const withImages = galleryData.filter((item) => (item.images?.length ?? 0) > 0);
-    const order = {
-      "legacy-gallery-2024": 0,
-      "legacy-gallery-2023": 1,
-      "legacy-gallery-wagle": 2,
-    };
-    return withImages.sort((a, b) => (order[a.id] ?? 99) - (order[b.id] ?? 99));
+    return galleryData
+      .filter((item) => (item.images?.length ?? 0) > 0)
+      .sort((a, b) => (a.displayOrder ?? 99) - (b.displayOrder ?? 99) || b.year - a.year);
   }, []);
-  const [activeAlbumId, setActiveAlbumId] = useState(albums[0]?.id ?? null);
+  const [activeAlbumId, setActiveAlbumId] = useState(null);
   const [lightboxImage, setLightboxImage] = useState(null);
   const [lightboxDisplaySrc, setLightboxDisplaySrc] = useState("");
   const highResCacheRef = useRef(new Set());
+  const lastAppliedQueryRef = useRef("");
+  const querySelector = useMemo(() => {
+    const queryKey = searchParams.toString();
+    const yearValue = searchParams.get("year");
+    const parsedYear = yearValue === null ? null : Number(yearValue);
+    const categoryValue = searchParams.get("category");
+
+    return {
+      key: queryKey,
+      year: parsedYear !== null && Number.isFinite(parsedYear) ? parsedYear : null,
+      category: categoryValue || null,
+    };
+  }, [searchParams]);
+  const queryAlbumId = useMemo(() => {
+    if (!albums.length) return null;
+    if (!querySelector.year && !querySelector.category) return null;
+
+    const matched = albums.find((album) => {
+      const legacyYear = Number(album.legacyQuery?.year ?? album.year);
+      const legacyCategory = String(album.legacyQuery?.category ?? album.category);
+      const yearMatch = querySelector.year === null || legacyYear === querySelector.year;
+      const categoryMatch = !querySelector.category || legacyCategory === querySelector.category;
+      return yearMatch && categoryMatch;
+    });
+    return matched?.id ?? null;
+  }, [albums, querySelector.category, querySelector.year]);
 
   function openLightbox(image) {
     setLightboxImage(image);
     setLightboxDisplaySrc(image.src);
   }
+
+  useEffect(() => {
+    if (!albums.length) return;
+    if (activeAlbumId && albums.some((item) => item.id === activeAlbumId)) return;
+    setActiveAlbumId(albums[0].id);
+  }, [activeAlbumId, albums]);
+
+  useEffect(() => {
+    if (!querySelector.key) return;
+    if (lastAppliedQueryRef.current === querySelector.key) return;
+    lastAppliedQueryRef.current = querySelector.key;
+    if (queryAlbumId) {
+      setActiveAlbumId(queryAlbumId);
+    }
+  }, [queryAlbumId, querySelector.key]);
 
   useEffect(() => {
     if (!lightboxImage) return undefined;
@@ -265,7 +304,7 @@ export default function GalleryPage() {
   }
 
   const activeAlbum = albums.find((item) => item.id === activeAlbumId) ?? albums[0];
-  const hidePhotoCaption = activeAlbum.id === "legacy-gallery-wagle";
+  const hidePhotoCaption = Boolean(activeAlbum.hideCaptions);
 
   return (
     <section style={styles.section} aria-labelledby="gallery-title">

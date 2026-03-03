@@ -17,6 +17,12 @@ export const galleryData = [
     "id": "legacy-gallery-2023",
     "year": 2023,
     "category": "Year Archive",
+    "displayOrder": 1,
+    "hideCaptions": false,
+    "legacyQuery": {
+      "year": 2023,
+      "category": "Year Archive"
+    },
     "title": {
       "ko": "2023 이전 아카이브",
       "en": "~2023 Archive"
@@ -152,6 +158,12 @@ export const galleryData = [
     "id": "legacy-gallery-2024",
     "year": 2024,
     "category": "Year Archive",
+    "displayOrder": 0,
+    "hideCaptions": false,
+    "legacyQuery": {
+      "year": 2024,
+      "category": "Year Archive"
+    },
     "title": {
       "ko": "2024 아카이브",
       "en": "2024 Archive"
@@ -227,6 +239,11 @@ export const galleryData = [
     "id": "legacy-gallery-wagle",
     "year": 2024,
     "category": "Lab Life",
+    "displayOrder": 2,
+    "hideCaptions": true,
+    "legacyQuery": {
+      "category": "Lab Life"
+    },
     "title": {
       "ko": "와글와글",
       "en": "Lab Moments"
@@ -322,11 +339,4 @@ export const galleryData = [
       }
     ]
   }
-];
-
-export const galleryCategories = [
-  "All",
-  "Gallery",
-  "Year Archive",
-  "Lab Life"
 ];

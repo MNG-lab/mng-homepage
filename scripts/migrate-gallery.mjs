@@ -19,6 +19,9 @@ const GALLERY_SOURCES = [
     id: "legacy-gallery-2023",
     year: 2023,
     category: "Year Archive",
+    displayOrder: 1,
+    hideCaptions: false,
+    legacyQuery: { year: 2023, category: "Year Archive" },
     title: { ko: "2023 이전 아카이브", en: "~2023 Archive" },
     description: {
       ko: "기존 갤러리의 2023년 이전 활동 모음 페이지",
@@ -31,6 +34,9 @@ const GALLERY_SOURCES = [
     id: "legacy-gallery-2024",
     year: 2024,
     category: "Year Archive",
+    displayOrder: 0,
+    hideCaptions: false,
+    legacyQuery: { year: 2024, category: "Year Archive" },
     title: { ko: "2024 아카이브", en: "2024 Archive" },
     description: {
       ko: "기존 갤러리의 2024년 활동 모음 페이지",
@@ -43,6 +49,9 @@ const GALLERY_SOURCES = [
     id: "legacy-gallery-wagle",
     year: 2024,
     category: "Lab Life",
+    displayOrder: 2,
+    hideCaptions: true,
+    legacyQuery: { category: "Lab Life" },
     title: { ko: "와글와글", en: "Lab Moments" },
     description: {
       ko: "연구실 활동 중심의 별도 갤러리 섹션",
@@ -230,8 +239,6 @@ async function run() {
   }
 
   const output = `export const galleryData = ${JSON.stringify(outputData, null, 2)};
-
-export const galleryCategories = ${JSON.stringify(["All", "Gallery", "Year Archive", "Lab Life"], null, 2)};
 `;
 
   await fs.writeFile(OUTPUT_FILE, output, "utf8");
