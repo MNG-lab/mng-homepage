@@ -9,7 +9,7 @@ MNG Lab 홈페이지 저장소입니다.
 아래 버튼으로 템플릿 이슈를 생성하세요.  
 해당 템플릿으로 만든 이슈(`codex-auto` 라벨)는 생성 즉시 Codex 자동 실행 대상입니다.
 
-[![Open Issue Template](https://img.shields.io/badge/Issue%20Template-Open-0A66C2?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)
+[![수정 요청하기](https://img.shields.io/badge/%EC%88%98%EC%A0%95%20%EC%9A%94%EC%B2%AD%ED%95%98%EA%B8%B0-0A66C2?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)
 
 ### 2) 댓글로 Codex 실행하기
 수동 실행이 필요하면 Issue/PR 댓글에 `@codex` 또는 `/codex`를 포함해 지시하세요.
