@@ -53,6 +53,8 @@ const styles = {
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 12,
     padding: spacing[4],
+    width: "70%",
+    justifySelf: "center",
     display: "flex",
     flexDirection: "column",
     gap: spacing[2],
