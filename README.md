@@ -11,7 +11,13 @@ MNG Lab 홈페이지 저장소입니다.
 [![수정 요청하기](https://img.shields.io/badge/%EC%88%98%EC%A0%95%20%EC%9A%94%EC%B2%AD%ED%95%98%EA%B8%B0-0A66C2?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)
 [![즉시 롤백 요청하기](https://img.shields.io/badge/%EC%A6%89%EC%8B%9C%20%EB%A1%A4%EB%B0%B1%20%EC%9A%94%EC%B2%AD-FF8A00?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-simple-request.yml)
 
-즉시 롤백은 `main` 최신 반영 1건을 되돌려 **직전 상태**로 복구합니다.
+즉시 롤백은 아래 상황에서 쓰는 **긴급 복구 버튼**입니다.
+- 방금 수정/배포 후 홈페이지가 갑자기 깨졌을 때
+- 원인 분석보다 먼저, 일단 직전 정상 상태로 빠르게 되돌려야 할 때
+
+버튼을 누르고 양식만 제출하면, 시스템이 자동으로:
+- 직전 상태로 되돌리는 PR을 생성하고
+- 확인 후 머지하면 사이트를 복구할 수 있게 준비합니다.
 
 ### 2) 댓글로 Codex 실행하기
 수동 실행이 필요하면 Issue/PR 댓글에 `@codex` 또는 `/codex`를 포함해 지시하세요.
@@ -27,7 +33,7 @@ MNG Lab 홈페이지 저장소입니다.
 
 동작 방식:
 - Issue 생성(라벨: `codex-auto`): `codex/issue-...` 브랜치를 만들고 PR 생성
-- Issue 생성(라벨: `rollback-simple-request`): `main` 최신 반영 1건을 자동 revert해서 롤백 PR 생성
+- Issue 생성(라벨: `rollback-simple-request`): 최신 반영 1건을 자동으로 되돌리는 복구 PR 생성
 - Issue 댓글: `codex-auto` 라벨이 있는 이슈에서만 수동 실행 가능
 - PR 댓글: 해당 PR 브랜치에 직접 커밋/푸시
 - 워크플로가 실행되면 변경 후 검증(`build`, 필요 시 `validate:content`)을 수행하도록 지시됨
