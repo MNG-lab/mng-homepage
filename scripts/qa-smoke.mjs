@@ -81,6 +81,43 @@ async function waitForServerReady(child, timeoutMs = 15000) {
   });
 }
 
+async function waitForExit(child, timeoutMs = 4000) {
+  return new Promise((resolve, reject) => {
+    if (child.exitCode !== null) {
+      resolve({ code: child.exitCode, signal: null });
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      reject(new Error(`process did not exit within ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    child.once("exit", (code, signal) => {
+      clearTimeout(timeout);
+      resolve({ code, signal });
+    });
+  });
+}
+
+async function stopServer(child) {
+  if (!child || child.exitCode !== null) return;
+
+  child.kill("SIGTERM");
+  try {
+    await waitForExit(child, 4000);
+  } catch {
+    child.kill("SIGKILL");
+    try {
+      await waitForExit(child, 4000);
+    } catch {
+      // Best effort cleanup; do not mask smoke test result.
+    }
+  }
+
+  child.stdout?.destroy();
+  child.stderr?.destroy();
+}
+
 async function fetchRoute(route) {
   try {
     const response = await fetch(`${BASE_URL}${route}`, { redirect: "follow" });
@@ -156,7 +193,7 @@ async function main() {
       process.exitCode = 1;
     }
   } finally {
-    preview.kill("SIGTERM");
+    await stopServer(preview);
   }
 }
 
