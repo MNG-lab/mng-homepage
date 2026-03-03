@@ -294,6 +294,12 @@ const styles = {
     color: colors.brand.navy,
     fontSize: typography.fontSize.md,
   },
+  newsMeta: {
+    marginTop: 0,
+    fontSize: typography.fontSize.sm,
+    lineHeight: typography.lineHeight.relaxed,
+    color: "rgba(61,61,61,0.82)",
+  },
   joinCard: {
     background: colors.surface.card,
     borderRadius: 18,
@@ -541,7 +547,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   <h3 style={styles.newsTitle}>{t(item.title)}</h3>
-                  <p style={{ ...styles.paragraph, marginBottom: 0 }}>{t(item.description)}</p>
+                  <p style={{ ...styles.newsMeta, marginBottom: 0 }}>{t(item.description)}</p>
                 </article>
               );
             })}
