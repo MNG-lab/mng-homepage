@@ -108,6 +108,7 @@ $env:VITE_SITE_URL="https://dglab.yonsei.ac.kr"; npm run build
 ## 7) 운영 문서
 
 - 마이그레이션 체크리스트: `content/migration-checklist.md`
+- 릴리스 핸드오프 요약: `content/release-handoff-summary-2026-03-03.md`
 - Pages 안정화 체크리스트: `content/p5-pages-checklist.md`
 - 배포 상태 리포트: `content/p5-deployment-status-report.md`
 - 커스텀 도메인/HTTPS 수동 가이드: `content/p5-custom-domain-guide.md`

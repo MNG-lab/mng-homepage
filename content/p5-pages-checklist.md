@@ -1,7 +1,13 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p5-rollback-verify-script`
+Branch: `codex/p5-manual-handoff`
+
+## Current Status (2026-03-03)
+
+- Code-side P4/P5 automation is complete.
+- Integrated preflight passed (`9/9`): `content/p5-preflight-report.md`
+- Remaining items are manual cutover tasks + conditional rollback drill execution.
 
 ## 1) Workflow Baseline
 
@@ -46,4 +52,4 @@ Branch: `codex/p5-rollback-verify-script`
 - [x] Keep last known good commit hash documented (`content/p5-deployment-status-report.md`)
 - [x] If critical issue occurs, revert main to previous deploy commit and push (command template in `content/p5-deployment-status-report.md`)
 - [x] Rollback verification command added (`npm run verify:rollback:deploy -- --sha <commit-sha>`)
-- [ ] Verify rollback deployment from Actions history (execute command with actual rollback SHA)
+- [ ] Verify rollback deployment from Actions history (execute command with actual rollback SHA; only when rollback is actually performed)
