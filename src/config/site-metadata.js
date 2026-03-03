@@ -1,4 +1,11 @@
-export const SITE_URL = "https://dglab.yonsei.ac.kr";
+const DEFAULT_SITE_URL = "https://mng-lab.github.io/mng-homepage";
+const RAW_SITE_URL = import.meta.env.VITE_SITE_URL || DEFAULT_SITE_URL;
+
+function normalizeSiteUrl(url) {
+  return String(url || DEFAULT_SITE_URL).replace(/\/+$/, "");
+}
+
+export const SITE_URL = normalizeSiteUrl(RAW_SITE_URL);
 
 export const SITE_NAME = {
   ko: "MNG Lab | 연세대학교",

@@ -1,7 +1,7 @@
 # P5 GitHub Pages Stabilization Checklist
 
 Date: 2026-03-03  
-Branch: `codex/p4-legacy-route-aliases`
+Branch: `codex/p5-seo-url-config`
 
 ## 1) Workflow Baseline
 
@@ -36,7 +36,7 @@ Branch: `codex/p4-legacy-route-aliases`
 - [ ] Domain selected and DNS records prepared
 - [ ] Domain connected in Pages settings
 - [ ] HTTPS enabled and certificate issued
-- [ ] Canonical URL / sitemap base URL updated if domain changes
+- [ ] Canonical URL / sitemap base URL updated if domain changes (`VITE_SITE_URL` 값으로 빌드 후 반영)
 - Guide: `content/p5-custom-domain-guide.md`
 
 ## 5) Rollback Plan

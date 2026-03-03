@@ -46,6 +46,9 @@ Scope: GitHub Pages + external DNS provider manual steps
 
 - `https://<custom-domain>/` loads successfully.
 - `https://<custom-domain>/research` etc. route fallback works.
+- Rebuild with domain base URL:
+  - macOS/Linux: `VITE_SITE_URL=https://<custom-domain> npm run build`
+  - PowerShell: `$env:VITE_SITE_URL="https://<custom-domain>"; npm run build`
 - `npm run verify:routes:published -- --base-url https://<custom-domain> --write-report`
 - Update canonical/OG/sitemap base URL only after custom domain is stable.
 

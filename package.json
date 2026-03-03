@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm run generate:seo",
     "build": "vite build",
     "preview": "vite preview",
+    "generate:seo": "node scripts/generate-seo-assets.mjs",
     "qa:smoke": "node scripts/qa-smoke.mjs",
     "migrate:publications": "node scripts/migrate-publications.mjs",
     "migrate:gallery": "node scripts/migrate-gallery.mjs",
