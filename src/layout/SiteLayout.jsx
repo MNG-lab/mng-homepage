@@ -109,7 +109,7 @@ const styles = {
     gap: spacing[6],
   },
   footerTitle: {
-    margin: 0,
+    margin: `0 0 ${spacing[3]} 0`,
     color: colors.text.inverse,
     fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.semibold,
