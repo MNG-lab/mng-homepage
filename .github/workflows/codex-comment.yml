@@ -7,6 +7,12 @@ on:
     types: [created]
   pull_request_review_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number, #number, or issue URL"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -14,12 +20,13 @@ permissions:
   issues: write
 
 concurrency:
-  group: codex-${{ github.repository }}-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: codex-${{ github.repository }}-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue || github.run_id }}
   cancel-in-progress: false
 
 jobs:
   codex:
     if: >
+      github.event_name == 'workflow_dispatch' || (
       (
         github.event_name == 'issues' &&
         github.event.issue.user.type != 'Bot' &&
@@ -37,6 +44,7 @@ jobs:
         github.event_name == 'pull_request_review_comment' &&
         github.event.comment.user.type != 'Bot' &&
         (contains(github.event.comment.body, '@codex') || contains(github.event.comment.body, '/codex'))
+      )
       )
     runs-on: ubuntu-latest
 
@@ -148,6 +156,40 @@ jobs:
               echo "TARGET_REF=$NEW_BRANCH" >> "$GITHUB_ENV"
               git checkout -b "$NEW_BRANCH"
             fi
+          elif [[ "$EVENT" == "workflow_dispatch" ]]; then
+            RAW_INPUT="$(printf "%s" "${{ github.event.inputs.issue }}" | xargs)"
+            if [[ -z "$RAW_INPUT" ]]; then
+              echo "workflow_dispatch input 'issue' is required."
+              exit 1
+            fi
+
+            ISSUE_NUMBER="$(printf "%s" "$RAW_INPUT" | sed -nE 's#^.*/issues/([0-9]+).*$#\1#p' | head -n1)"
+            if [[ -z "$ISSUE_NUMBER" ]]; then
+              ISSUE_NUMBER="$(printf "%s" "$RAW_INPUT" | sed -nE 's/^#?([0-9]+)$/\1/p' | head -n1)"
+            fi
+
+            if [[ -z "$ISSUE_NUMBER" ]]; then
+              echo "Could not parse issue number from input: $RAW_INPUT"
+              echo "Use one of: 123, #123, https://github.com/<owner>/<repo>/issues/123"
+              exit 1
+            fi
+
+            ISSUE_JSON="$(gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}")"
+            IS_PR="$(printf "%s" "$ISSUE_JSON" | jq -r 'has("pull_request")')"
+            if [[ "$IS_PR" == "true" ]]; then
+              echo "Input #${ISSUE_NUMBER} is a PR. This manual trigger currently supports issues only."
+              exit 1
+            fi
+
+            echo "NUMBER=$ISSUE_NUMBER" >> "$GITHUB_ENV"
+            echo "TARGET_KIND=issue" >> "$GITHUB_ENV"
+
+            git checkout "$DEFAULT_BRANCH"
+            git pull --ff-only
+
+            NEW_BRANCH="codex/issue-${ISSUE_NUMBER}-${GITHUB_RUN_ID}"
+            echo "TARGET_REF=$NEW_BRANCH" >> "$GITHUB_ENV"
+            git checkout -b "$NEW_BRANCH"
           else
             PR_NUMBER="${{ github.event.pull_request.number }}"
             echo "NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
@@ -162,12 +204,12 @@ jobs:
           fi
 
       - name: Assign issue to app bot
-        if: github.event_name == 'issues'
+        if: (github.event_name == 'issues' || github.event_name == 'workflow_dispatch') && env.TARGET_KIND == 'issue'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_NUMBER="${NUMBER:?}"
           if ! gh issue edit "$ISSUE_NUMBER" --add-assignee "${{ steps.app-bot.outputs.login }}"; then
             echo "::warning::Failed to assign issue #${ISSUE_NUMBER} to ${{ steps.app-bot.outputs.login }}."
           fi
@@ -183,6 +225,12 @@ jobs:
             REQUEST="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")"
             if [[ -z "${REQUEST// }" ]]; then
               REQUEST="$(jq -r '.issue.title // ""' "$GITHUB_EVENT_PATH")"
+            fi
+          elif [[ "$EVENT" == "workflow_dispatch" ]]; then
+            ISSUE_NUMBER="${NUMBER:?}"
+            REQUEST="$(gh issue view "$ISSUE_NUMBER" --json body -q '.body // ""')"
+            if [[ -z "${REQUEST// }" ]]; then
+              REQUEST="$(gh issue view "$ISSUE_NUMBER" --json title -q '.title // ""')"
             fi
           else
             COMMENT_BODY="$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")"
@@ -207,7 +255,7 @@ jobs:
 
             printf -v CONTEXT "You are working on PR #%s (%s).\nBase: %s\nHead: %s\n\nPR description:\n%s\n\n%s" "$PR_NUMBER" "$TITLE" "$BASE" "$HEAD" "$BODY" "$EXTRA_CONTEXT"
           else
-            ISSUE_NUMBER="${{ github.event.issue.number }}"
+            ISSUE_NUMBER="${NUMBER:?}"
             TITLE="$(gh issue view "$ISSUE_NUMBER" --json title -q .title)"
             BODY="$(gh issue view "$ISSUE_NUMBER" --json body -q .body)"
 
@@ -261,20 +309,20 @@ jobs:
           git commit -m "codex: apply request (#${NUMBER})"
           git push -u origin "${TARGET_REF}"
 
-      - name: Create PR (only when Issue comment)
+      - name: Create PR (when target is Issue)
         if: env.TARGET_KIND == 'issue' && env.NO_CHANGES != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_NUMBER="${NUMBER:?}"
           DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
 
           PR_URL="$(gh pr create \
             --base "$DEFAULT_BRANCH" \
             --head "${TARGET_REF}" \
             --title "Codex: resolve #$ISSUE_NUMBER" \
-            --body "Automated changes requested via comment on issue #$ISSUE_NUMBER.")"
+            --body "Automated changes requested for issue #$ISSUE_NUMBER.")"
 
           SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
           BODY=$'✅ Codex 작업 완료. PR 생성: '"$PR_URL"$'\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
@@ -286,7 +334,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_NUMBER="${NUMBER:?}"
           SUMMARY="$(tail -n 120 /tmp/codex_out.txt | sed 's/\r$//')"
           BODY=$'ℹ️ Codex가 실행됐지만 변경사항이 없어 PR을 만들지 않았어요.\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
           gh issue comment "$ISSUE_NUMBER" --body "$BODY"
