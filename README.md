@@ -39,7 +39,10 @@ MNG Lab 홈페이지 저장소입니다.
 - 워크플로: `.github/workflows/deploy-pages.yml`
 
 ---
-## For Developers
+<details>
+<summary><strong>For Developers</strong></summary>
+
+## 개발 환경
 
 요구사항:
 - Node.js 20+
@@ -88,3 +91,5 @@ npm run preview
 - `content/p5-pages-checklist.md`
 - `content/p5-custom-domain-guide.md`
 - `content/release-handoff-summary-2026-03-03.md`
+
+</details>
