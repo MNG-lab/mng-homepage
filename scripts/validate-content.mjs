@@ -96,9 +96,6 @@ function validateResearch() {
     assert(Array.isArray(item.focus) && item.focus.length > 0, `researchAreas[${index}].focus must be non-empty array`);
     item.focus?.forEach((focusItem, focusIndex) => assertLocalized(focusItem, `researchAreas[${index}].focus[${focusIndex}]`));
     assert(Array.isArray(item.tags) && item.tags.length > 0, `researchAreas[${index}].tags must be non-empty array`);
-    if (item.legacyPath && !isAbsoluteHttpUrl(item.legacyPath)) {
-      pushError(`researchAreas[${index}].legacyPath must be absolute URL`);
-    }
   });
 }
 
@@ -119,10 +116,6 @@ function validateProfessor() {
   assert(Array.isArray(professorData.keywords) && professorData.keywords.length > 0, "professorData.keywords must be non-empty array");
   assert(isValidEmail(professorData.contact?.email), "professorData.contact.email must be a valid email");
   assert(isAbsoluteHttpUrl(professorData.contact?.scholarUrl), "professorData.contact.scholarUrl must be absolute URL");
-  assert(isAbsoluteHttpUrl(professorData.source?.professorPage), "professorData.source.professorPage must be absolute URL");
-  if (professorData.source?.membersPage && !isAbsoluteHttpUrl(professorData.source.membersPage)) {
-    pushError("professorData.source.membersPage must be absolute URL");
-  }
 }
 
 function validateMembers() {
@@ -145,8 +138,8 @@ function validateMembers() {
   current.forEach((member, index) => {
     assert(typeof member.id === "string" && member.id.trim(), `membersData.current[${index}].id must be non-empty string`);
     assertLocalized(member.name, `membersData.current[${index}].name`);
-    assertLocalized(member.role, `membersData.current[${index}].role`);
-    assertLocalized(member.interests, `membersData.current[${index}].interests`);
+    if (member.role) assertLocalized(member.role, `membersData.current[${index}].role`);
+    if (member.interests) assertLocalized(member.interests, `membersData.current[${index}].interests`);
     if (member.email && !isValidEmail(member.email)) {
       pushError(`membersData.current[${index}].email is invalid`);
     }
@@ -158,13 +151,6 @@ function validateMembers() {
     assert(typeof member.period === "string" && member.period.trim(), `membersData.alumni[${index}].period must be non-empty string`);
     assertLocalized(member.now, `membersData.alumni[${index}].now`);
   });
-
-  if (!isAbsoluteHttpUrl(membersData.source?.membersPage)) {
-    pushError("membersData.source.membersPage must be absolute URL");
-  }
-  if (!isAbsoluteHttpUrl(membersData.source?.professorPage)) {
-    pushError("membersData.source.professorPage must be absolute URL");
-  }
 
   if (membersData.pi?.email !== professorData.contact?.email) {
     pushWarning("membersData.pi.email differs from professorData.contact.email");
@@ -182,11 +168,8 @@ function validatePublications() {
     assert(typeof item.title === "string" && item.title.trim(), `publicationsData[${index}].title must be non-empty string`);
     assert(typeof item.authors === "string" && item.authors.trim(), `publicationsData[${index}].authors must be non-empty string`);
     assert(typeof item.journal === "string" && item.journal.trim(), `publicationsData[${index}].journal must be non-empty string`);
-    if (!isAbsoluteHttpUrl(item.url)) {
+    if (item.url && !isAbsoluteHttpUrl(item.url)) {
       pushError(`publicationsData[${index}].url must be absolute URL`);
-    }
-    if (!isAbsoluteHttpUrl(item.sourcePage)) {
-      pushError(`publicationsData[${index}].sourcePage must be absolute URL`);
     }
   });
 }
@@ -202,9 +185,6 @@ function validateGallery() {
     assert(typeof item.category === "string" && item.category.trim(), `galleryData[${index}].category must be non-empty string`);
     assertLocalized(item.title, `galleryData[${index}].title`);
     assertLocalized(item.description, `galleryData[${index}].description`);
-    if (!isAbsoluteHttpUrl(item.sourcePage)) {
-      pushError(`galleryData[${index}].sourcePage must be absolute URL`);
-    }
 
     if (Array.isArray(item.images)) {
       const imageIds = item.images.map((img) => img.id);
@@ -260,21 +240,14 @@ function validateContact() {
 
 function collectExternalUrls() {
   const urls = new Set();
-  researchAreas.forEach((item) => {
-    if (item.legacyPath) urls.add(item.legacyPath);
-  });
-  [membersData.source?.membersPage, membersData.source?.professorPage, membersData.pi?.scholarUrl].forEach((item) => {
+  [membersData.pi?.scholarUrl].forEach((item) => {
     if (item) urls.add(item);
   });
-  [professorData.source?.professorPage, professorData.source?.membersPage, professorData.contact?.scholarUrl].forEach((item) => {
+  [professorData.contact?.scholarUrl].forEach((item) => {
     if (item) urls.add(item);
   });
   publicationsData.forEach((item) => {
     if (item.url) urls.add(item.url);
-    if (item.sourcePage) urls.add(item.sourcePage);
-  });
-  galleryData.forEach((item) => {
-    if (item.sourcePage) urls.add(item.sourcePage);
   });
   contactData.links.forEach((item) => {
     if (isAbsoluteHttpUrl(item.url)) urls.add(item.url);

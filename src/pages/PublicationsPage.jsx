@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { colors, spacing, typography } from "../design-tokens";
-import { publicationMigrationStatus, publicationThemes, publicationsData } from "../content/publications-data";
+import { publicationThemes, publicationsData } from "../content/publications-data";
 import { useLanguage } from "../context/LanguageContext";
 
 const PAGE_SIZE = 4;
@@ -110,12 +110,9 @@ const styles = {
     cursor: "pointer",
     fontSize: typography.fontSize.sm,
   },
-  migrationNote: {
-    marginTop: spacing[4],
-    background: colors.surface.card,
-    border: `1px dashed ${colors.border.strong}`,
-    borderRadius: 10,
-    padding: spacing[4],
+  pendingLink: {
+    marginTop: spacing[2],
+    marginBottom: 0,
     color: colors.text.secondary,
     fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.relaxed,
@@ -133,8 +130,8 @@ const copy = {
   themeFilter: { ko: "테마", en: "Theme" },
   featured: { ko: "주요 논문", en: "Featured" },
   view: { ko: "원문 보기", en: "View Paper" },
+  pending: { ko: "원문 링크 입력 필요", en: "원문 링크 입력 필요" },
   none: { ko: "조건에 맞는 논문이 없습니다.", en: "No publications match current filters." },
-  migrationPrefix: { ko: "이관 상태", en: "Migration Status" },
 };
 
 export default function PublicationsPage() {
@@ -177,10 +174,6 @@ export default function PublicationsPage() {
         {t(copy.title)}
       </h1>
       <p style={styles.desc}>{t(copy.description)}</p>
-      <div style={styles.migrationNote}>
-        <strong>{t(copy.migrationPrefix)}:</strong> {publicationMigrationStatus.verifiedItems} verified item(s), legacy archive with{" "}
-        {publicationMigrationStatus.observedLegacyPagination} pages observed. {publicationMigrationStatus.note}
-      </div>
 
       <div style={styles.filterRow}>
         <label htmlFor="publication-year-filter">{t(copy.yearFilter)}</label>
@@ -230,15 +223,19 @@ export default function PublicationsPage() {
               <h2 style={styles.paperTitle}>{item.title}</h2>
               <p style={styles.meta}>{item.authors}</p>
               <p style={styles.meta}>{item.journal}</p>
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noreferrer"
-                style={styles.link}
-                aria-label={`${t(copy.view)}: ${item.title}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
-              >
-                {t(copy.view)}
-              </a>
+              {item.url ? (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.link}
+                  aria-label={`${t(copy.view)}: ${item.title}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
+                >
+                  {t(copy.view)}
+                </a>
+              ) : (
+                <p style={styles.pendingLink}>{t(copy.pending)}</p>
+              )}
             </article>
           ))
         )}
