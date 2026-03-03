@@ -35,6 +35,19 @@ function npmCommand() {
   return process.platform === "win32" ? "npm.cmd" : "npm";
 }
 
+function hasFlag(name) {
+  return process.argv.includes(name);
+}
+
+async function ensureDistExists() {
+  const distIndexPath = path.join(ROOT_DIR, "dist", "index.html");
+  try {
+    await fs.access(distIndexPath);
+  } catch {
+    throw new Error("--skip-build was provided, but dist/index.html was not found. Run npm run build first.");
+  }
+}
+
 async function waitForServerReady(child, timeoutMs = 15000) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -109,8 +122,15 @@ function renderMarkdown(results) {
 
 async function main() {
   const npm = npmCommand();
+  const skipBuild = hasFlag("--skip-build");
 
-  await runCommand(npm, ["run", "build"], { cwd: ROOT_DIR });
+  if (skipBuild) {
+    await ensureDistExists();
+    console.log("Skipping build step (--skip-build). Using existing dist output.");
+  } else {
+    console.log("Running build step before smoke test.");
+    await runCommand(npm, ["run", "build"], { cwd: ROOT_DIR });
+  }
 
   const preview = spawn(npm, ["run", "preview", "--", "--host", HOST, "--port", String(PORT), "--strictPort"], {
     cwd: ROOT_DIR,

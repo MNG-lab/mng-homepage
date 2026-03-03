@@ -27,5 +27,8 @@ jobs:
       - name: Validate content
         run: npm run validate:content
 
+      - name: Build app
+        run: npm run build
+
       - name: Run smoke test
-        run: npm run qa:smoke
+        run: npm run qa:smoke -- --skip-build
