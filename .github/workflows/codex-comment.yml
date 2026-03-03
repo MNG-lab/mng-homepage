@@ -339,6 +339,7 @@ jobs:
             2) ## 변경 내용 (개발자용)
             3) ## 검증
           - "## 관련 이슈"에는 어떤 이슈로 생성된 PR인지 한 줄로 명확히 적어줘.
+          - "## 관련 이슈"에는 이슈 번호 표기(#5 같은 형식)를 넣지 말고, 이슈 제목 + 이슈 URL만 사용해줘.
           - "## 변경 내용 (개발자용)"에는 코드/설정 변경 사항을 파일 단위로 요약해줘.
           - "## 검증"에는 실행한 검증 내용과 결과(PASS/FAIL 또는 미실행 사유)를 bullet로 적어줘.
           - 불필요한 인삿말/서론/결론 없이, PR 본문으로 바로 사용할 수 있는 내용만 출력해줘.
@@ -381,8 +382,7 @@ jobs:
             echo "::warning::Failed to generate PR body via Codex. Falling back to template."
             cat > /tmp/codex_pr_body.md <<EOF
           ## 관련 이슈
-          - #${ISSUE_NUMBER} (${ISSUE_TITLE}) 이슈를 해결하기 위해 생성된 PR입니다.
-          - 이슈 링크: ${ISSUE_URL}
+          - \`${ISSUE_TITLE}\` 이슈 대응 PR입니다. (${ISSUE_URL})
 
           ## 변경 내용 (개발자용)
           - 자동화 실행 결과 생성된 변경사항을 반영했습니다.
