@@ -7,6 +7,7 @@ import { professorData } from "../content/professor-data";
 import { publicationsData } from "../content/publications-data";
 import { researchAreas } from "../content/research-data";
 import { useLanguage } from "../context/LanguageContext";
+import { useViewport } from "../hooks/useViewport";
 
 const AUTO_ROTATE_MS = 5000;
 const HOME_NEWS_LIMIT = 4;
@@ -340,6 +341,7 @@ function newsTypeColor(typeEn) {
 
 export default function HomePage() {
   const { language, t } = useLanguage();
+  const { isMobile } = useViewport();
   const [activeSlide, setActiveSlide] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [hoveredResearch, setHoveredResearch] = useState(null);
@@ -383,21 +385,71 @@ export default function HomePage() {
     return () => window.clearInterval(timer);
   }, [slides.length]);
 
+  const heroStyle = isMobile ? { ...styles.hero, minHeight: 480 } : styles.hero;
+  const heroInnerStyle = isMobile
+    ? { ...styles.heroInner, padding: `${spacing[12]} ${spacing[4]} ${spacing[10]}`, display: "flex", flexDirection: "column" }
+    : styles.heroInner;
+  const heroCopyBlockStyle = isMobile
+    ? { ...styles.heroCopyBlock, minHeight: 318 }
+    : styles.heroCopyBlock;
+  const heroTitleStyle = isMobile ? { ...styles.heroTitle, margin: `${spacing[3]} 0 ${spacing[2]}`, minHeight: "2.15em" } : styles.heroTitle;
+  const heroSubStyle = isMobile
+    ? { ...styles.heroSub, fontSize: typography.fontSize.md, lineHeight: 1.35, minHeight: "2.7em" }
+    : styles.heroSub;
+  const heroDescStyle = isMobile
+    ? { ...styles.heroDesc, marginTop: spacing[3], fontSize: typography.fontSize.md, lineHeight: 1.55, minHeight: "7em" }
+    : styles.heroDesc;
+  const chipsRowStyle = isMobile
+    ? {
+        ...styles.chipsRow,
+        marginTop: spacing[2],
+        display: "grid",
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+        gap: spacing[2],
+        width: "100%",
+      }
+    : styles.chipsRow;
+  const chipStyle = isMobile
+    ? {
+        ...styles.chip,
+        width: "100%",
+        minHeight: 38,
+        padding: "0.42rem 0.4rem",
+        gap: spacing[1],
+        whiteSpace: "nowrap",
+        fontSize: "0.72rem",
+      }
+    : styles.chip;
+  const statsWrapStyle = isMobile ? { ...styles.statsWrap, padding: `0 ${spacing[4]}`, marginTop: -26 } : styles.statsWrap;
+  const sectionStyle = isMobile ? { ...styles.section, padding: `${spacing[12]} ${spacing[4]}` } : styles.section;
+  const sectionOffStyle = isMobile
+    ? { ...styles.section, ...styles.sectionOff, padding: `${spacing[12]} ${spacing[4]}` }
+    : { ...styles.section, ...styles.sectionOff };
+  const sectionTitleStyle = isMobile ? { ...styles.sectionTitle, margin: `0 0 ${spacing[4]}` } : styles.sectionTitle;
+  const twoColStyle = isMobile ? { ...styles.twoCol, gridTemplateColumns: "1fr" } : styles.twoCol;
+  const cardStyle = isMobile ? { ...styles.card, padding: 20, borderRadius: 14 } : styles.card;
+  const profileStyle = isMobile ? { ...styles.profile, padding: 16, borderRadius: 14 } : styles.profile;
+  const ctaPrimaryStyle = isMobile ? { ...styles.ctaPrimary, padding: `${spacing[2]} ${spacing[4]}` } : styles.ctaPrimary;
+  const researchGridStyle = isMobile ? { ...styles.researchGrid, gridTemplateColumns: "1fr" } : styles.researchGrid;
+  const researchCardStyle = isMobile ? { ...styles.researchCard, padding: spacing[5] } : styles.researchCard;
+  const newsGridStyle = isMobile ? { ...styles.newsGrid, gridTemplateColumns: "1fr" } : styles.newsGrid;
+  const joinCardStyle = isMobile ? { ...styles.joinCard, padding: 20, borderRadius: 14 } : styles.joinCard;
+
   return (
     <>
-      <section id="top" style={{ ...styles.hero, background: currentSlide.gradient }} aria-labelledby="home-hero-title">
+      <section id="top" style={{ ...heroStyle, background: currentSlide.gradient }} aria-labelledby="home-hero-title">
         <div style={styles.heroGlow} />
-        <div style={styles.heroInner}>
+        <div style={heroInnerStyle}>
           <div style={styles.kicker}>{t(homeContent.hero.kicker)}</div>
-          <div style={{ ...(mounted ? styles.fadeUpOn : styles.fadeUpOff), ...styles.heroCopyBlock }} key={currentSlide.id}>
-            <h1 id="home-hero-title" style={styles.heroTitle}>
+          <div style={{ ...(mounted ? styles.fadeUpOn : styles.fadeUpOff), ...heroCopyBlockStyle }} key={currentSlide.id}>
+            <h1 id="home-hero-title" style={heroTitleStyle}>
               {t(currentSlide.title)}
             </h1>
-            <p style={styles.heroSub}>{t(currentSlide.subtitle)}</p>
-            <p style={styles.heroDesc}>{t(currentSlide.description)}</p>
+            <p style={heroSubStyle}>{t(currentSlide.subtitle)}</p>
+            <p style={heroDescStyle}>{t(currentSlide.description)}</p>
           </div>
 
-          <div style={styles.chipsRow}>
+          <div style={chipsRowStyle}>
             {slides.map((slide, index) => {
               const selected = index === activeSlide;
               return (
@@ -405,9 +457,9 @@ export default function HomePage() {
                   key={slide.id}
                   type="button"
                   onClick={() => setActiveSlide(index)}
-                  style={{ ...styles.chip, ...(selected ? styles.chipActive : {}) }}
+                  style={{ ...chipStyle, ...(selected ? styles.chipActive : {}) }}
                 >
-                  {slide.icon ? `${slide.icon} ` : ""}
+                  {slide.icon && !isMobile ? `${slide.icon} ` : ""}
                   {t(slide.label)}
                 </button>
               );
@@ -417,7 +469,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div style={styles.statsWrap}>
+      <div style={statsWrapStyle}>
         <div style={styles.statsGrid} aria-label="Quick stats">
           {quickStats.map((item) => (
             <article key={`${item.value}-${item.label.en}`} style={styles.statCard}>
@@ -428,27 +480,30 @@ export default function HomePage() {
         </div>
       </div>
 
-      <section id="about" style={styles.section}>
+      <section id="about" style={sectionStyle}>
         <div style={styles.sectionInner}>
-          <h2 style={styles.sectionTitle}>
+          <h2 style={sectionTitleStyle}>
             {t(homeContent.about.title)} <span style={styles.pill}>{t(homeContent.about.pill)}</span>
           </h2>
 
-          <div style={styles.twoCol}>
-            <article style={styles.card}>
+          <div style={twoColStyle}>
+            <article style={cardStyle}>
               <p style={styles.paragraph}>{t(homeContent.about.paragraphs[0])}</p>
               <p style={{ ...styles.paragraph, ...styles.muted }}>{t(homeContent.about.paragraphs[1])}</p>
               <div style={styles.ctaRow}>
-                <Link to={ROUTES.join} style={styles.ctaPrimary}>
+                <Link to={ROUTES.join} style={ctaPrimaryStyle}>
                   {t(homeContent.about.ctaJoin)}
                 </Link>
-                <Link to={`${ROUTES.home}#news`} style={{ ...styles.ctaPrimary, background: colors.surface.card, color: colors.brand.navy }}>
+                <Link
+                  to={`${ROUTES.home}#news`}
+                  style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
+                >
                   {t(homeContent.about.ctaNews)}
                 </Link>
               </div>
             </article>
 
-            <aside style={styles.profile}>
+            <aside style={profileStyle}>
               <div style={styles.profileLabel}>{t(homeContent.profile.label)}</div>
               <h3 style={styles.profileName}>{t(professorData.profile.name)}</h3>
               <div style={styles.profileTitle}>{t(professorData.profile.title)}</div>
@@ -458,11 +513,14 @@ export default function HomePage() {
                   href={professorData.contact.scholarUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={styles.ctaPrimary}
+                  style={ctaPrimaryStyle}
                 >
                   {t(homeContent.profile.ctaScholar)} ↗
                 </a>
-                <Link to={ROUTES.contact} style={{ ...styles.ctaPrimary, background: colors.surface.card, color: colors.brand.navy }}>
+                <Link
+                  to={ROUTES.contact}
+                  style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
+                >
                   {t(homeContent.profile.ctaContact)}
                 </Link>
               </div>
@@ -471,13 +529,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="research-summary" style={{ ...styles.section, ...styles.sectionOff }}>
+      <section id="research-summary" style={sectionOffStyle}>
         <div style={styles.sectionInner}>
-          <h2 style={styles.sectionTitle}>
+          <h2 style={sectionTitleStyle}>
             {t(homeContent.research.title)} <span style={styles.pill}>{researchThemePill}</span>
           </h2>
 
-          <div style={styles.researchGrid}>
+          <div style={researchGridStyle}>
             {homeContent.research.cards.map((item) => {
               const accent = researchAccent(item.color);
               const isHovered = hoveredResearch === item.id;
@@ -486,7 +544,7 @@ export default function HomePage() {
                 <article
                   key={item.id}
                   style={{
-                    ...styles.researchCard,
+                    ...researchCardStyle,
                     transform: isHovered ? "translateY(-4px)" : "translateY(0)",
                     boxShadow: isHovered ? "0 18px 40px rgba(11,29,58,0.1)" : "none",
                   }}
@@ -528,13 +586,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="news" style={{ ...styles.section, ...styles.sectionOff }}>
+      <section id="news" style={sectionOffStyle}>
         <div style={styles.sectionInner}>
-          <h2 style={styles.sectionTitle}>
+          <h2 style={sectionTitleStyle}>
             {t(homeContent.news.title)} <span style={styles.pill}>{t(homeContent.news.pill)}</span>
           </h2>
 
-          <div style={styles.newsGrid}>
+          <div style={newsGridStyle}>
             {newsItems.map((item) => {
               const typeEn = item.type.en;
               const dotColor = newsTypeColor(typeEn);
@@ -555,19 +613,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="join" style={styles.section}>
+      <section id="join" style={sectionStyle}>
         <div style={styles.sectionInner}>
-          <h2 style={styles.sectionTitle}>
+          <h2 style={sectionTitleStyle}>
             {t(homeContent.join.title)} <span style={styles.pill}>{t(homeContent.join.pill)}</span>
           </h2>
 
-          <article style={styles.joinCard}>
+          <article style={joinCardStyle}>
             <p style={styles.joinText}>{t(homeContent.join.description)}</p>
             <div style={styles.ctaRow}>
-              <Link to={ROUTES.join} style={styles.ctaPrimary}>
+              <Link to={ROUTES.join} style={ctaPrimaryStyle}>
                 {t(homeContent.join.ctaPrimary)} →
               </Link>
-              <Link to={ROUTES.contact} style={{ ...styles.ctaPrimary, background: colors.surface.card, color: colors.brand.navy }}>
+              <Link
+                to={ROUTES.contact}
+                style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
+              >
                 {t(homeContent.join.ctaSecondary)}
               </Link>
             </div>
