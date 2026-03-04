@@ -4,6 +4,8 @@ import { membersData } from "../content/members-data";
 import { ROUTES } from "../config/site-routes";
 import { useLanguage } from "../context/LanguageContext";
 
+const MEMBER_CARD_WIDTH = 168; // 240px baseline scaled by 0.7.
+
 const styles = {
   section: {
     maxWidth: 1080,
@@ -45,7 +47,8 @@ const styles = {
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gridTemplateColumns: `repeat(auto-fit, minmax(${MEMBER_CARD_WIDTH}px, ${MEMBER_CARD_WIDTH}px))`,
+    justifyContent: "center",
     gap: spacing[4],
   },
   memberCard: {
@@ -56,6 +59,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: spacing[2],
+    width: `${MEMBER_CARD_WIDTH}px`,
   },
   photoWrap: {
     borderRadius: 10,
