@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { HOME_ANCHOR_ITEMS, PRIMARY_NAV_ITEMS, ROUTES } from "../config/site-routes";
 import { uiCopy } from "../content/ui-copy";
 import { useLanguage } from "../context/LanguageContext";
+import { useViewport } from "../hooks/useViewport";
 
 const styles = {
   app: {
@@ -85,6 +86,52 @@ const styles = {
     borderRadius: 9999,
     padding: 2,
   },
+  mobileHeaderRow: {
+    display: "flex",
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing[3],
+  },
+  menuButton: {
+    border: "1px solid rgba(255,255,255,0.24)",
+    background: "rgba(255,255,255,0.08)",
+    color: colors.text.inverse,
+    borderRadius: 10,
+    padding: "0.4rem 0.66rem",
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
+    cursor: "pointer",
+    transition: "background 0.22s ease, border-color 0.22s ease, transform 0.22s ease",
+  },
+  mobilePanel: {
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing[3],
+    overflow: "hidden",
+    maxHeight: 0,
+    opacity: 0,
+    transform: "translateY(-6px)",
+    paddingTop: 0,
+    borderTop: "1px solid rgba(255,255,255,0)",
+    pointerEvents: "none",
+    transition:
+      "max-height 320ms ease, opacity 220ms ease, transform 280ms ease, padding-top 280ms ease, border-color 280ms ease",
+  },
+  mobilePanelOpen: {
+    maxHeight: 320,
+    opacity: 1,
+    transform: "translateY(0)",
+    paddingTop: spacing[2],
+    borderTop: "1px solid rgba(255,255,255,0.12)",
+    pointerEvents: "auto",
+  },
+  mobileNav: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: spacing[2],
+  },
   langButton: {
     border: 0,
     background: "transparent",
@@ -133,11 +180,11 @@ const styles = {
   },
 };
 
-function navStyle(isActive, isJoin) {
+function navStyle(isActive, isJoin, isMobile) {
   return {
     textDecoration: "none",
     fontSize: typography.fontSize.xs,
-    padding: "0.5rem 0.75rem",
+    padding: isMobile ? "0.42rem 0.68rem" : "0.5rem 0.75rem",
     borderRadius: 9999,
     border: `1px solid ${isActive ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.14)"}`,
     color: isJoin
@@ -149,6 +196,25 @@ function navStyle(isActive, isJoin) {
         : "rgba(255,255,255,0.72)",
     background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
     transition: "all 0.2s ease",
+  };
+}
+
+function mobileNavStyle(isActive, isJoin) {
+  return {
+    textDecoration: "none",
+    fontSize: typography.fontSize.xs,
+    textAlign: "center",
+    padding: "0.52rem 0.6rem",
+    borderRadius: 9999,
+    border: `1px solid ${isActive ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.14)"}`,
+    color: isJoin
+      ? isActive
+        ? colors.text.inverse
+        : colors.brand.gold
+      : isActive
+        ? colors.text.inverse
+        : "rgba(255,255,255,0.78)",
+    background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
   };
 }
 
@@ -174,11 +240,37 @@ function resolveCopyright(text, year) {
 
 export default function SiteLayout() {
   const { language, setLanguage, t } = useLanguage();
+  const location = useLocation();
+  const { isCompactNav } = useViewport();
   const [skipFocused, setSkipFocused] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname, location.hash]);
+
+  useEffect(() => {
+    if (!isCompactNav) setMenuOpen(false);
+  }, [isCompactNav]);
 
   const skipToMainLabel = language === "ko" ? "본문으로 건너뛰기" : "Skip to main content";
   const primaryNavLabel = language === "ko" ? "주요 메뉴" : "Primary navigation";
+  const headerInnerStyle = isCompactNav
+    ? {
+        ...styles.headerInner,
+        padding: "12px 16px",
+        gap: 10,
+        alignItems: "stretch",
+      }
+    : styles.headerInner;
+  const controlsStyle = styles.controls;
+  const navLayoutStyle = styles.nav;
+  const languageWrapStyle = isCompactNav ? { ...styles.languageWrap, alignSelf: "flex-start" } : styles.languageWrap;
+  const menuLabel = menuOpen ? (language === "ko" ? "메뉴 닫기" : "Close menu") : language === "ko" ? "메뉴" : "Menu";
+  const menuButtonStyle = menuOpen
+    ? { ...styles.menuButton, background: "rgba(255,255,255,0.14)", borderColor: "rgba(255,255,255,0.38)" }
+    : styles.menuButton;
 
   return (
     <div style={styles.app}>
@@ -192,45 +284,105 @@ export default function SiteLayout() {
       </a>
 
       <header style={styles.header}>
-        <div style={styles.headerInner}>
-          <Link to={ROUTES.home} style={styles.brand}>
-            <span style={styles.brandTitle}>MNG Lab</span>
-            <span style={styles.brandSub}>Yonsei University</span>
-          </Link>
-
-          <div style={styles.controls}>
-            <nav style={styles.nav} aria-label={primaryNavLabel}>
-              {PRIMARY_NAV_ITEMS.map((item) => (
-                <NavLink
-                  key={item.key}
-                  to={item.path}
-                  style={({ isActive }) => navStyle(isActive, item.key === "join")}
-                  end={item.path === ROUTES.home}
+        <div style={headerInnerStyle}>
+          {isCompactNav ? (
+            <>
+              <div style={styles.mobileHeaderRow}>
+                <Link to={ROUTES.home} style={styles.brand}>
+                  <span style={styles.brandTitle}>MNG Lab</span>
+                  <span style={styles.brandSub}>Yonsei University</span>
+                </Link>
+                <button
+                  type="button"
+                  style={menuButtonStyle}
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                  aria-expanded={menuOpen}
+                  aria-controls="mobile-nav-panel"
                 >
-                  {uiCopy.nav[item.key].en}
-                </NavLink>
-              ))}
-            </nav>
+                  {menuLabel}
+                </button>
+              </div>
 
-            <div style={styles.languageWrap} role="group" aria-label={t(uiCopy.language.label)}>
-              <button
-                type="button"
-                onClick={() => setLanguage("ko")}
-                style={languageButtonStyle(language === "ko")}
-                aria-pressed={language === "ko"}
+              <div
+                id="mobile-nav-panel"
+                style={{ ...styles.mobilePanel, ...(menuOpen ? styles.mobilePanelOpen : {}) }}
+                aria-hidden={!menuOpen}
               >
-                KR
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage("en")}
-                style={languageButtonStyle(language === "en")}
-                aria-pressed={language === "en"}
-              >
-                EN
-              </button>
-            </div>
-          </div>
+                <nav style={styles.mobileNav} aria-label={primaryNavLabel}>
+                  {PRIMARY_NAV_ITEMS.map((item) => (
+                    <NavLink
+                      key={item.key}
+                      to={item.path}
+                      style={({ isActive }) => mobileNavStyle(isActive, item.key === "join")}
+                      end={item.path === ROUTES.home}
+                    >
+                      {uiCopy.nav[item.key].en}
+                    </NavLink>
+                  ))}
+                </nav>
+
+                <div style={languageWrapStyle} role="group" aria-label={t(uiCopy.language.label)}>
+                  <button
+                    type="button"
+                    onClick={() => setLanguage("ko")}
+                    style={languageButtonStyle(language === "ko")}
+                    aria-pressed={language === "ko"}
+                  >
+                    KR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLanguage("en")}
+                    style={languageButtonStyle(language === "en")}
+                    aria-pressed={language === "en"}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link to={ROUTES.home} style={styles.brand}>
+                <span style={styles.brandTitle}>MNG Lab</span>
+                <span style={styles.brandSub}>Yonsei University</span>
+              </Link>
+
+              <div style={controlsStyle}>
+                <nav style={navLayoutStyle} aria-label={primaryNavLabel}>
+                  {PRIMARY_NAV_ITEMS.map((item) => (
+                      <NavLink
+                        key={item.key}
+                        to={item.path}
+                        style={({ isActive }) => navStyle(isActive, item.key === "join", false)}
+                        end={item.path === ROUTES.home}
+                      >
+                      {uiCopy.nav[item.key].en}
+                    </NavLink>
+                  ))}
+                </nav>
+
+                <div style={languageWrapStyle} role="group" aria-label={t(uiCopy.language.label)}>
+                  <button
+                    type="button"
+                    onClick={() => setLanguage("ko")}
+                    style={languageButtonStyle(language === "ko")}
+                    aria-pressed={language === "ko"}
+                  >
+                    KR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLanguage("en")}
+                    style={languageButtonStyle(language === "en")}
+                    aria-pressed={language === "en"}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
