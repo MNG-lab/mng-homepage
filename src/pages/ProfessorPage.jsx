@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { colors, spacing, typography } from "../design-tokens";
 import { professorData } from "../content/professor-data";
 import { useLanguage } from "../context/LanguageContext";
+import { useViewport } from "../hooks/useViewport";
 
 const EXPERIENCE_PREVIEW_ITEMS = 2;
 
@@ -178,6 +179,7 @@ const copy = {
 
 export default function ProfessorPage() {
   const { language, t } = useLanguage();
+  const { isMobile } = useViewport();
   const { profile, affiliation, address, overview, education, experience, honors, keywords, contact } = professorData;
   const [showAllExperience, setShowAllExperience] = useState(false);
   const experienceCardRef = useRef(null);
@@ -189,22 +191,33 @@ export default function ProfessorPage() {
     if (measured > 0) setCardHeight(measured);
   }, [language, showAllExperience, experience.length]);
 
-  const equalHeightStyle = cardHeight > 0 ? { minHeight: cardHeight } : {};
   const hasExpandableExperience = experience.length > EXPERIENCE_PREVIEW_ITEMS;
   const visibleExperience = showAllExperience ? experience : experience.slice(0, EXPERIENCE_PREVIEW_ITEMS);
+  const shouldEqualizeCards = !isMobile && !(hasExpandableExperience && showAllExperience);
+  const equalHeightStyle = shouldEqualizeCards && cardHeight > 0 ? { minHeight: cardHeight } : {};
+  const sectionStyle = isMobile ? { ...styles.section, padding: `${spacing[10]} ${spacing[4]} ${spacing[12]}` } : styles.section;
+  const subtitleStyle = isMobile ? { ...styles.subtitle, fontSize: typography.fontSize.sm } : styles.subtitle;
+  const profileCardStyle = isMobile
+    ? { ...styles.profileCard, gridTemplateColumns: "1fr", padding: spacing[4], gap: spacing[4] }
+    : styles.profileCard;
+  const profilePhotoStyle = isMobile ? { ...styles.profilePhoto, maxWidth: 220 } : styles.profilePhoto;
+  const nameStyle = isMobile ? { ...styles.name, fontSize: "clamp(1.9rem, 6vw, 2.4rem)" } : styles.name;
+  const gridStyle = isMobile ? { ...styles.grid, gridTemplateColumns: "1fr", gap: spacing[3] } : styles.grid;
+  const cardStyle = isMobile ? { ...styles.card, padding: spacing[4] } : styles.card;
+  const linksStyle = isMobile ? { ...styles.links, marginTop: spacing[5], gap: spacing[2] } : styles.links;
 
   return (
-    <section style={styles.section} aria-labelledby="professor-title">
+    <section style={sectionStyle} aria-labelledby="professor-title">
       <div style={styles.eyebrow}>{t(copy.eyebrow)}</div>
       <h1 id="professor-title" style={styles.title}>
         {t(copy.pageTitle)}
       </h1>
-      <p style={styles.subtitle}>{t(profile.intro)}</p>
+      <p style={subtitleStyle}>{t(profile.intro)}</p>
 
-      <article style={styles.profileCard}>
-        <img src={profile.photo} alt={t(profile.name)} style={styles.profilePhoto} loading="lazy" />
+      <article style={profileCardStyle}>
+        <img src={profile.photo} alt={t(profile.name)} style={profilePhotoStyle} loading="lazy" />
         <div style={styles.profileBody}>
-          <h2 style={styles.name}>{t(profile.name)}</h2>
+          <h2 style={nameStyle}>{t(profile.name)}</h2>
           <p style={styles.role}>{t(profile.title)}</p>
           <p style={styles.body}>
             <strong>{t(copy.affiliation)}:</strong> {t(affiliation)}
@@ -227,8 +240,8 @@ export default function ProfessorPage() {
         </div>
       </article>
 
-      <div style={styles.grid}>
-        <article style={{ ...styles.card, ...equalHeightStyle }}>
+      <div style={gridStyle}>
+        <article style={{ ...cardStyle, ...equalHeightStyle }}>
           <h2 style={styles.cardTitle}>{t(copy.educationTitle)}</h2>
           <ul style={styles.list}>
             {education.map((item) => (
@@ -240,7 +253,7 @@ export default function ProfessorPage() {
           </ul>
         </article>
 
-        <article ref={experienceCardRef} style={styles.card}>
+        <article ref={experienceCardRef} style={cardStyle}>
           <h2 style={styles.cardTitle}>{t(copy.experienceTitle)}</h2>
           <ul style={styles.list}>
             {visibleExperience.map((item) => (
@@ -262,7 +275,7 @@ export default function ProfessorPage() {
           ) : null}
         </article>
 
-        <article style={{ ...styles.card, ...equalHeightStyle }}>
+        <article style={{ ...cardStyle, ...equalHeightStyle }}>
           <h2 style={styles.cardTitle}>{t(copy.honorsTitle)}</h2>
           <ul style={styles.list}>
             {honors.map((item) => (
@@ -275,7 +288,7 @@ export default function ProfessorPage() {
         </article>
       </div>
 
-      <div style={styles.links}>
+      <div style={linksStyle}>
         <a href={`tel:${contact.officePhone.replace(/[^+\d]/g, "")}`} style={styles.pillLink}>
           {t(copy.officePhone)}: {contact.officePhone}
         </a>
