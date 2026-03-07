@@ -3,6 +3,7 @@ import { colors, spacing, typography } from "../design-tokens";
 import { professorData } from "../content/professor-data";
 import { useLanguage } from "../context/LanguageContext";
 import { useViewport } from "../hooks/useViewport";
+import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const EXPERIENCE_PREVIEW_ITEMS = 2;
 
@@ -215,7 +216,7 @@ export default function ProfessorPage() {
       <p style={subtitleStyle}>{t(profile.intro)}</p>
 
       <article style={profileCardStyle}>
-        <img src={profile.photo} alt={t(profile.name)} style={profilePhotoStyle} loading="lazy" />
+        <img src={resolveContentImageSrc(profile.photo)} alt={t(profile.name)} style={profilePhotoStyle} loading="lazy" />
         <div style={styles.profileBody}>
           <h2 style={nameStyle}>{t(profile.name)}</h2>
           <p style={styles.role}>{t(profile.title)}</p>

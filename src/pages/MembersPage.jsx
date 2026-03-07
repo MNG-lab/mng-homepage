@@ -4,6 +4,7 @@ import { membersData } from "../content/members-data";
 import { ROUTES } from "../config/site-routes";
 import { useLanguage } from "../context/LanguageContext";
 import { useViewport } from "../hooks/useViewport";
+import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const MEMBER_PHOTO_WIDTH = 120;
 const CURRENT_ORDER_KO = ["제수연", "김수정", "황보고은", "한연수", "김서영", "임현진", "남이진", "이준서"];
@@ -176,7 +177,7 @@ export default function MembersPage() {
             {member.photo ? (
               <div style={styles.photoWrap}>
                 <img
-                  src={member.photo}
+                  src={resolveContentImageSrc(member.photo)}
                   alt={t(member.name)}
                   style={styles.photo}
                   loading="lazy"
@@ -199,7 +200,7 @@ export default function MembersPage() {
             {member.photo ? (
               <div style={styles.photoWrap}>
                 <img
-                  src={member.photo}
+                  src={resolveContentImageSrc(member.photo)}
                   alt={t(member.name)}
                   style={styles.photo}
                   loading="lazy"

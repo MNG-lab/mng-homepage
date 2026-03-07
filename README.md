@@ -10,6 +10,7 @@ MNG Lab 홈페이지 저장소입니다.
 아래 버튼으로 템플릿 이슈를 생성하세요.
 
 [![수정 요청하기](https://img.shields.io/badge/%EC%88%98%EC%A0%95%20%EC%9A%94%EC%B2%AD%ED%95%98%EA%B8%B0-0A66C2?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)
+[![사진 추가 요청하기](https://img.shields.io/badge/%EC%82%AC%EC%A7%84%20%EC%B6%94%EA%B0%80%20%EC%9A%94%EC%B2%AD-1B9AAA?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=photo-upload-request.yml)
 [![즉시 롤백 요청하기](https://img.shields.io/badge/%EC%A6%89%EC%8B%9C%20%EB%A1%A4%EB%B0%B1%20%EC%9A%94%EC%B2%AD-FF8A00?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-simple-request.yml)
 
 즉시 롤백은 아래 상황에서 쓰는 **긴급 복구 버튼**입니다.
@@ -29,6 +30,21 @@ MNG Lab 홈페이지 저장소입니다.
 >    - 생각하지 못한 문제 발생했을 경우 롤백 수행
 >    - 추가로 수정해야할 사항이 생긴 경우, 롤백 대신 수정 요청 추가 생성
 > 3. 1~2번을 반복
+
+### 1-1) 사진 추가/교체 요청하기 (비개발자 권장)
+
+`사진 추가 요청하기` 버튼으로 이슈를 열고 아래 순서로 작성하세요.
+
+1. 이미지 파일을 이슈 본문에 드래그앤드롭으로 첨부
+2. 생성된 첨부 URL을 `업로드 이미지 URL` 칸에 한 줄씩 붙여넣기
+3. 대상 위치(예: `legacy-gallery-2024`, `m3`)와 캡션 입력
+4. 이슈 제출 후 생성된 PR 확인/머지
+
+동작 방식:
+
+- Codex가 첨부 이미지를 저장소 `public/media/...`로 저장
+- 콘텐츠 데이터(`src/content/...`)의 이미지 경로를 로컬 경로로 업데이트
+- PR 머지 시 GitHub Pages 자동 배포
 
 ### 2) 댓글로 Codex 실행하기
 
@@ -117,6 +133,7 @@ npm run preview
 - `npm run qa:cross-browser`: Chromium/Firefox/WebKit 점검
 - `npm run qa:accessibility`: 접근성 점검 리포트
 - `npm run preflight:p5`: 릴리즈 전 통합 점검
+- `npm run localize:wix-images`: `wixstatic` 이미지 URL을 `public/media/legacy-wix` 로컬 자산으로 다운로드/치환
 
 ## Codex 워크플로 파일
 

@@ -15,6 +15,7 @@
     "qa:accessibility": "node scripts/qa-accessibility.mjs",
     "migrate:publications": "node scripts/migrate-publications.mjs",
     "migrate:gallery": "node scripts/migrate-gallery.mjs",
+    "localize:wix-images": "node scripts/localize-wix-images.mjs",
     "verify:members": "node scripts/verify-members.mjs",
     "verify:routes:published": "node scripts/verify-published-routes.mjs --write-report",
     "verify:rollback:deploy": "node scripts/verify-rollback-deploy.mjs",

@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { contactData } from "../src/content/contact-data.js";
@@ -57,6 +58,40 @@ function isAbsoluteHttpUrl(value) {
   }
 }
 
+function isLocalAssetPath(value) {
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().replace(/^\/+/, "");
+  if (!normalized) return false;
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) return false;
+  if (normalized.startsWith("data:") || normalized.startsWith("blob:")) return false;
+  return normalized.startsWith("media/");
+}
+
+function localAssetExists(value) {
+  const normalized = String(value).trim().replace(/^\/+/, "");
+  if (!normalized) return false;
+  const localPath = path.join(ROOT_DIR, "public", normalized);
+  return existsSync(localPath);
+}
+
+function assertImageSource(value, label) {
+  if (typeof value !== "string" || !value.trim()) {
+    pushError(`${label} must be non-empty string`);
+    return;
+  }
+
+  if (isAbsoluteHttpUrl(value)) return;
+
+  if (isLocalAssetPath(value)) {
+    if (!localAssetExists(value)) {
+      pushError(`${label} points to missing local asset: ${value}`);
+    }
+    return;
+  }
+
+  pushError(`${label} must be an absolute URL or local media path`);
+}
+
 function assert(condition, message) {
   if (!condition) {
     pushError(message);
@@ -97,6 +132,11 @@ function validateResearch() {
     assert(Array.isArray(item.focus) && item.focus.length > 0, `researchAreas[${index}].focus must be non-empty array`);
     item.focus?.forEach((focusItem, focusIndex) => assertLocalized(focusItem, `researchAreas[${index}].focus[${focusIndex}]`));
     assert(Array.isArray(item.tags) && item.tags.length > 0, `researchAreas[${index}].tags must be non-empty array`);
+    if (Array.isArray(item.figures)) {
+      item.figures.forEach((figure, figureIndex) => {
+        assertImageSource(figure.src, `researchAreas[${index}].figures[${figureIndex}].src`);
+      });
+    }
   });
 }
 
@@ -141,6 +181,7 @@ function validateProfessor() {
   assert(Array.isArray(professorData.keywords) && professorData.keywords.length > 0, "professorData.keywords must be non-empty array");
   assert(isValidEmail(professorData.contact?.email), "professorData.contact.email must be a valid email");
   assert(isAbsoluteHttpUrl(professorData.contact?.scholarUrl), "professorData.contact.scholarUrl must be absolute URL");
+  assertImageSource(professorData.profile?.photo, "professorData.profile.photo");
 }
 
 function validateMembers() {
@@ -176,6 +217,9 @@ function validateMembers() {
     if (member.email && !isValidEmail(member.email)) {
       pushError(`membersData.current[${index}].email is invalid`);
     }
+    if (member.photo) {
+      assertImageSource(member.photo, `membersData.current[${index}].photo`);
+    }
   });
 
   alumni.forEach((member, index) => {
@@ -183,6 +227,9 @@ function validateMembers() {
     assertLocalized(member.name, `membersData.alumni[${index}].name`);
     assert(typeof member.period === "string" && member.period.trim(), `membersData.alumni[${index}].period must be non-empty string`);
     assertLocalized(member.now, `membersData.alumni[${index}].now`);
+    if (member.photo) {
+      assertImageSource(member.photo, `membersData.alumni[${index}].photo`);
+    }
   });
 
   if (membersData.pi?.email !== professorData.contact?.email) {
@@ -252,9 +299,7 @@ function validateGallery() {
 
       item.images.forEach((img, imgIndex) => {
         assert(typeof img.id === "string" && img.id.trim(), `galleryData[${index}].images[${imgIndex}].id must be non-empty string`);
-        if (!isAbsoluteHttpUrl(img.src)) {
-          pushError(`galleryData[${index}].images[${imgIndex}].src must be absolute URL`);
-        }
+        assertImageSource(img.src, `galleryData[${index}].images[${imgIndex}].src`);
         assertLocalized(img.alt, `galleryData[${index}].images[${imgIndex}].alt`);
         assertLocalized(img.caption, `galleryData[${index}].images[${imgIndex}].caption`);
       });

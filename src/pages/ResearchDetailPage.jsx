@@ -3,6 +3,7 @@ import { colors, spacing, typography } from "../design-tokens";
 import { ROUTES } from "../config/site-routes";
 import { researchAreas } from "../content/research-data";
 import { useLanguage } from "../context/LanguageContext";
+import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const styles = {
   section: {
@@ -125,7 +126,12 @@ export default function ResearchDetailPage() {
           {area.figures.map((figure, index) => (
             <figure key={`${area.id}-figure-${index}`} style={styles.figureCard}>
               <div style={styles.figureMedia}>
-                <img src={figure.src} alt={t(figure.caption)} style={styles.figureImage} loading="lazy" />
+                <img
+                  src={resolveContentImageSrc(figure.src)}
+                  alt={t(figure.caption)}
+                  style={styles.figureImage}
+                  loading="lazy"
+                />
               </div>
               <figcaption style={styles.figureCaption}>{t(figure.caption)}</figcaption>
             </figure>

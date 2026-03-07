@@ -41,14 +41,14 @@ export const researchAreas = [
     ],
     figures: [
       {
-        src: "https://static.wixstatic.com/media/aff8cf_0a0d680cc7b64f21934a9e30b52de0b6~mv2.png/v1/fill/w_470,h_339,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_0a0d680cc7b64f21934a9e30b52de0b6~mv2.png",
+        src: "media/legacy-wix/cd43631750-aff8cf_0a0d680cc7b64f21934a9e30b52de0b6-mv2.png",
         caption: {
           ko: "그림 1. 섬모의 구조적 특징 및 섬모 유형별 미세소관 구조",
           en: "Figure 1. Structural features of cilia and axonemal architecture by cilia type",
         },
       },
       {
-        src: "https://static.wixstatic.com/media/aff8cf_0f9133cbdbda4596b0946f75810c5107~mv2.png/v1/fill/w_702,h_342,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_0f9133cbdbda4596b0946f75810c5107~mv2.png",
+        src: "media/legacy-wix/bd5d6e5d5b-aff8cf_0f9133cbdbda4596b0946f75810c5107-mv2.png",
         caption: {
           ko: "그림 2. 발생 과정의 섬모 유형 전환과 이상 시 질환 발병 예시",
           en: "Figure 2. Cilia-type conversion during development and representative disorders caused by defects",
@@ -99,14 +99,14 @@ export const researchAreas = [
     ],
     figures: [
       {
-        src: "https://static.wixstatic.com/media/aff8cf_06c19cf4e9ac454d8a4dcd00cc7fb694~mv2.jpg/v1/fill/w_463,h_360,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_06c19cf4e9ac454d8a4dcd00cc7fb694~mv2.jpg",
+        src: "media/legacy-wix/475229e5c2-aff8cf_06c19cf4e9ac454d8a4dcd00cc7fb694-mv2.jpg",
         caption: {
           ko: "그림 1. 섬모질환의 병리학적·임상적 특징",
           en: "Figure 1. Pathological and clinical features of ciliopathies",
         },
       },
       {
-        src: "https://static.wixstatic.com/media/aff8cf_58dca3e4d7eb44ca93cd1f222b18baf3~mv2.jpg/v1/fill/w_600,h_240,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_58dca3e4d7eb44ca93cd1f222b18baf3~mv2.jpg",
+        src: "media/legacy-wix/973fcfd5ce-aff8cf_58dca3e4d7eb44ca93cd1f222b18baf3-mv2.jpg",
         caption: {
           ko: "그림 2. ICK 결손 마우스 표현형 및 섬모 길이 조절 분석",
           en: "Figure 2. Phenotypic analysis and cilia-length regulation in ICK-deficient mice",
@@ -157,14 +157,14 @@ export const researchAreas = [
     ],
     figures: [
       {
-        src: "https://static.wixstatic.com/media/aff8cf_f4dd90a504454c2fabe6fcafc06c6d41~mv2.png/v1/fill/w_600,h_358,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_f4dd90a504454c2fabe6fcafc06c6d41~mv2.png",
+        src: "media/legacy-wix/29e40d4c6e-aff8cf_f4dd90a504454c2fabe6fcafc06c6d41-mv2.png",
         caption: {
           ko: "그림 1. Hedgehog 신호전달계의 생물학적 중요성과 병리적 이슈",
           en: "Figure 1. Biological significance and pathological issues of Hedgehog signaling",
         },
       },
       {
-        src: "https://static.wixstatic.com/media/aff8cf_865c4943a7dd40a69b2f440e744f5525~mv2.png/v1/crop/x_160,y_0,w_1219,h_681/fill/w_678,h_379,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_865c4943a7dd40a69b2f440e744f5525~mv2.png",
+        src: "media/legacy-wix/41b9ed810c-aff8cf_865c4943a7dd40a69b2f440e744f5525-mv2.png",
         caption: {
           ko: "그림 2. 바이오프로브 기반 신호조절 유전자 발굴 및 약물개발 전략",
           en: "Figure 2. Bioprobe-based discovery of signaling regulators and drug-development strategy",
