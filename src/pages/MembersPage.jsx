@@ -3,6 +3,7 @@ import { colors, spacing, typography } from "../design-tokens";
 import { membersData } from "../content/members-data";
 import { ROUTES } from "../config/site-routes";
 import { useLanguage } from "../context/LanguageContext";
+import { useViewport } from "../hooks/useViewport";
 
 const MEMBER_PHOTO_WIDTH = 120;
 
@@ -46,8 +47,8 @@ const styles = {
     fontSize: typography.fontSize.xl,
   },
   grid: {
-    display: "flex",
-    flexDirection: "column",
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: spacing[4],
   },
   memberCard: {
@@ -114,20 +115,13 @@ const copy = {
   alumni: { ko: "동문", en: "Alumni" },
 };
 
-function extractRecentYear(period) {
-  const matches = String(period || "").match(/\b(19|20)\d{2}\b/g) || [];
-  if (!matches.length) return 0;
-  return Math.max(...matches.map((value) => Number(value)));
-}
-
 export default function MembersPage() {
   const { t } = useLanguage();
+  const { isMobile } = useViewport();
   const { current, alumni } = membersData;
-  const sortedAlumni = [...alumni].sort((a, b) => {
-    const yearDiff = extractRecentYear(b.period) - extractRecentYear(a.period);
-    if (yearDiff !== 0) return yearDiff;
-    return a.name.ko.localeCompare(b.name.ko, "ko");
-  });
+  const gridStyle = isMobile
+    ? { ...styles.grid, gridTemplateColumns: "minmax(0, 1fr)" }
+    : styles.grid;
 
   return (
     <section style={styles.section} aria-labelledby="members-title">
@@ -141,7 +135,7 @@ export default function MembersPage() {
       </Link>
 
       <h2 style={styles.heading}>{t(copy.current)}</h2>
-      <div style={styles.grid}>
+      <div style={gridStyle}>
         {current.map((member) => (
           <article key={member.id} style={styles.memberCard}>
             {member.photo ? (
@@ -164,8 +158,8 @@ export default function MembersPage() {
       </div>
 
       <h2 style={styles.heading}>{t(copy.alumni)}</h2>
-      <div style={styles.grid}>
-        {sortedAlumni.map((member) => (
+      <div style={gridStyle}>
+        {alumni.map((member) => (
           <article key={member.id} style={styles.memberCard}>
             {member.photo ? (
               <div style={styles.photoWrap}>
