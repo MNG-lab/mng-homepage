@@ -4,7 +4,7 @@ import { membersData } from "../content/members-data";
 import { ROUTES } from "../config/site-routes";
 import { useLanguage } from "../context/LanguageContext";
 
-const MEMBER_CARD_WIDTH = 168; // 240px baseline scaled by 0.7.
+const MEMBER_PHOTO_WIDTH = 120;
 
 const styles = {
   section: {
@@ -46,27 +46,34 @@ const styles = {
     fontSize: typography.fontSize.xl,
   },
   grid: {
-    display: "grid",
-    gridTemplateColumns: `repeat(auto-fit, minmax(${MEMBER_CARD_WIDTH}px, ${MEMBER_CARD_WIDTH}px))`,
-    justifyContent: "center",
+    display: "flex",
+    flexDirection: "column",
     gap: spacing[4],
   },
   memberCard: {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
-    borderRadius: 12,
+    borderRadius: 0,
     padding: spacing[4],
-    display: "flex",
-    flexDirection: "column",
-    gap: spacing[2],
-    width: `${MEMBER_CARD_WIDTH}px`,
+    display: "grid",
+    gridTemplateColumns: `${MEMBER_PHOTO_WIDTH}px minmax(0, 1fr)`,
+    alignItems: "start",
+    columnGap: spacing[4],
+    rowGap: spacing[2],
   },
   photoWrap: {
-    borderRadius: 10,
+    borderRadius: 0,
     overflow: "hidden",
     border: `1px solid ${colors.border.soft}`,
+    width: `${MEMBER_PHOTO_WIDTH}px`,
     aspectRatio: "4 / 5",
     background: colors.surface.subtle,
+  },
+  memberInfo: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing[1],
   },
   photo: {
     width: "100%",
@@ -77,20 +84,25 @@ const styles = {
   memberName: {
     margin: 0,
     fontFamily: typography.fontFamily.serif,
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.xl,
+    lineHeight: typography.lineHeight.snug,
     color: colors.text.primary,
+    overflowWrap: "anywhere",
   },
   meta: {
     margin: 0,
     color: colors.brand.accent,
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     lineHeight: typography.lineHeight.relaxed,
+    overflowWrap: "anywhere",
   },
   desc: {
     margin: 0,
     color: colors.text.secondary,
     lineHeight: typography.lineHeight.relaxed,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
   },
 };
 
@@ -142,13 +154,11 @@ export default function MembersPage() {
                 />
               </div>
             ) : null}
-            <h3 style={styles.memberName}>{t(member.name)}</h3>
-            {member.role ? <p style={styles.meta}>{t(member.role)}</p> : null}
-            {member.email ? (
-              <p style={{ ...styles.desc, marginTop: spacing[2] }}>
-                {member.email}
-              </p>
-            ) : null}
+            <div style={styles.memberInfo}>
+              {member.role ? <p style={styles.meta}>{t(member.role)}</p> : null}
+              <h3 style={styles.memberName}>{t(member.name)}</h3>
+              {member.email ? <p style={styles.desc}>{member.email}</p> : null}
+            </div>
           </article>
         ))}
       </div>
@@ -167,13 +177,11 @@ export default function MembersPage() {
                 />
               </div>
             ) : null}
-            <h3 style={styles.memberName}>{t(member.name)}</h3>
-            <p style={styles.meta}>{member.period}</p>
-            {member.email ? (
-              <p style={{ ...styles.desc, marginTop: spacing[2] }}>
-                {member.email}
-              </p>
-            ) : null}
+            <div style={styles.memberInfo}>
+              <p style={styles.meta}>{member.period}</p>
+              <h3 style={styles.memberName}>{t(member.name)}</h3>
+              {member.email ? <p style={styles.desc}>{member.email}</p> : null}
+            </div>
           </article>
         ))}
       </div>
