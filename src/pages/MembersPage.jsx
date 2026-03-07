@@ -86,6 +86,7 @@ const styles = {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 0,
+    overflow: "hidden",
     padding: 0,
     display: "grid",
     gridTemplateColumns: `${MEMBER_PHOTO_WIDTH}px minmax(0, 1fr)`,
@@ -96,9 +97,9 @@ const styles = {
   photoWrap: {
     borderRadius: 0,
     overflow: "hidden",
-    border: `1px solid ${colors.border.soft}`,
     width: `${MEMBER_PHOTO_WIDTH}px`,
-    aspectRatio: "4 / 5",
+    height: "100%",
+    alignSelf: "stretch",
     background: colors.surface.subtle,
   },
   memberInfo: {
@@ -148,11 +149,11 @@ const copy = {
 };
 
 export default function MembersPage() {
-  const { t, isKorean } = useLanguage();
+  const { t } = useLanguage();
   const { isMobile } = useViewport();
   const { current, alumni } = membersData;
-  const orderedCurrent = isKorean ? sortMembersByKoreanName(current, CURRENT_ORDER_KO) : current;
-  const orderedAlumni = isKorean ? sortMembersByKoreanName(alumni, ALUMNI_ORDER_KO) : alumni;
+  const orderedCurrent = sortMembersByKoreanName(current, CURRENT_ORDER_KO);
+  const orderedAlumni = sortMembersByKoreanName(alumni, ALUMNI_ORDER_KO);
   const gridStyle = isMobile
     ? { ...styles.grid, gridTemplateColumns: "minmax(0, 1fr)" }
     : styles.grid;
