@@ -1,0 +1,104 @@
+name: "🖼️ 사진 추가/교체 요청 (비개발자용)"
+description: "이미지를 이슈에 첨부하면 Codex가 저장소에 저장하고 콘텐츠 데이터까지 반영합니다."
+title: "[사진요청] "
+labels:
+  - codex-auto
+body:
+  - type: markdown
+    attributes:
+      value: |
+        이 템플릿은 **비개발자용 사진 업로드 요청**입니다.
+
+        핵심:
+        - 이미지 파일을 이슈 본문에 **드래그앤드롭**으로 첨부
+        - 첨부 후 생성된 URL을 아래 `업로드 이미지 URL` 항목에도 다시 붙여넣기
+        - Codex가 `public/media/...`에 파일 저장 + 콘텐츠 데이터 파일 반영 PR 생성
+
+  - type: dropdown
+    id: update_mode
+    attributes:
+      label: 작업 유형
+      options:
+        - 기존 사진 교체
+        - 새 사진 추가
+        - 교체 + 추가
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target_page
+    attributes:
+      label: 대상 영역
+      options:
+        - Gallery
+        - Members
+        - Professor
+        - Research
+        - Home
+        - 기타
+    validations:
+      required: true
+
+  - type: input
+    id: target_location
+    attributes:
+      label: 대상 위치(앨범/섹션/멤버 id 등)
+      description: 어떤 위치에 반영할지 식별 가능한 값을 적어주세요.
+      placeholder: "예) legacy-gallery-2024 / m3 / research-2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: uploaded_images
+    attributes:
+      label: 업로드 이미지 URL (필수)
+      description: 첨부 후 생성된 GitHub 첨부 URL을 한 줄에 하나씩 넣어주세요.
+      placeholder: |
+        - https://github.com/user-attachments/assets/xxxx
+        - https://github.com/user-attachments/assets/yyyy
+    validations:
+      required: true
+
+  - type: textarea
+    id: captions
+    attributes:
+      label: 캡션/대체텍스트 (선택)
+      description: 이미지 순서대로 작성해 주세요. 비우면 파일명 기반으로 생성됩니다.
+      placeholder: |
+        1) KR: 교수님 생신 / EN: Professor's Birthday
+        2) KR: KSBMB 학회 / EN: KSBMB Conference
+    validations:
+      required: false
+
+  - type: textarea
+    id: order_rule
+    attributes:
+      label: 정렬 규칙 (선택)
+      description: 앞/뒤 배치 등 원하는 정렬을 적어주세요.
+      placeholder: |
+        예)
+        - 최신 사진이 먼저 보이게 맨 앞에 추가
+        - 기존 순서 유지하고 마지막에만 추가
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 완료 기준
+      placeholder: |
+        - [ ] 데스크톱/모바일에서 이미지 표시 정상
+        - [ ] 깨진 이미지 없음
+        - [ ] KR/EN 캡션 반영 확인
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 제출 전 확인
+      options:
+        - label: 이미지 파일을 이슈에 첨부했고 URL도 본문에 입력했습니다.
+          required: true
+        - label: 대상 위치(앨범/섹션/멤버)를 구체적으로 작성했습니다.
+          required: true
