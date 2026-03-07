@@ -6,6 +6,37 @@ import { useLanguage } from "../context/LanguageContext";
 import { useViewport } from "../hooks/useViewport";
 
 const MEMBER_PHOTO_WIDTH = 120;
+const CURRENT_ORDER_KO = ["제수연", "김수정", "황보고은", "한연수", "김서영", "임현진", "남이진", "이준서"];
+const ALUMNI_ORDER_KO = [
+  "윤혜린",
+  "김연경",
+  "이경민",
+  "전지연",
+  "박시현",
+  "오신애",
+  "송지은",
+  "박지현",
+  "박주은",
+  "정주현",
+  "이한규",
+  "이윤지",
+  "이경혜",
+  "이수진",
+  "이정휘",
+  "문희정",
+];
+
+function sortMembersByKoreanName(members, orderedNames) {
+  const order = new Map(orderedNames.map((name, index) => [name, index]));
+  return [...members].sort((a, b) => {
+    const aOrder = order.get(a?.name?.ko);
+    const bOrder = order.get(b?.name?.ko);
+    if (aOrder == null && bOrder == null) return 0;
+    if (aOrder == null) return 1;
+    if (bOrder == null) return -1;
+    return aOrder - bOrder;
+  });
+}
 
 const styles = {
   section: {
@@ -55,12 +86,12 @@ const styles = {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 0,
-    padding: spacing[4],
+    padding: 0,
     display: "grid",
     gridTemplateColumns: `${MEMBER_PHOTO_WIDTH}px minmax(0, 1fr)`,
     alignItems: "start",
-    columnGap: spacing[4],
-    rowGap: spacing[2],
+    columnGap: 0,
+    rowGap: 0,
   },
   photoWrap: {
     borderRadius: 0,
@@ -71,6 +102,7 @@ const styles = {
     background: colors.surface.subtle,
   },
   memberInfo: {
+    padding: spacing[4],
     minWidth: 0,
     display: "flex",
     flexDirection: "column",
@@ -116,9 +148,11 @@ const copy = {
 };
 
 export default function MembersPage() {
-  const { t } = useLanguage();
+  const { t, isKorean } = useLanguage();
   const { isMobile } = useViewport();
   const { current, alumni } = membersData;
+  const orderedCurrent = isKorean ? sortMembersByKoreanName(current, CURRENT_ORDER_KO) : current;
+  const orderedAlumni = isKorean ? sortMembersByKoreanName(alumni, ALUMNI_ORDER_KO) : alumni;
   const gridStyle = isMobile
     ? { ...styles.grid, gridTemplateColumns: "minmax(0, 1fr)" }
     : styles.grid;
@@ -136,7 +170,7 @@ export default function MembersPage() {
 
       <h2 style={styles.heading}>{t(copy.current)}</h2>
       <div style={gridStyle}>
-        {current.map((member) => (
+        {orderedCurrent.map((member) => (
           <article key={member.id} style={styles.memberCard}>
             {member.photo ? (
               <div style={styles.photoWrap}>
@@ -159,7 +193,7 @@ export default function MembersPage() {
 
       <h2 style={styles.heading}>{t(copy.alumni)}</h2>
       <div style={gridStyle}>
-        {alumni.map((member) => (
+        {orderedAlumni.map((member) => (
           <article key={member.id} style={styles.memberCard}>
             {member.photo ? (
               <div style={styles.photoWrap}>
