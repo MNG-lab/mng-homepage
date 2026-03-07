@@ -67,18 +67,6 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: language_scope
-    attributes:
-      label: 언어 반영 범위
-      description: 어떤 언어에 반영해야 하는지 선택해주세요.
-      options:
-        - 국문(KR)만
-        - 영문(EN)만
-        - 국문/영문 모두
-    validations:
-      required: true
-
   - type: textarea
     id: source_links
     attributes:
@@ -103,18 +91,6 @@ body:
         EN: We develop anti-aging technologies based on primary cilium metabolism...
     validations:
       required: false
-
-  - type: textarea
-    id: acceptance_criteria
-    attributes:
-      label: 완료 기준 (체크리스트)
-      description: 작업 완료를 판단할 조건을 적어주세요.
-      placeholder: |
-        - [ ] 데스크톱/모바일에서 레이아웃 깨짐 없음
-        - [ ] KR/EN 토글 시 내용 동일 기준 반영
-        - [ ] 내부/외부 링크 동작 확인
-    validations:
-      required: true
 
   - type: textarea
     id: out_of_scope
@@ -145,6 +121,4 @@ body:
         - label: 한 이슈에서 한 가지 목표를 다루고 있습니다.
           required: true
         - label: 기준 링크(또는 원문 문구)를 포함했습니다.
-          required: true
-        - label: 완료 기준(체크리스트)을 작성했습니다.
           required: true
