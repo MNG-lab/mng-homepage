@@ -13,7 +13,7 @@ export const professorData = {
       en: "As PI of the Development and Genetic Diseases Laboratory (DGLab), he leads research in cilia biology, developmental genetics, and disease mechanisms.",
     },
     photo:
-      "https://static.wixstatic.com/media/aff8cf_74d33387bb08452688d0e50f6efa6ab6~mv2.jpg/v1/crop/x_0,y_45,w_551,h_732/fill/w_196,h_259,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/aff8cf_74d33387bb08452688d0e50f6efa6ab6~mv2.jpg",
+      "media/legacy-wix/98ade9188e-aff8cf_74d33387bb08452688d0e50f6efa6ab6-mv2.jpg",
   },
   affiliation: {
     ko: "Development and Genetic Diseases Laboratory, 생화학과, 생명과학기술대학, 연세대학교",

@@ -34,7 +34,7 @@ export const galleryData = [
     "images": [
       {
         "id": "legacy-gallery-2023-img-1",
-        "src": "https://static.wixstatic.com/media/aff8cf_ce4d9d1c61724c7caaa234691bde9a85~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_014238051_09_edited.jpg",
+        "src": "media/legacy-wix/251dda577b-kakaotalk_20241119_014238051_09_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_014238051_09_edited.jpg",
           "en": "KakaoTalk_20241119_014238051_09_edited.jpg"
@@ -46,7 +46,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-2",
-        "src": "https://static.wixstatic.com/media/aff8cf_8265979b24794fefba94d1a39e238765~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241121_003815216_edited.jpg",
+        "src": "media/legacy-wix/46df5fb8e3-kakaotalk_20241121_003815216_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241121_003815216_edited.jpg",
           "en": "KakaoTalk_20241121_003815216_edited.jpg"
@@ -58,7 +58,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-3",
-        "src": "https://static.wixstatic.com/media/aff8cf_3cf09409b6d84765abbef65414f743c9~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20171130_154155616_edited.jpg",
+        "src": "media/legacy-wix/ea9f797cdf-kakaotalk_20171130_154155616_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20171130_154155616_edited.jpg",
           "en": "KakaoTalk_20171130_154155616_edited.jpg"
@@ -70,7 +70,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-4",
-        "src": "https://static.wixstatic.com/media/aff8cf_cf2e1c4c81e5466ca0431dca2107ee1d~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20171130_153916987.jpg",
+        "src": "media/legacy-wix/00a85b1ef9-kakaotalk_20171130_153916987.jpg",
         "alt": {
           "ko": "KakaoTalk_20171130_153916987.jpg",
           "en": "KakaoTalk_20171130_153916987.jpg"
@@ -82,7 +82,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-5",
-        "src": "https://static.wixstatic.com/media/aff8cf_81e367b817114a8bb8e1808dd84925f8~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241121_004237384_edited.jpg",
+        "src": "media/legacy-wix/75174708ac-kakaotalk_20241121_004237384_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241121_004237384_edited.jpg",
           "en": "KakaoTalk_20241121_004237384_edited.jpg"
@@ -94,7 +94,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-6",
-        "src": "https://static.wixstatic.com/media/aff8cf_51fbedf7736246dda71dcba828ecc16e~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241121_003529522_edited.jpg",
+        "src": "media/legacy-wix/82628cac36-kakaotalk_20241121_003529522_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241121_003529522_edited.jpg",
           "en": "KakaoTalk_20241121_003529522_edited.jpg"
@@ -106,7 +106,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-7",
-        "src": "https://static.wixstatic.com/media/aff8cf_676c63757b214922bb0f7a99a5d5af55~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/2018-%EC%86%A1%EB%85%84%ED%9A%8C_edited.jpg",
+        "src": "media/legacy-wix/e7f6da44e4-2018-_edited.jpg",
         "alt": {
           "ko": "2018-송년회_edited.jpg",
           "en": "2018-송년회_edited.jpg"
@@ -118,7 +118,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-8",
-        "src": "https://static.wixstatic.com/media/aff8cf_a2a10407db6246c19fd40981b87c7ca8~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_014238051.jpg",
+        "src": "media/legacy-wix/8cf92db028-kakaotalk_20241119_014238051.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_014238051.jpg",
           "en": "KakaoTalk_20241119_014238051.jpg"
@@ -130,7 +130,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-9",
-        "src": "https://static.wixstatic.com/media/aff8cf_7c91989090c2462f9cce9b50a543ff14~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/photo_0%20(1)_edited_edited.jpg",
+        "src": "media/legacy-wix/7c873ee916-photo_0-1.jpg",
         "alt": {
           "ko": "photo_0 (1)_edited_edited.jpg",
           "en": "photo_0 (1)_edited_edited.jpg"
@@ -142,7 +142,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2023-img-10",
-        "src": "https://static.wixstatic.com/media/aff8cf_234706b8fc4f48bc86ee79a49e7a300b~mv2.jpg/v1/fill/w_301,h_269,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/2018-%EA%B2%BD%ED%98%9C%EC%9C%A4%EC%A7%80%20%EC%A1%B8%EC%97%85_edited.jpg",
+        "src": "media/legacy-wix/85fbc25dba-2018-_edited.jpg",
         "alt": {
           "ko": "2018-경혜윤지 졸업_edited.jpg",
           "en": "2018-경혜윤지 졸업_edited.jpg"
@@ -175,7 +175,7 @@ export const galleryData = [
     "images": [
       {
         "id": "legacy-gallery-2024-img-1",
-        "src": "https://static.wixstatic.com/media/aff8cf_4397421ed95b4622845d91ddcd3161be~mv2.jpg/v1/fill/w_355,h_317,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/24-10%20%EC%83%9D%EC%8B%A0_edited.jpg",
+        "src": "media/legacy-wix/5d7b59d966-24-10-_edited.jpg",
         "alt": {
           "ko": "24-10 생신_edited.jpg",
           "en": "24-10 생신_edited.jpg"
@@ -187,7 +187,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2024-img-2",
-        "src": "https://static.wixstatic.com/media/aff8cf_5a7eea6bf5604609b5b2a99835a23aea~mv2.jpg/v1/fill/w_355,h_317,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_014238051_12_edited.jpg",
+        "src": "media/legacy-wix/21f3be0a4f-kakaotalk_20241119_014238051_12_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_014238051_12_edited.jpg",
           "en": "KakaoTalk_20241119_014238051_12_edited.jpg"
@@ -199,7 +199,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2024-img-3",
-        "src": "https://static.wixstatic.com/media/aff8cf_24a62e59f96e4f6082846b67509eb3d2~mv2.jpg/v1/fill/w_355,h_317,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241121_002237948_edited.jpg",
+        "src": "media/legacy-wix/452976d616-kakaotalk_20241121_002237948_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241121_002237948_edited.jpg",
           "en": "KakaoTalk_20241121_002237948_edited.jpg"
@@ -211,7 +211,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2024-img-4",
-        "src": "https://static.wixstatic.com/media/aff8cf_ddb50d8d57f14807992bb3e814902a0e~mv2.jpg/v1/fill/w_355,h_317,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_014238051_11_edited.jpg",
+        "src": "media/legacy-wix/1da185add7-kakaotalk_20241119_014238051_11_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_014238051_11_edited.jpg",
           "en": "KakaoTalk_20241119_014238051_11_edited.jpg"
@@ -223,7 +223,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-2024-img-5",
-        "src": "https://static.wixstatic.com/media/aff8cf_8b3713bfe35a4259b877e8b5f0584bbd~mv2.jpg/v1/fill/w_355,h_317,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_014238051_13_edited.jpg",
+        "src": "media/legacy-wix/938a4e3f4a-kakaotalk_20241119_014238051_13_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_014238051_13_edited.jpg",
           "en": "KakaoTalk_20241119_014238051_13_edited.jpg"
@@ -255,7 +255,7 @@ export const galleryData = [
     "images": [
       {
         "id": "legacy-gallery-wagle-img-1",
-        "src": "https://static.wixstatic.com/media/aff8cf_8fc306d2bcbd432798c0a330f0bc82d8~mv2.jpg/v1/fill/w_288,h_258,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/%E3%85%8E%E3%85%8E.jpg",
+        "src": "media/legacy-wix/0b6d2d0f59-.jpg",
         "alt": {
           "ko": "ㅎㅎ.jpg",
           "en": "ㅎㅎ.jpg"
@@ -267,7 +267,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-wagle-img-2",
-        "src": "https://static.wixstatic.com/media/aff8cf_d2544563f7fd4108ab2b59b2e2bb5b84~mv2.jpg/v1/fill/w_288,h_258,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_011501700_edited.jpg",
+        "src": "media/legacy-wix/6cf2757694-kakaotalk_20241119_011501700_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_011501700_edited.jpg",
           "en": "KakaoTalk_20241119_011501700_edited.jpg"
@@ -279,7 +279,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-wagle-img-3",
-        "src": "https://static.wixstatic.com/media/aff8cf_8f1ea4c3db684e5b9f727d120c581fee~mv2.jpg/v1/fill/w_288,h_258,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_014238051_07_edited.jpg",
+        "src": "media/legacy-wix/e9157fba79-kakaotalk_20241119_014238051_07_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_014238051_07_edited.jpg",
           "en": "KakaoTalk_20241119_014238051_07_edited.jpg"
@@ -291,7 +291,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-wagle-img-4",
-        "src": "https://static.wixstatic.com/media/aff8cf_f2828793e8c34f1da19564141fb0e586~mv2.jpg/v1/fill/w_288,h_258,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241119_014238051_01.jpg",
+        "src": "media/legacy-wix/984a2ceba4-kakaotalk_20241119_014238051_01.jpg",
         "alt": {
           "ko": "KakaoTalk_20241119_014238051_01.jpg",
           "en": "KakaoTalk_20241119_014238051_01.jpg"
@@ -303,7 +303,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-wagle-img-5",
-        "src": "https://static.wixstatic.com/media/aff8cf_c0653206caa2448ab736c80a6a5059bb~mv2.jpg/v1/fill/w_288,h_258,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241121_003512215_edited.jpg",
+        "src": "media/legacy-wix/b846ca4801-kakaotalk_20241121_003512215_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241121_003512215_edited.jpg",
           "en": "KakaoTalk_20241121_003512215_edited.jpg"
@@ -315,7 +315,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-wagle-img-6",
-        "src": "https://static.wixstatic.com/media/aff8cf_b768be9d3a2c4f4dbe2ef80e21b99d5d~mv2.jpg/v1/fill/w_288,h_258,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241121_000639836_05_edited.jpg",
+        "src": "media/legacy-wix/e841ecf671-kakaotalk_20241121_000639836_05_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241121_000639836_05_edited.jpg",
           "en": "KakaoTalk_20241121_000639836_05_edited.jpg"
@@ -327,7 +327,7 @@ export const galleryData = [
       },
       {
         "id": "legacy-gallery-wagle-img-7",
-        "src": "https://static.wixstatic.com/media/aff8cf_b8095283cbda40d59202abd8e0470ef8~mv2.jpg/v1/fill/w_288,h_258,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/KakaoTalk_20241121_000639836_02_edited.jpg",
+        "src": "media/legacy-wix/7306d5192a-kakaotalk_20241121_000639836_02_edited.jpg",
         "alt": {
           "ko": "KakaoTalk_20241121_000639836_02_edited.jpg",
           "en": "KakaoTalk_20241121_000639836_02_edited.jpg"

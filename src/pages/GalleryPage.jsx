@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { galleryData } from "../content/gallery-data";
 import { useLanguage } from "../context/LanguageContext";
+import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const styles = {
   section: {
@@ -196,6 +197,7 @@ const copy = {
 };
 
 function toLightboxSrc(src) {
+  if (typeof src !== "string") return "";
   return src.replace(/w_\d+,h_\d+,/i, "w_1280,h_1280,").replace(/q_\d+/i, "q_80");
 }
 
@@ -240,7 +242,7 @@ export default function GalleryPage() {
 
   function openLightbox(image) {
     setLightboxImage(image);
-    setLightboxDisplaySrc(image.src);
+    setLightboxDisplaySrc(resolveContentImageSrc(image.src));
   }
 
   useEffect(() => {
@@ -261,7 +263,7 @@ export default function GalleryPage() {
   useEffect(() => {
     if (!lightboxImage) return undefined;
 
-    const hiResSrc = toLightboxSrc(lightboxImage.src);
+    const hiResSrc = toLightboxSrc(resolveContentImageSrc(lightboxImage.src));
     if (highResCacheRef.current.has(hiResSrc)) {
       setLightboxDisplaySrc(hiResSrc);
     } else {
@@ -328,7 +330,12 @@ export default function GalleryPage() {
               style={{ ...styles.albumCard, ...(selected ? styles.albumCardActive : {}) }}
             >
               <div style={styles.albumCoverWrap}>
-                <img src={album.images[0].src} alt={t(album.images[0].alt)} style={styles.albumCover} loading="lazy" />
+                <img
+                  src={resolveContentImageSrc(album.images[0].src)}
+                  alt={t(album.images[0].alt)}
+                  style={styles.albumCover}
+                  loading="lazy"
+                />
               </div>
               <p style={styles.albumMeta}>
                 {album.year} · {album.images.length} {t(copy.photos)}
@@ -354,7 +361,7 @@ export default function GalleryPage() {
                   aria-label={language === "ko" ? "사진 확대 보기" : "Open full-size image"}
                   onClick={() => openLightbox(image)}
                 >
-                  <img src={image.src} alt={t(image.alt)} style={styles.photo} loading="lazy" />
+                  <img src={resolveContentImageSrc(image.src)} alt={t(image.alt)} style={styles.photo} loading="lazy" />
                 </button>
               </div>
               {hidePhotoCaption ? null : <figcaption style={styles.caption}>{t(image.caption)}</figcaption>}
@@ -381,7 +388,7 @@ export default function GalleryPage() {
               ×
             </button>
             <img
-              src={lightboxDisplaySrc || lightboxImage.src}
+              src={lightboxDisplaySrc || resolveContentImageSrc(lightboxImage.src)}
               alt={t(lightboxImage.alt)}
               style={styles.lightboxImage}
               loading="eager"
