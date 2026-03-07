@@ -8,24 +8,6 @@ import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const MEMBER_PHOTO_WIDTH = 120;
 const CURRENT_ORDER_KO = ["제수연", "김수정", "황보고은", "한연수", "김서영", "임현진", "남이진", "이준서"];
-const ALUMNI_ORDER_KO = [
-  "문희정",
-  "이정휘",
-  "이수진",
-  "이경혜",
-  "이윤지",
-  "이한규",
-  "정주현",
-  "박주은",
-  "박지현",
-  "송지은",
-  "오신애",
-  "박시현",
-  "전지연",
-  "이경민",
-  "김연경",
-  "윤혜린",
-];
 
 function sortMembersByKoreanName(members, orderedNames) {
   const order = new Map(orderedNames.map((name, index) => [name, index]));
@@ -37,6 +19,12 @@ function sortMembersByKoreanName(members, orderedNames) {
     if (bOrder == null) return -1;
     return aOrder - bOrder;
   });
+}
+
+function extractLatestGraduationYear(period) {
+  const years = String(period || "").match(/\d{4}/g);
+  if (!years?.length) return -1;
+  return Math.max(...years.map(Number));
 }
 
 const styles = {
@@ -154,7 +142,9 @@ export default function MembersPage() {
   const { isMobile } = useViewport();
   const { current, alumni } = membersData;
   const orderedCurrent = sortMembersByKoreanName(current, CURRENT_ORDER_KO);
-  const orderedAlumni = sortMembersByKoreanName(alumni, ALUMNI_ORDER_KO);
+  const orderedAlumni = [...alumni].sort(
+    (a, b) => extractLatestGraduationYear(b.period) - extractLatestGraduationYear(a.period)
+  );
   const gridStyle = isMobile
     ? { ...styles.grid, gridTemplateColumns: "minmax(0, 1fr)" }
     : styles.grid;
