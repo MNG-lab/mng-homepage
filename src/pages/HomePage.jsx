@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { colors, spacing, typography } from "../design-tokens";
 import { ROUTES, getResearchDetailPath } from "../config/site-routes";
 import { homeContent } from "../content/home-content";
-import { professorData } from "../content/professor-data";
 import { publicationsData } from "../content/publications-data";
 import { researchAreas } from "../content/research-data";
 import { useLanguage } from "../context/LanguageContext";
@@ -375,7 +374,6 @@ export default function HomePage() {
     ];
   }, []);
   const researchThemePill = language === "ko" ? `${researchAreas.length}개 테마` : `${researchAreas.length} themes`;
-  const primaryProfileOverview = t(professorData.overview?.[0] ?? { ko: "", en: "" });
 
   useEffect(() => {
     setMounted(true);
@@ -426,9 +424,7 @@ export default function HomePage() {
     ? { ...styles.section, ...styles.sectionOff, padding: `${spacing[12]} ${spacing[4]}` }
     : { ...styles.section, ...styles.sectionOff };
   const sectionTitleStyle = isMobile ? { ...styles.sectionTitle, margin: `0 0 ${spacing[4]}` } : styles.sectionTitle;
-  const twoColStyle = isMobile ? { ...styles.twoCol, gridTemplateColumns: "1fr" } : styles.twoCol;
   const cardStyle = isMobile ? { ...styles.card, padding: 20, borderRadius: 14 } : styles.card;
-  const profileStyle = isMobile ? { ...styles.profile, padding: 16, borderRadius: 14 } : styles.profile;
   const ctaPrimaryStyle = isMobile ? { ...styles.ctaPrimary, padding: `${spacing[2]} ${spacing[4]}` } : styles.ctaPrimary;
   const researchGridStyle = isMobile ? { ...styles.researchGrid, gridTemplateColumns: "1fr" } : styles.researchGrid;
   const researchCardStyle = isMobile ? { ...styles.researchCard, padding: spacing[5] } : styles.researchCard;
@@ -486,46 +482,21 @@ export default function HomePage() {
             {t(homeContent.about.title)} <span style={styles.pill}>{t(homeContent.about.pill)}</span>
           </h2>
 
-          <div style={twoColStyle}>
-            <article style={cardStyle}>
-              <p style={styles.paragraph}>{t(homeContent.about.paragraphs[0])}</p>
-              <p style={{ ...styles.paragraph, ...styles.muted }}>{t(homeContent.about.paragraphs[1])}</p>
-              <div style={styles.ctaRow}>
-                <Link to={ROUTES.join} style={ctaPrimaryStyle}>
-                  {t(homeContent.about.ctaJoin)}
-                </Link>
-                <Link
-                  to={`${ROUTES.home}#news`}
-                  style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
-                >
-                  {t(homeContent.about.ctaNews)}
-                </Link>
-              </div>
-            </article>
-
-            <aside style={profileStyle}>
-              <div style={styles.profileLabel}>{t(homeContent.profile.label)}</div>
-              <h3 style={styles.profileName}>{t(professorData.profile.name)}</h3>
-              <div style={styles.profileTitle}>{t(professorData.profile.title)}</div>
-              <p style={{ ...styles.paragraph, marginTop: spacing[3], marginBottom: 0 }}>{primaryProfileOverview}</p>
-              <div style={styles.ctaRow}>
-                <a
-                  href={professorData.contact.scholarUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={ctaPrimaryStyle}
-                >
-                  {t(homeContent.profile.ctaScholar)} ↗
-                </a>
-                <Link
-                  to={ROUTES.contact}
-                  style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
-                >
-                  {t(homeContent.profile.ctaContact)}
-                </Link>
-              </div>
-            </aside>
-          </div>
+          <article style={cardStyle}>
+            <p style={styles.paragraph}>{t(homeContent.about.paragraphs[0])}</p>
+            <p style={{ ...styles.paragraph, ...styles.muted }}>{t(homeContent.about.paragraphs[1])}</p>
+            <div style={styles.ctaRow}>
+              <Link to={ROUTES.join} style={ctaPrimaryStyle}>
+                {t(homeContent.about.ctaJoin)}
+              </Link>
+              <Link
+                to={`${ROUTES.home}#news`}
+                style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
+              >
+                {t(homeContent.about.ctaNews)}
+              </Link>
+            </div>
+          </article>
         </div>
       </section>
 
