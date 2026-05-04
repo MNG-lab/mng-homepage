@@ -300,21 +300,6 @@ const styles = {
     lineHeight: typography.lineHeight.relaxed,
     color: "rgba(61,61,61,0.82)",
   },
-  joinCard: {
-    background: colors.surface.card,
-    borderRadius: 18,
-    color: colors.text.primary,
-    border: "1px solid rgba(0,0,0,0.06)",
-    boxShadow: "0 8px 28px rgba(11,29,58,0.05)",
-    padding: 28,
-  },
-  joinText: {
-    color: "rgba(61,61,61,0.72)",
-    marginTop: 0,
-    marginBottom: spacing[5],
-    lineHeight: typography.lineHeight.relaxed,
-    maxWidth: 780,
-  },
   fadeUpOn: {
     opacity: 1,
     transform: "translateY(0)",
@@ -429,7 +414,6 @@ export default function HomePage() {
   const researchGridStyle = isMobile ? { ...styles.researchGrid, gridTemplateColumns: "1fr" } : styles.researchGrid;
   const researchCardStyle = isMobile ? { ...styles.researchCard, padding: spacing[5] } : styles.researchCard;
   const newsGridStyle = isMobile ? { ...styles.newsGrid, gridTemplateColumns: "1fr" } : styles.newsGrid;
-  const joinCardStyle = isMobile ? { ...styles.joinCard, padding: 20, borderRadius: 14 } : styles.joinCard;
 
   return (
     <>
@@ -486,9 +470,6 @@ export default function HomePage() {
             <p style={styles.paragraph}>{t(homeContent.about.paragraphs[0])}</p>
             <p style={{ ...styles.paragraph, ...styles.muted }}>{t(homeContent.about.paragraphs[1])}</p>
             <div style={styles.ctaRow}>
-              <Link to={ROUTES.join} style={ctaPrimaryStyle}>
-                {t(homeContent.about.ctaJoin)}
-              </Link>
               <Link
                 to={`${ROUTES.home}#news`}
                 style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
@@ -584,28 +565,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="join" style={sectionStyle}>
-        <div style={styles.sectionInner}>
-          <h2 style={sectionTitleStyle}>
-            {t(homeContent.join.title)} <span style={styles.pill}>{t(homeContent.join.pill)}</span>
-          </h2>
-
-          <article style={joinCardStyle}>
-            <p style={styles.joinText}>{t(homeContent.join.description)}</p>
-            <div style={styles.ctaRow}>
-              <Link to={ROUTES.join} style={ctaPrimaryStyle}>
-                {t(homeContent.join.ctaPrimary)} →
-              </Link>
-              <Link
-                to={ROUTES.contact}
-                style={{ ...ctaPrimaryStyle, background: colors.surface.card, color: colors.brand.navy }}
-              >
-                {t(homeContent.join.ctaSecondary)}
-              </Link>
-            </div>
-          </article>
-        </div>
-      </section>
     </>
   );
 }

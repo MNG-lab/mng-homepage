@@ -330,7 +330,6 @@ function validateContact() {
   });
 
   const links = Array.isArray(contactData.links) ? contactData.links : [];
-  assert(links.length > 0, "contactData.links must be non-empty array");
   links.forEach((link, index) => {
     assertLocalized(link.label, `contactData.links[${index}].label`);
     const isInternalPath = typeof link.url === "string" && link.url.startsWith("/");

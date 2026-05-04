@@ -16,13 +16,13 @@ export const PAGE_SEO = {
   home: {
     ko: {
       title: "MNG Lab | 연세대학교",
-      description: "MNG Lab은 연세대학교 생화학과에서 일차섬모, 희귀질환, 대사질환을 연구하는 분자신경유전학 연구실입니다.",
-      keywords: "MNG Lab, 연세대학교, 생화학과, 분자신경유전학, 일차섬모, 희귀질환, 대사질환",
+      description: "MNG Lab은 연세대학교 생화학과에서 희귀 유전질환, 비만, 대사질환, 노화 관련 질환 진행을 연구하는 대사 및 유전질환 연구실입니다.",
+      keywords: "MNG Lab, Metabolic and Genetic disorders Lab, 연세대학교, 생화학과, 희귀 유전질환, 비만, 대사질환, 노화",
     },
     en: {
       title: "MNG Lab | Yonsei University",
-      description: "MNG Lab is a Molecular NeuroGenetics laboratory at Yonsei University studying primary cilia, rare diseases, and metabolic disorders.",
-      keywords: "MNG Lab, Yonsei University, Biochemistry, Molecular NeuroGenetics, Primary Cilia, Rare Disease, Metabolic Disease",
+      description: "MNG Lab is the Metabolic and Genetic disorders Lab at Yonsei University, studying rare genetic diseases, obesity, metabolic disorders, and age-related disease progression.",
+      keywords: "MNG Lab, Metabolic and Genetic disorders Lab, Yonsei University, Biochemistry, Rare Genetic Disease, Obesity, Metabolic Disease, Aging",
     },
   },
   research: {
@@ -52,13 +52,13 @@ export const PAGE_SEO = {
   professor: {
     ko: {
       title: "Professor | MNG Lab",
-      description: "DGLab 책임교수 소개와 연구 방향을 안내합니다.",
-      keywords: "MNG Lab Professor, DGLab PI, 고혁완, Hyuk Wan Ko",
+      description: "MNG Lab 책임교수 소개와 연구 방향을 안내합니다.",
+      keywords: "MNG Lab Professor, MNG Lab PI, 고혁완, Hyuk Wan Ko",
     },
     en: {
       title: "Professor | MNG Lab",
-      description: "Professor profile and research direction of DGLab.",
-      keywords: "MNG Lab Professor, DGLab PI, Hyuk Wan Ko",
+      description: "Professor profile and research direction of MNG Lab.",
+      keywords: "MNG Lab Professor, MNG Lab PI, Hyuk Wan Ko",
     },
   },
   members: {
@@ -107,18 +107,6 @@ export const PAGE_SEO = {
       title: "Contact | MNG Lab",
       description: "Contact information and directions for MNG Lab.",
       keywords: "MNG Lab Contact, Location, Inquiry",
-    },
-  },
-  join: {
-    ko: {
-      title: "Join Us | MNG Lab",
-      description: "MNG Lab 합류를 위한 안내 및 모집 정보를 제공합니다.",
-      keywords: "MNG Lab 모집, Join Us, 연구실 지원",
-    },
-    en: {
-      title: "Join Us | MNG Lab",
-      description: "Information on opportunities to join MNG Lab.",
-      keywords: "MNG Lab Recruitment, Join Us, Opportunities",
     },
   },
   notFound: {

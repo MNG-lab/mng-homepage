@@ -9,7 +9,7 @@ const ROOT_DIR = path.resolve(__dirname, "..");
 const DEFAULT_BASE_URL = "https://mng-lab.github.io/mng-homepage";
 const DEFAULT_REPORT_PATH = path.join(ROOT_DIR, "content", "p5-route-verification-report.md");
 
-const CANONICAL_ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact", "/join-us"];
+const CANONICAL_ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact"];
 const LEGACY_ENTRY_ROUTES = [
   "/publications/publications",
   "/aitem-1",

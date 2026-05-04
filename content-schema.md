@@ -1,4 +1,4 @@
-# DGLab Content Schema (P0)
+# MNG Lab Content Schema (P0)
 
 Date: 2026-03-02  
 Principle: separate content from presentation, and manage user-facing text as `ko/en` pairs.
@@ -18,8 +18,7 @@ Principle: separate content from presentation, and manage user-facing text as `k
   },
   "publications": [],
   "gallery": [],
-  "contact": {},
-  "join": {}
+  "contact": {}
 }
 ```
 
@@ -129,7 +128,6 @@ content/
   publications.json
   gallery.json
   contact.json
-  join.json
 ```
 
 ## 5) Migration Checklist (Schema)

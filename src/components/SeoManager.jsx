@@ -45,7 +45,6 @@ function resolveSeoKey(pathname) {
   if (pathname === ROUTES.publications || pathname === "/publications/publications") return "publications";
   if (pathname === ROUTES.gallery) return "gallery";
   if (pathname === ROUTES.contact) return "contact";
-  if (pathname === ROUTES.join) return "join";
   return "notFound";
 }
 
