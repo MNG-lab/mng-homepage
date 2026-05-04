@@ -10,7 +10,7 @@ const REPORT_PATH = path.join(ROOT_DIR, "content", "qa-smoke-p4.md");
 const HOST = "127.0.0.1";
 const PORT = 4174;
 const BASE_URL = `http://${HOST}:${PORT}`;
-const ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact", "/join-us"];
+const ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact"];
 
 function runCommand(command, args, options = {}) {
   return new Promise((resolve, reject) => {

@@ -1,4 +1,4 @@
-# DGLab URL Mapping (P0)
+# MNG Lab URL Mapping (P0)
 
 Date: 2026-03-02  
 Goal: migrate to the new information architecture without losing legacy URL value.
@@ -14,7 +14,6 @@ Goal: migrate to the new information architecture without losing legacy URL valu
 | publications | `/publications` | Year and filter support |
 | gallery | `/gallery` | Year and category |
 | contact | `/contact` | Address / email / map |
-| join | `/join-us` | Recruitment / FAQ |
 
 ## 2) Legacy -> New Mapping
 

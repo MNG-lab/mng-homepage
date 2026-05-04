@@ -7,7 +7,6 @@ export const ROUTES = {
   publications: "/publications",
   gallery: "/gallery",
   contact: "/contact",
-  join: "/join-us",
 };
 
 export function getResearchDetailPath(slug) {
@@ -39,12 +38,10 @@ export const PRIMARY_NAV_ITEMS = [
   { key: "publications", path: ROUTES.publications },
   { key: "gallery", path: ROUTES.gallery },
   { key: "contact", path: ROUTES.contact },
-  { key: "join", path: ROUTES.join },
 ];
 
 export const HOME_ANCHOR_ITEMS = [
   { key: "about", path: `${ROUTES.home}#about` },
   { key: "research-summary", path: `${ROUTES.home}#research-summary` },
   { key: "news", path: `${ROUTES.home}#news` },
-  { key: "join", path: `${ROUTES.home}#join` },
 ];

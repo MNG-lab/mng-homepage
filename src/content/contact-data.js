@@ -82,10 +82,5 @@ export const contactData = {
     ko: "바로가기",
     en: "Quick Links",
   },
-  links: [
-    {
-      label: { ko: "지원 안내", en: "Join Us" },
-      url: "/join-us",
-    },
-  ],
+  links: [],
 };

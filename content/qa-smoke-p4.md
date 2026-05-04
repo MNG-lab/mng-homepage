@@ -1,11 +1,11 @@
 # P4 Route Smoke Test
 
-Date: 2026-03-03
+Date: 2026-05-04
 Base URL: http://127.0.0.1:4174
 
 ## Summary
 
-- Passed: 8/8
+- Passed: 7/7
 
 ## Route Status
 
@@ -18,4 +18,3 @@ Base URL: http://127.0.0.1:4174
 | /publications | 200 | yes | PASS |
 | /gallery | 200 | yes | PASS |
 | /contact | 200 | yes | PASS |
-| /join-us | 200 | yes | PASS |

@@ -180,26 +180,20 @@ const styles = {
   },
 };
 
-function navStyle(isActive, isJoin, isMobile) {
+function navStyle(isActive, isMobile) {
   return {
     textDecoration: "none",
     fontSize: typography.fontSize.xs,
     padding: isMobile ? "0.42rem 0.68rem" : "0.5rem 0.75rem",
     borderRadius: 9999,
     border: `1px solid ${isActive ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.14)"}`,
-    color: isJoin
-      ? isActive
-        ? colors.text.inverse
-        : colors.brand.gold
-      : isActive
-        ? colors.text.inverse
-        : "rgba(255,255,255,0.72)",
+    color: isActive ? colors.text.inverse : "rgba(255,255,255,0.72)",
     background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
     transition: "all 0.2s ease",
   };
 }
 
-function mobileNavStyle(isActive, isJoin) {
+function mobileNavStyle(isActive) {
   return {
     textDecoration: "none",
     fontSize: typography.fontSize.xs,
@@ -207,13 +201,7 @@ function mobileNavStyle(isActive, isJoin) {
     padding: "0.52rem 0.6rem",
     borderRadius: 9999,
     border: `1px solid ${isActive ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.14)"}`,
-    color: isJoin
-      ? isActive
-        ? colors.text.inverse
-        : colors.brand.gold
-      : isActive
-        ? colors.text.inverse
-        : "rgba(255,255,255,0.78)",
+    color: isActive ? colors.text.inverse : "rgba(255,255,255,0.78)",
     background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
   };
 }
@@ -313,7 +301,7 @@ export default function SiteLayout() {
                     <NavLink
                       key={item.key}
                       to={item.path}
-                      style={({ isActive }) => mobileNavStyle(isActive, item.key === "join")}
+                      style={({ isActive }) => mobileNavStyle(isActive)}
                       end={item.path === ROUTES.home}
                     >
                       {uiCopy.nav[item.key].en}
@@ -354,7 +342,7 @@ export default function SiteLayout() {
                       <NavLink
                         key={item.key}
                         to={item.path}
-                        style={({ isActive }) => navStyle(isActive, item.key === "join", false)}
+                        style={({ isActive }) => navStyle(isActive, false)}
                         end={item.path === ROUTES.home}
                       >
                       {uiCopy.nav[item.key].en}

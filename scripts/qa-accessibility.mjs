@@ -12,7 +12,7 @@ const REPORT_PATH = path.join(ROOT_DIR, "content", "qa-accessibility-report.md")
 const HOST = "127.0.0.1";
 const PORT = 4178;
 const BASE_URL = `http://${HOST}:${PORT}`;
-const ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact", "/join-us"];
+const ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact"];
 
 const AXE_RULES = ["heading-order", "image-alt", "color-contrast"];
 

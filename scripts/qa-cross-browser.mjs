@@ -11,7 +11,7 @@ const REPORT_PATH = path.join(ROOT_DIR, "content", "qa-cross-browser-report.md")
 const HOST = "127.0.0.1";
 const PORT = 4177;
 const BASE_URL = `http://${HOST}:${PORT}`;
-const ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact", "/join-us"];
+const ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact"];
 const VIEWPORT = { width: 1440, height: 900 };
 
 const BROWSERS = [

@@ -185,8 +185,9 @@ export default function ContactPage() {
           <span style={styles.label}>{t(contactData.officeHoursTitle)}:</span> {t(contactData.officeHours)}
         </p>
 
-        <div style={styles.linksWrap}>
-          {contactData.links.map((item) => {
+        {contactData.links.length > 0 ? (
+          <div style={styles.linksWrap}>
+            {contactData.links.map((item) => {
             const isInternal = item.url.startsWith("/");
             if (isInternal) {
               return (
@@ -204,11 +205,12 @@ export default function ContactPage() {
                 style={styles.pillLink}
                 aria-label={`${t(item.label)}${language === "ko" ? " (새 탭)" : " (new tab)"}`}
               >
-                {t(item.label)}
-              </a>
-            );
-          })}
-        </div>
+              {t(item.label)}
+            </a>
+          );
+            })}
+          </div>
+        ) : null}
       </article>
     </section>
   );

@@ -29,7 +29,6 @@ function buildSitemapXml(siteUrl) {
     ROUTES.publications,
     ROUTES.gallery,
     ROUTES.contact,
-    ROUTES.join,
   ];
 
   const urls = canonicalRoutes

@@ -12,7 +12,6 @@ const MembersPage = lazy(() => import("./pages/MembersPage"));
 const PublicationsPage = lazy(() => import("./pages/PublicationsPage"));
 const GalleryPage = lazy(() => import("./pages/GalleryPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
-const JoinUsPage = lazy(() => import("./pages/JoinUsPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 
 const loadingStyles = {
@@ -70,7 +69,6 @@ export default function App() {
             <Route path={ROUTES.publications} element={<PublicationsPage />} />
             <Route path={ROUTES.gallery} element={<GalleryPage />} />
             <Route path={ROUTES.contact} element={<ContactPage />} />
-            <Route path={ROUTES.join} element={<JoinUsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

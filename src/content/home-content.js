@@ -1,8 +1,8 @@
 export const homeContent = {
   hero: {
     kicker: {
-      ko: "Molecular NeuroGenetics Lab",
-      en: "Molecular NeuroGenetics Lab",
+      ko: "Metabolic and Genetic disorders Lab",
+      en: "Metabolic and Genetic disorders Lab",
     },
     ctaPrimary: {
       ko: "연구 보기",
@@ -18,52 +18,52 @@ export const homeContent = {
         label: { ko: "희귀질환", en: "Rare Diseases" },
         icon: "",
         title: {
-          ko: "희귀질환 및 섬모병 연구",
-          en: "Rare Diseases & Ciliopathies",
+          ko: "섬모 생물학 및 희귀 유전질환",
+          en: "Cilia Biology & Rare Genetic Diseases",
         },
         subtitle: {
-          ko: "유전질환의 분자 기전을 규명합니다",
-          en: "Unraveling the molecular basis of genetic disorders",
+          ko: "섬모와 유전자 변이가 질환으로 이어지는 과정을 밝힙니다",
+          en: "Connecting cilia and genetic defects to human disease",
         },
         description: {
-          ko: "일차섬모의 구조와 기능이 Carpenter syndrome 및 두개골조기유합증과 같은 희귀 유전질환에 어떻게 연결되는지 분석하며, BMP signaling과 ciliogenesis 조절 인자를 발굴합니다.",
-          en: "We investigate how primary cilia structure and function contribute to rare genetic conditions including Carpenter syndrome and craniosynostosis, identifying novel regulators of BMP signaling and ciliogenesis.",
+          ko: "세포 신호전달과 조직 항상성에 중요한 섬모가 어떻게 형성·유지·조절되는지, 그리고 섬모 관련 유전자 변이가 희귀 유전질환으로 이어지는지 연구합니다.",
+          en: "We study how cilia are formed, maintained, and regulated, and how mutations in cilia-related genes lead to rare genetic diseases.",
         },
         gradient: "linear-gradient(135deg, #0B1D3A 0%, #1a3a5c 50%, #2d5a7b 100%)",
       },
       {
         id: "metabolic",
-        label: { ko: "대사질환", en: "Metabolic Disease" },
+        label: { ko: "대사 항상성", en: "Metabolic Homeostasis" },
         icon: "⚕️",
         title: {
-          ko: "비만 및 대사질환 연구",
-          en: "Obesity & Metabolic Disorders",
+          ko: "비만 및 대사 항상성",
+          en: "Obesity & Metabolic Homeostasis",
         },
         subtitle: {
-          ko: "대사질환 치료 타깃을 탐색합니다",
-          en: "Discovering new therapeutic targets for metabolic diseases",
+          ko: "세포 수준의 불균형이 전신 대사질환으로 이어지는 과정을 탐구합니다",
+          en: "Tracing cellular imbalance to whole-body metabolic disease",
         },
         description: {
-          ko: "CEP89, NCS1 등 섬모 단백질이 ER-mitochondria contact sites와 mitophagy를 통해 비만 및 대사 항상성에 미치는 영향을 규명합니다.",
-          en: "Our research explores how ciliary proteins such as CEP89 and NCS1 regulate mitophagy and ER-mitochondria contact sites, revealing novel mechanisms underlying obesity and metabolic homeostasis.",
+          ko: "세포소기관 기능, 세포 신호전달, 대사 경로가 지방조직 생물학, 에너지 소비, 전신 대사 항상성에 미치는 영향을 연구합니다.",
+          en: "We investigate how organelle function, cellular signaling, and metabolic pathways influence adipose tissue biology, energy expenditure, and metabolic homeostasis.",
         },
         gradient: "linear-gradient(135deg, #1a3a5c 0%, #0B1D3A 50%, #2a1a4a 100%)",
       },
       {
         id: "aging",
-        label: { ko: "노화/섬유화", en: "Fibrosis & Aging" },
+        label: { ko: "노화 대사질환", en: "Age-Related Disorders" },
         icon: "",
         title: {
-          ko: "간섬유화 및 노화 연구",
-          en: "Liver Fibrosis & Aging",
+          ko: "노화 관련 대사질환",
+          en: "Age-Related Metabolic Disorders",
         },
         subtitle: {
-          ko: "항노화 전략과 섬모 대사를 연결합니다",
-          en: "Targeting cilia metabolism for anti-aging strategies",
+          ko: "노화와 대사 스트레스가 질병 진행을 악화시키는 기전을 연구합니다",
+          en: "Understanding how aging and metabolic stress drive disease progression",
         },
         description: {
-          ko: "일차섬모 대사를 기반으로 항노화 기술을 개발하고, 간섬유화 진행 기전 및 장 발달 과정에서의 Cilk1 기능을 연구합니다.",
-          en: "We develop anti-aging technologies through primary cilia metabolism and investigate the mechanisms of hepatic fibrosis progression, with a focus on intestinal development and villus morphogenesis.",
+          ko: "노화가 염증, 조직 복구 저하, 대사 불균형과 상호작용해 간섬유화 및 대사질환 진행을 촉진하는 과정을 연구합니다.",
+          en: "We study how aging interacts with inflammation, impaired tissue repair, and metabolic imbalance to promote liver fibrosis and metabolic disease progression.",
         },
         gradient: "linear-gradient(135deg, #2a1a4a 0%, #1a3a5c 50%, #0B1D3A 100%)",
       },
@@ -77,15 +77,14 @@ export const homeContent = {
     pill: { ko: "소개", en: "About" },
     paragraphs: [
       {
-        ko: "MNG Lab은 일차섬모(primary cilia)의 생물학적 기능을 중심으로 발생, 신호전달, 대사 조절의 핵심 기전을 연구합니다.",
-        en: "The Molecular NeuroGenetics Laboratory at Yonsei University focuses on understanding the biology and functions of primary cilia - organelles essential for development, signaling, and metabolic regulation.",
+        ko: "MNG Lab(Metabolic and Genetic disorders Lab)은 세포가 생물학적 균형을 유지하는 방식과, 이 균형이 무너질 때 희귀 유전질환·비만·대사질환·노화 관련 질환 진행으로 이어지는 과정을 연구합니다.",
+        en: "The MNG Lab (Metabolic and Genetic disorders Lab) studies how cells maintain biological balance and how disruption of this balance leads to rare genetic diseases, obesity, metabolic disorders, and age-related disease progression.",
       },
       {
-        ko: "기초 섬모생물학을 희귀질환/대사질환의 중개연구로 확장하여 질환 메커니즘을 밝히고 치료 전략으로 연결하는 것을 목표로 합니다.",
-        en: "Our research spans from fundamental cilia biology to translational studies on rare genetic disorders and metabolic diseases, utilizing advanced molecular, genetic, and imaging techniques to uncover disease mechanisms and explore therapeutic strategies.",
+        ko: "분자생물학, 세포생물학, 유전학, 질환 모델, 중개연구 접근을 결합해 세포소기관 기능 이상, 유전적 결함, 대사 경로, 노화 과정이 인간 질환에 기여하는 기전을 밝히고자 합니다.",
+        en: "By combining molecular biology, cell biology, genetics, disease models, and translational approaches, we aim to uncover how organelle dysfunction, genetic defects, metabolic pathways, and aging-related processes contribute to human disease.",
       },
     ],
-    ctaJoin: { ko: "Join Us", en: "Join Us" },
     ctaNews: { ko: "Lab News", en: "Lab News" },
   },
   profile: {
@@ -101,18 +100,17 @@ export const homeContent = {
         number: "01",
         color: "cilia",
         title: {
-          ko: "Cilia Biology & Rare Genetic Diseases",
+          ko: "섬모 생물학 및 희귀 유전질환",
           en: "Cilia Biology & Rare Genetic Diseases",
         },
         description: {
-          ko: "centriole appendage proteins의 ciliogenesis 조절 기전과 Carpenter syndrome의 BMP signaling 이상을 동물모델 기반으로 분석합니다.",
-          en: "Investigating the roles of centriole appendage proteins in ciliogenesis using mouse models, and elucidating how MEGF8 and RAB23 cause craniosynostosis through distinct BMP signaling mechanisms.",
+          ko: "섬모가 세포 신호전달과 조직 항상성을 조절하는 방식, 그리고 섬모 관련 유전자 변이가 희귀 유전질환으로 이어지는 과정을 연구합니다.",
+          en: "Studying how cilia regulate cellular signaling and tissue homeostasis, and how cilia-related gene mutations lead to rare genetic diseases.",
         },
         tags: [
-          { ko: "Primary Cilia", en: "Primary Cilia" },
-          { ko: "Ciliogenesis", en: "Ciliogenesis" },
-          { ko: "Craniosynostosis", en: "Craniosynostosis" },
-          { ko: "BMP Signaling", en: "BMP Signaling" },
+          { ko: "Cilia Biology", en: "Cilia Biology" },
+          { ko: "Rare Genetic Diseases", en: "Rare Genetic Diseases" },
+          { ko: "Ciliopathies", en: "Ciliopathies" },
         ],
       },
       {
@@ -120,17 +118,17 @@ export const homeContent = {
         number: "02",
         color: "metab",
         title: {
-          ko: "Obesity & Metabolic Regulation",
-          en: "Obesity & Metabolic Regulation",
+          ko: "비만 및 대사 항상성",
+          en: "Obesity & Metabolic Homeostasis",
         },
         description: {
-          ko: "CEP89 결손이 ER-미토콘드리아 접촉부위 기반 mitophagy를 통해 비만 표현형으로 이어지는 경로를 규명합니다.",
-          en: "Uncovering how CEP89 deficiency drives obesity through impaired mitophagy via NCS1 at ER-mitochondria contact sites, revealing new therapeutic targets for metabolic diseases.",
+          ko: "세포소기관 기능, 세포 신호전달, 대사 경로가 지방조직 생물학과 전신 대사 균형에 미치는 영향을 분석합니다.",
+          en: "Analyzing how organelle function, cellular signaling, and metabolic pathways influence adipose tissue biology and whole-body metabolic balance.",
         },
         tags: [
-          { ko: "Mitophagy", en: "Mitophagy" },
-          { ko: "ER-Mito Contact Sites", en: "ER-Mito Contact Sites" },
+          { ko: "Obesity", en: "Obesity" },
           { ko: "Metabolic Homeostasis", en: "Metabolic Homeostasis" },
+          { ko: "Organelle Biology", en: "Organelle Biology" },
         ],
       },
       {
@@ -138,17 +136,17 @@ export const homeContent = {
         number: "03",
         color: "aging",
         title: {
-          ko: "Liver Fibrosis & Anti-aging",
-          en: "Liver Fibrosis & Anti-aging",
+          ko: "노화 관련 대사질환",
+          en: "Age-Related Metabolic Disorders",
         },
         description: {
-          ko: "일차섬모 대사 기반 항노화 연구와 함께 간섬유화 진행 및 장 융모 발생에서 Cilk1 기능을 연구합니다.",
-          en: "Developing anti-aging technologies through primary cilia metabolism and investigating the role of Cilk1 in intestinal development and villus morphogenesis.",
+          ko: "노화가 대사 스트레스, 염증, 조직 복구 저하와 상호작용해 간섬유화 및 대사질환 진행을 악화시키는 기전을 연구합니다.",
+          en: "Studying how aging interacts with metabolic stress, inflammation, and impaired tissue repair to worsen liver fibrosis and metabolic disease progression.",
         },
         tags: [
-          { ko: "Hepatic Fibrosis", en: "Hepatic Fibrosis" },
           { ko: "Aging", en: "Aging" },
-          { ko: "Intestinal Development", en: "Intestinal Development" },
+          { ko: "Metabolic Disorders", en: "Metabolic Disorders" },
+          { ko: "Liver Fibrosis", en: "Liver Fibrosis" },
         ],
       },
     ],
@@ -156,15 +154,5 @@ export const homeContent = {
   news: {
     title: { ko: "Lab News", en: "Lab News" },
     pill: { ko: "Timeline", en: "Timeline" },
-  },
-  join: {
-    title: { ko: "Join Our Lab", en: "Join Our Lab" },
-    pill: { ko: "Recruiting", en: "Recruiting" },
-    description: {
-      ko: "※ 이 섹션은 기존 홈페이지에 없는 신규 영역입니다. 모집 공고 문구와 지원 요건, 연락처 링크를 운영용으로 입력해 주세요.",
-      en: "※ 이 섹션은 기존 홈페이지에 없는 신규 영역입니다. 모집 공고 문구와 지원 요건, 연락처 링크를 운영용으로 입력해 주세요.",
-    },
-    ctaPrimary: { ko: "Open Positions", en: "Open Positions" },
-    ctaSecondary: { ko: "Contact Us", en: "Contact Us" },
   },
 };
