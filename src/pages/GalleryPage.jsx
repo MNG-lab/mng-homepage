@@ -48,7 +48,7 @@ const styles = {
     textAlign: "left",
   },
   albumCardActive: {
-    borderColor: colors.brand.accent,
+    border: `1px solid ${colors.brand.accent}`,
     boxShadow: "0 10px 26px rgba(11,29,58,0.08)",
   },
   albumCoverWrap: {
