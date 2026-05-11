@@ -33,13 +33,13 @@ const styles = {
   albumGrid: {
     marginTop: spacing[6],
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: spacing[4],
   },
   albumCard: {
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: spacing[4],
     display: "flex",
     flexDirection: "column",
@@ -48,11 +48,11 @@ const styles = {
     textAlign: "left",
   },
   albumCardActive: {
-    borderColor: colors.brand.accent,
+    border: `1px solid ${colors.brand.accent}`,
     boxShadow: "0 10px 26px rgba(11,29,58,0.08)",
   },
   albumCoverWrap: {
-    borderRadius: 10,
+    borderRadius: 6,
     overflow: "hidden",
     border: `1px solid ${colors.border.soft}`,
     aspectRatio: "4 / 3",
@@ -77,10 +77,6 @@ const styles = {
   },
   viewerSection: {
     marginTop: spacing[8],
-    background: colors.surface.card,
-    border: `1px solid ${colors.border.soft}`,
-    borderRadius: 14,
-    padding: spacing[5],
   },
   viewerHeader: {
     display: "flex",
@@ -98,13 +94,13 @@ const styles = {
   photoGrid: {
     marginTop: spacing[5],
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: spacing[4],
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gap: spacing[3],
   },
   photoCard: {
-    background: colors.surface.base,
+    background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
-    borderRadius: 10,
+    borderRadius: 8,
     overflow: "hidden",
   },
   photoWrap: {
@@ -130,10 +126,25 @@ const styles = {
   },
   caption: {
     margin: 0,
-    padding: spacing[2],
+    padding: `${spacing[3]} ${spacing[3]} ${spacing[4]}`,
     color: colors.text.secondary,
     fontSize: typography.fontSize.xs,
     lineHeight: typography.lineHeight.relaxed,
+  },
+  captionTitle: {
+    display: "block",
+    color: colors.text.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    lineHeight: typography.lineHeight.normal,
+  },
+  captionYear: {
+    display: "block",
+    marginTop: 2,
+    color: colors.text.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    lineHeight: typography.lineHeight.normal,
   },
   lightboxOverlay: {
     position: "fixed",
@@ -147,21 +158,26 @@ const styles = {
   },
   lightboxPanel: {
     position: "relative",
-    maxWidth: "min(94vw, 1600px)",
+    width: "min(94vw, 1320px)",
     maxHeight: "90vh",
     display: "flex",
     flexDirection: "column",
     gap: spacing[3],
     alignItems: "center",
   },
+  lightboxImageShell: {
+    width: "100%",
+    height: "min(80vh, 860px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   lightboxImage: {
-    maxWidth: "100%",
-    maxHeight: "84vh",
-    width: "auto",
-    height: "auto",
-    borderRadius: 10,
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+    borderRadius: 8,
     boxShadow: "0 20px 56px rgba(0,0,0,0.42)",
-    background: "#111",
   },
   lightboxCaption: {
     margin: 0,
@@ -201,6 +217,35 @@ function toLightboxSrc(src) {
   return src.replace(/w_\d+,h_\d+,/i, "w_1280,h_1280,").replace(/q_\d+/i, "q_80");
 }
 
+function getAlbumCover(album) {
+  return album.coverImage ?? album.images?.[0];
+}
+
+function getAlbumYearLabel(album) {
+  const years = (album.images ?? []).map((image) => image.year).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!years.length) return String(album.year);
+  const first = years[0];
+  const last = years[years.length - 1];
+  return first === last ? String(first) : `${first}-${last}`;
+}
+
+function getImageYear(image, album) {
+  return Number.isFinite(image?.year) ? String(image.year) : String(album.year);
+}
+
+function matchesLegacyQuery(album, querySelector) {
+  const queries = [album.legacyQuery, ...(album.legacyQueries ?? [])].filter(Boolean);
+  const candidates = queries.length ? queries : [{ year: album.year, category: album.category }];
+
+  return candidates.some((query) => {
+    const legacyYear = Number(query.year ?? album.year);
+    const legacyCategory = String(query.category ?? album.category);
+    const yearMatch = querySelector.year === null || legacyYear === querySelector.year;
+    const categoryMatch = !querySelector.category || legacyCategory === querySelector.category;
+    return yearMatch && categoryMatch;
+  });
+}
+
 export default function GalleryPage() {
   const { language, t } = useLanguage();
   const [searchParams] = useSearchParams();
@@ -230,13 +275,7 @@ export default function GalleryPage() {
     if (!albums.length) return null;
     if (!querySelector.year && !querySelector.category) return null;
 
-    const matched = albums.find((album) => {
-      const legacyYear = Number(album.legacyQuery?.year ?? album.year);
-      const legacyCategory = String(album.legacyQuery?.category ?? album.category);
-      const yearMatch = querySelector.year === null || legacyYear === querySelector.year;
-      const categoryMatch = !querySelector.category || legacyCategory === querySelector.category;
-      return yearMatch && categoryMatch;
-    });
+    const matched = albums.find((album) => matchesLegacyQuery(album, querySelector));
     return matched?.id ?? null;
   }, [albums, querySelector.category, querySelector.year]);
 
@@ -319,6 +358,7 @@ export default function GalleryPage() {
       <div style={styles.albumGrid} role="tablist" aria-label={language === "ko" ? "사진첩 선택" : "Album selection"}>
         {albums.map((album) => {
           const selected = album.id === activeAlbum.id;
+          const coverImage = getAlbumCover(album);
           return (
             <button
               key={album.id}
@@ -331,14 +371,14 @@ export default function GalleryPage() {
             >
               <div style={styles.albumCoverWrap}>
                 <img
-                  src={resolveContentImageSrc(album.images[0].src)}
-                  alt={t(album.images[0].alt)}
+                  src={resolveContentImageSrc(coverImage.src)}
+                  alt={t(coverImage.alt)}
                   style={styles.albumCover}
                   loading="lazy"
                 />
               </div>
               <p style={styles.albumMeta}>
-                {album.year} · {album.images.length} {t(copy.photos)}
+                {getAlbumYearLabel(album)} · {album.images.length} {t(copy.photos)}
               </p>
               <h2 style={styles.albumTitle}>{t(album.title)}</h2>
             </button>
@@ -364,7 +404,12 @@ export default function GalleryPage() {
                   <img src={resolveContentImageSrc(image.src)} alt={t(image.alt)} style={styles.photo} loading="lazy" />
                 </button>
               </div>
-              {hidePhotoCaption ? null : <figcaption style={styles.caption}>{t(image.caption)}</figcaption>}
+              {hidePhotoCaption ? null : (
+                <figcaption style={styles.caption}>
+                  <span style={styles.captionTitle}>{t(image.caption)}</span>
+                  <span style={styles.captionYear}>{getImageYear(image, activeAlbum)}</span>
+                </figcaption>
+              )}
             </figure>
           ))}
         </div>
@@ -387,14 +432,20 @@ export default function GalleryPage() {
             >
               ×
             </button>
-            <img
-              src={lightboxDisplaySrc || resolveContentImageSrc(lightboxImage.src)}
-              alt={t(lightboxImage.alt)}
-              style={styles.lightboxImage}
-              loading="eager"
-              decoding="async"
-            />
-            {hidePhotoCaption ? null : <p style={styles.lightboxCaption}>{t(lightboxImage.caption)}</p>}
+            <div style={styles.lightboxImageShell}>
+              <img
+                src={lightboxDisplaySrc || resolveContentImageSrc(lightboxImage.src)}
+                alt={t(lightboxImage.alt)}
+                style={styles.lightboxImage}
+                loading="eager"
+                decoding="async"
+              />
+            </div>
+            {hidePhotoCaption ? null : (
+              <p style={styles.lightboxCaption}>
+                {t(lightboxImage.caption)} · {getImageYear(lightboxImage, activeAlbum)}
+              </p>
+            )}
           </div>
         </div>
       ) : null}

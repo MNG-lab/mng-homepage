@@ -124,11 +124,26 @@ const styles = {
     margin: 0,
     color: colors.brand.accent,
     fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: typography.fontWeight.bold,
+  },
+  listPrimary: {
+    margin: `${spacing[1]} 0 0`,
+    color: colors.text.primary,
+    fontSize: "0.95rem",
+    fontWeight: typography.fontWeight.bold,
+    lineHeight: typography.lineHeight.normal,
+  },
+  listSecondary: {
+    margin: `${spacing[1]} 0 0`,
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.xs,
+    lineHeight: typography.lineHeight.relaxed,
   },
   listText: {
     margin: `${spacing[1]} 0 0`,
     color: colors.text.secondary,
+    fontSize: typography.fontSize.xs,
+    lineHeight: typography.lineHeight.relaxed,
   },
   listViewport: {
     overflow: "hidden",
@@ -178,6 +193,13 @@ const copy = {
   less: { ko: "접기", en: "Show Less" },
 };
 
+function getLocalizedEntry(item, key, language) {
+  const value = item?.[key];
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  return value[language] ?? value.en ?? value.ko ?? "";
+}
+
 export default function ProfessorPage() {
   const { language, t } = useLanguage();
   const { isMobile } = useViewport();
@@ -206,6 +228,22 @@ export default function ProfessorPage() {
   const gridStyle = isMobile ? { ...styles.grid, gridTemplateColumns: "1fr", gap: spacing[3] } : styles.grid;
   const cardStyle = isMobile ? { ...styles.card, padding: spacing[4] } : styles.card;
   const linksStyle = isMobile ? { ...styles.links, marginTop: spacing[5], gap: spacing[2] } : styles.links;
+  const renderProfileEntry = (item, primaryKey, secondaryKey, options = {}) => {
+    const primary = getLocalizedEntry(item, primaryKey, language);
+    const secondary = getLocalizedEntry(item, secondaryKey, language);
+    const fallback = t({ ko: item.ko, en: item.en });
+    const showFallback = !primary && !secondary;
+    const primaryStyle = options.subtlePrimary ? styles.listText : styles.listPrimary;
+
+    return (
+      <li key={`${item.period}-${item.en}`} style={styles.listItem}>
+        <p style={styles.listPeriod}>{item.period}</p>
+        {primary ? <p style={primaryStyle}>{primary}</p> : null}
+        {secondary ? <p style={styles.listSecondary}>{secondary}</p> : null}
+        {showFallback ? <p style={styles.listText}>{fallback}</p> : null}
+      </li>
+    );
+  };
 
   return (
     <section style={sectionStyle} aria-labelledby="professor-title">
@@ -245,24 +283,14 @@ export default function ProfessorPage() {
         <article style={{ ...cardStyle, ...equalHeightStyle }}>
           <h2 style={styles.cardTitle}>{t(copy.educationTitle)}</h2>
           <ul style={styles.list}>
-            {education.map((item) => (
-              <li key={`${item.period}-${item.en}`} style={styles.listItem}>
-                <p style={styles.listPeriod}>{item.period}</p>
-                <p style={styles.listText}>{t({ ko: item.ko, en: item.en })}</p>
-              </li>
-            ))}
+            {education.map((item) => renderProfileEntry(item, "degree", "organization"))}
           </ul>
         </article>
 
         <article ref={experienceCardRef} style={cardStyle}>
           <h2 style={styles.cardTitle}>{t(copy.experienceTitle)}</h2>
           <ul style={styles.list}>
-            {visibleExperience.map((item) => (
-              <li key={`${item.period}-${item.en}`} style={styles.listItem}>
-                <p style={styles.listPeriod}>{item.period}</p>
-                <p style={styles.listText}>{t({ ko: item.ko, en: item.en })}</p>
-              </li>
-            ))}
+            {visibleExperience.map((item) => renderProfileEntry(item, "position", "organization"))}
           </ul>
           {hasExpandableExperience ? (
             <button
@@ -279,12 +307,7 @@ export default function ProfessorPage() {
         <article style={{ ...cardStyle, ...equalHeightStyle }}>
           <h2 style={styles.cardTitle}>{t(copy.honorsTitle)}</h2>
           <ul style={styles.list}>
-            {honors.map((item) => (
-              <li key={`${item.period}-${item.en}`} style={styles.listItem}>
-                <p style={styles.listPeriod}>{item.period}</p>
-                <p style={styles.listText}>{t({ ko: item.ko, en: item.en })}</p>
-              </li>
-            ))}
+            {honors.map((item) => renderProfileEntry(item, "award", "", { subtlePrimary: true }))}
           </ul>
         </article>
       </div>

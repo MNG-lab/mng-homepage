@@ -41,11 +41,27 @@ export const professorData = {
   education: [
     {
       period: "1989.03 - 1996.02",
+      degree: {
+        ko: "학사",
+        en: "B.S.",
+      },
+      organization: {
+        ko: "연세대학교 생화학과",
+        en: "Department of Biochemistry, Yonsei University, Seoul, Korea",
+      },
       ko: "연세대학교 생화학과 학사",
       en: "B.S., Department of Biochemistry, Yonsei University, Seoul, Korea",
     },
     {
       period: "1998.09 - 2004.10",
+      degree: {
+        ko: "신경과학 박사",
+        en: "Ph.D., Program in Neuroscience",
+      },
+      organization: {
+        ko: "럿거스대학교 / UMDNJ, NJ, USA (Advisor: Dr. Isaac Edery)",
+        en: "Rutgers University / UMDNJ, NJ, USA (Advisor: Dr. Isaac Edery)",
+      },
       ko: "럿거스대학교 신경과학 박사 (Advisor: Dr. Isaac Edery)",
       en: "Ph.D., Program in Neuroscience, Rutgers University / UMDNJ, NJ, USA (Advisor: Dr. Isaac Edery)",
     },
@@ -53,46 +69,118 @@ export const professorData = {
   experience: [
     {
       period: "2025.09 - Present",
+      position: {
+        ko: "교수",
+        en: "Professor",
+      },
+      organization: {
+        ko: "연세대학교 생명과학기술대학 생화학과",
+        en: "Department of Biochemistry, College of Life Science & Biotechnology, Yonsei University",
+      },
       ko: "교수, 연세대학교 생명과학기술대학 생화학과",
       en: "Professor, Department of Biochemistry, College of Life Science & Biotechnology, Yonsei University",
     },
     {
       period: "2018.03 - 2025.08",
+      position: {
+        ko: "부교수",
+        en: "Associate Professor",
+      },
+      organization: {
+        ko: "연세대학교 생명과학기술대학 생화학과",
+        en: "Department of Biochemistry, College of Life Science & Biotechnology, Yonsei University",
+      },
       ko: "부교수, 연세대학교 생명과학기술대학 생화학과",
       en: "Associate Professor, Department of Biochemistry, College of Life Science & Biotechnology, Yonsei University",
     },
     {
       period: "2012.03 - 2018.02",
+      position: {
+        ko: "부교수",
+        en: "Associate Professor",
+      },
+      organization: {
+        ko: "동국대학교 약학대학",
+        en: "College of Pharmacy, Dongguk University",
+      },
       ko: "부교수, 동국대학교 약학대학",
       en: "Associate Professor, College of Pharmacy, Dongguk University",
     },
     {
       period: "2010.03 - 2012.02",
+      position: {
+        ko: "조교수",
+        en: "Assistant Professor",
+      },
+      organization: {
+        ko: "경희대학교 노인성 및 뇌질환연구소",
+        en: "Age-Related and Brain Diseases Research Center, Kyung Hee University",
+      },
       ko: "조교수, 경희대학교 노인성 및 뇌질환연구소",
       en: "Assistant Professor, Age-Related and Brain Diseases Research Center, Kyung Hee University",
     },
     {
       period: "2009.09 - 2010.02",
+      position: {
+        ko: "연구교수",
+        en: "Research Professor",
+      },
+      organization: {
+        ko: "경희대학교 신경퇴행질환 제어 연구센터",
+        en: "Neurodegeneration Control Research Center, Kyung Hee University",
+      },
       ko: "연구교수, 경희대학교 신경퇴행질환 제어 연구센터",
       en: "Research Professor, Neurodegeneration Control Research Center, Kyung Hee University",
     },
     {
       period: "2005.04 - 2009.08",
+      position: {
+        ko: "박사후연구원",
+        en: "Postdoctoral Fellow",
+      },
+      organization: {
+        ko: "프린스턴대학교 분자생물학과",
+        en: "Department of Molecular Biology, Princeton University, NJ, USA",
+      },
       ko: "박사후연구원, 프린스턴대학교 분자생물학과",
       en: "Postdoctoral Fellow, Department of Molecular Biology, Princeton University, NJ, USA",
     },
     {
       period: "2004.10 - 2005.03",
+      position: {
+        ko: "박사후연구원",
+        en: "Postdoctoral Associate",
+      },
+      organization: {
+        ko: "럿거스대학교 분자생물학·생화학과",
+        en: "Department of Molecular Biology and Biochemistry, Rutgers University, NJ, USA",
+      },
       ko: "박사후연구원, 럿거스대학교 분자생물학·생화학과",
       en: "Postdoctoral Associate, Department of Molecular Biology and Biochemistry, Rutgers University, NJ, USA",
     },
     {
       period: "1999.09 - 2004.10",
+      position: {
+        ko: "대학원 조교",
+        en: "Graduate Assistant",
+      },
+      organization: {
+        ko: "럿거스대학교 신경과학 프로그램",
+        en: "Program in Neuroscience, Rutgers University, NJ, USA",
+      },
       ko: "대학원 조교, 럿거스대학교 신경과학 프로그램",
       en: "Graduate Assistant, Program in Neuroscience, Rutgers University, NJ, USA",
     },
     {
       period: "1996.03 - 1998.08",
+      position: {
+        ko: "연구/교육 조교",
+        en: "Research Assistant & Teaching Assistant",
+      },
+      organization: {
+        ko: "아주대학교 의과대학 약리학교실",
+        en: "Department of Pharmacology, Ajou University School of Medicine, Suwon, Korea",
+      },
       ko: "연구/교육 조교, 아주대학교 의과대학 약리학교실",
       en: "Research Assistant & Teaching Assistant, Department of Pharmacology, Ajou University School of Medicine, Suwon, Korea",
     },
