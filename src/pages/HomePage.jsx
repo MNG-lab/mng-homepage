@@ -37,10 +37,12 @@ const styles = {
     width: "100%",
   },
   kicker: {
-    fontSize: "0.82rem",
-    letterSpacing: "0.12em",
+    fontSize: "1rem",
+    fontWeight: typography.fontWeight.bold,
+    letterSpacing: "0.1em",
+    lineHeight: typography.lineHeight.normal,
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.74)",
+    color: "rgba(255,255,255,0.9)",
   },
   heroTitle: {
     margin: `${spacing[3]} 0 ${spacing[2]}`,
