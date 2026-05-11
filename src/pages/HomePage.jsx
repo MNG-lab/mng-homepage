@@ -90,7 +90,7 @@ const styles = {
   },
   chipActive: {
     background: "rgba(255,255,255,0.14)",
-    borderColor: "rgba(255,255,255,0.3)",
+    border: "1px solid rgba(255,255,255,0.3)",
     color: colors.text.inverse,
   },
   ctaRow: {
