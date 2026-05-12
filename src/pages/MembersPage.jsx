@@ -7,6 +7,7 @@ import { useViewport } from "../hooks/useViewport";
 import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const MEMBER_PHOTO_WIDTH = 120;
+const MEMBER_CARD_MIN_HEIGHT = 160;
 const CURRENT_ORDER_KO = ["제수연", "김수정", "황보고은", "한연수", "김서영", "임현진", "남이진", "이준서"];
 
 function sortMembersByKoreanName(members, orderedNames) {
@@ -79,15 +80,17 @@ const styles = {
     padding: 0,
     display: "grid",
     gridTemplateColumns: `${MEMBER_PHOTO_WIDTH}px minmax(0, 1fr)`,
-    alignItems: "start",
+    alignItems: "stretch",
     columnGap: 0,
     rowGap: 0,
+    minHeight: MEMBER_CARD_MIN_HEIGHT,
   },
   photoWrap: {
     borderRadius: 0,
     overflow: "hidden",
     width: `${MEMBER_PHOTO_WIDTH}px`,
     height: "100%",
+    minHeight: MEMBER_CARD_MIN_HEIGHT,
     alignSelf: "stretch",
     background: colors.surface.subtle,
   },
