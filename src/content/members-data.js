@@ -22,7 +22,7 @@ export const membersData = {
       "photo": "media/edited/members/suyeon-je.jpg",
       "role": {
         "ko": "박사 후 연구원",
-        "en": "Postgraduate Researcher"
+        "en": "Postdoctoral Researcher"
       }
     },
     {
