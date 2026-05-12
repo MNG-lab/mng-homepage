@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mng-lab.github.io/mng-homepage/sitemap.xml
+Sitemap: https://dglab.yonsei.ac.kr/sitemap.xml
