@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { colors, spacing, typography } from "../design-tokens";
 import { professorData } from "../content/professor-data";
 import { useLanguage } from "../context/LanguageContext";
@@ -6,6 +6,7 @@ import { useViewport } from "../hooks/useViewport";
 import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const EXPERIENCE_PREVIEW_ITEMS = 2;
+const PROFILE_DETAIL_FONT_SIZE = "0.833rem";
 
 const styles = {
   section: {
@@ -89,9 +90,12 @@ const styles = {
   grid: {
     marginTop: spacing[6],
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: spacing[4],
-    alignItems: "start",
+    alignItems: "stretch",
+  },
+  featuredCard: {
+    gridColumn: "1 / -1",
   },
   card: {
     background: colors.surface.card,
@@ -123,26 +127,29 @@ const styles = {
   listPeriod: {
     margin: 0,
     color: colors.brand.accent,
-    fontSize: typography.fontSize.xs,
+    fontSize: PROFILE_DETAIL_FONT_SIZE,
     fontWeight: typography.fontWeight.bold,
+    lineHeight: typography.lineHeight.normal,
   },
   listPrimary: {
     margin: `${spacing[1]} 0 0`,
     color: colors.text.primary,
-    fontSize: "0.95rem",
+    fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.bold,
     lineHeight: typography.lineHeight.normal,
   },
   listSecondary: {
     margin: `${spacing[1]} 0 0`,
     color: colors.text.secondary,
-    fontSize: typography.fontSize.xs,
+    fontSize: PROFILE_DETAIL_FONT_SIZE,
+    fontWeight: typography.fontWeight.regular,
     lineHeight: typography.lineHeight.relaxed,
   },
   listText: {
     margin: `${spacing[1]} 0 0`,
     color: colors.text.secondary,
-    fontSize: typography.fontSize.xs,
+    fontSize: PROFILE_DETAIL_FONT_SIZE,
+    fontWeight: typography.fontWeight.regular,
     lineHeight: typography.lineHeight.relaxed,
   },
   listViewport: {
@@ -205,19 +212,9 @@ export default function ProfessorPage() {
   const { isMobile } = useViewport();
   const { profile, affiliation, address, overview, education, experience, honors, keywords, contact } = professorData;
   const [showAllExperience, setShowAllExperience] = useState(false);
-  const experienceCardRef = useRef(null);
-  const [cardHeight, setCardHeight] = useState(0);
-
-  useLayoutEffect(() => {
-    if (!experienceCardRef.current) return;
-    const measured = Math.ceil(experienceCardRef.current.getBoundingClientRect().height);
-    if (measured > 0) setCardHeight(measured);
-  }, [language, showAllExperience, experience.length]);
 
   const hasExpandableExperience = experience.length > EXPERIENCE_PREVIEW_ITEMS;
   const visibleExperience = showAllExperience ? experience : experience.slice(0, EXPERIENCE_PREVIEW_ITEMS);
-  const shouldEqualizeCards = !isMobile && !(hasExpandableExperience && showAllExperience);
-  const equalHeightStyle = shouldEqualizeCards && cardHeight > 0 ? { minHeight: cardHeight } : {};
   const sectionStyle = isMobile ? { ...styles.section, padding: `${spacing[10]} ${spacing[4]} ${spacing[12]}` } : styles.section;
   const subtitleStyle = isMobile ? { ...styles.subtitle, fontSize: typography.fontSize.sm } : styles.subtitle;
   const profileCardStyle = isMobile
@@ -227,6 +224,7 @@ export default function ProfessorPage() {
   const nameStyle = isMobile ? { ...styles.name, fontSize: "clamp(1.9rem, 6vw, 2.4rem)" } : styles.name;
   const gridStyle = isMobile ? { ...styles.grid, gridTemplateColumns: "1fr", gap: spacing[3] } : styles.grid;
   const cardStyle = isMobile ? { ...styles.card, padding: spacing[4] } : styles.card;
+  const featuredCardStyle = isMobile ? cardStyle : { ...cardStyle, ...styles.featuredCard };
   const linksStyle = isMobile ? { ...styles.links, marginTop: spacing[5], gap: spacing[2] } : styles.links;
   const renderProfileEntry = (item, primaryKey, secondaryKey, options = {}) => {
     const primary = getLocalizedEntry(item, primaryKey, language);
@@ -280,14 +278,7 @@ export default function ProfessorPage() {
       </article>
 
       <div style={gridStyle}>
-        <article style={{ ...cardStyle, ...equalHeightStyle }}>
-          <h2 style={styles.cardTitle}>{t(copy.educationTitle)}</h2>
-          <ul style={styles.list}>
-            {education.map((item) => renderProfileEntry(item, "degree", "organization"))}
-          </ul>
-        </article>
-
-        <article ref={experienceCardRef} style={cardStyle}>
+        <article style={featuredCardStyle}>
           <h2 style={styles.cardTitle}>{t(copy.experienceTitle)}</h2>
           <ul style={styles.list}>
             {visibleExperience.map((item) => renderProfileEntry(item, "position", "organization"))}
@@ -304,7 +295,14 @@ export default function ProfessorPage() {
           ) : null}
         </article>
 
-        <article style={{ ...cardStyle, ...equalHeightStyle }}>
+        <article style={cardStyle}>
+          <h2 style={styles.cardTitle}>{t(copy.educationTitle)}</h2>
+          <ul style={styles.list}>
+            {education.map((item) => renderProfileEntry(item, "degree", "organization"))}
+          </ul>
+        </article>
+
+        <article style={cardStyle}>
           <h2 style={styles.cardTitle}>{t(copy.honorsTitle)}</h2>
           <ul style={styles.list}>
             {honors.map((item) => renderProfileEntry(item, "award", "", { subtlePrimary: true }))}
