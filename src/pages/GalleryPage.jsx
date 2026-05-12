@@ -97,16 +97,28 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: spacing[3],
   },
+  photoGridCompact: {
+    gap: spacing[1],
+  },
   photoCard: {
+    margin: 0,
     background: colors.surface.card,
     border: `1px solid ${colors.border.soft}`,
     borderRadius: 8,
     overflow: "hidden",
   },
+  photoCardCompact: {
+    border: 0,
+    borderRadius: 0,
+    background: "transparent",
+  },
   photoWrap: {
     aspectRatio: "4 / 3",
     background: colors.surface.subtle,
     position: "relative",
+  },
+  photoWrapCompact: {
+    overflow: "hidden",
   },
   photoButton: {
     width: "100%",
@@ -346,6 +358,9 @@ export default function GalleryPage() {
 
   const activeAlbum = albums.find((item) => item.id === activeAlbumId) ?? albums[0];
   const hidePhotoCaption = Boolean(activeAlbum.hideCaptions);
+  const photoGridStyle = hidePhotoCaption ? { ...styles.photoGrid, ...styles.photoGridCompact } : styles.photoGrid;
+  const photoCardStyle = hidePhotoCaption ? { ...styles.photoCard, ...styles.photoCardCompact } : styles.photoCard;
+  const photoWrapStyle = hidePhotoCaption ? { ...styles.photoWrap, ...styles.photoWrapCompact } : styles.photoWrap;
 
   return (
     <section style={styles.section} aria-labelledby="gallery-title">
@@ -391,10 +406,10 @@ export default function GalleryPage() {
           <h2 style={styles.viewerTitle}>{t(activeAlbum.title)}</h2>
         </div>
 
-        <div style={styles.photoGrid}>
+        <div style={photoGridStyle}>
           {activeAlbum.images.map((image) => (
-            <figure key={image.id} style={styles.photoCard}>
-              <div style={styles.photoWrap}>
+            <figure key={image.id} style={photoCardStyle}>
+              <div style={photoWrapStyle}>
                 <button
                   type="button"
                   style={styles.photoButton}

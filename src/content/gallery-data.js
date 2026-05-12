@@ -143,7 +143,7 @@ export const galleryData = [
     year: 2024,
     category: "Lab Daily",
     displayOrder: 1,
-    hideCaptions: false,
+    hideCaptions: true,
     legacyQuery: {
       category: "Lab Life",
     },
