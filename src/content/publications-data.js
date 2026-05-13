@@ -8,7 +8,7 @@ export const publicationsData = [
     "theme": "Cilia Biology",
     "featured": true,
     "verified": true,
-    "url": "https://www.clinicalkey.com/#!/content/playContent/1-s2.0-S2352345X25002139?returnurl=https:%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS2352345X25002139%3Fshowall%3Dtrue&referrer=https:%2F%2Fpubmed.ncbi.nlm.nih.gov%2F"
+    "url": "https://www.cmghjournal.org/article/S2352-345X(25)00213-9/fulltext"
   },
   {
     "id": "legacy-2025-ebastine-mediated-destabilization-of-e3-liga-2",
