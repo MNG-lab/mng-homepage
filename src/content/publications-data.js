@@ -1,7 +1,7 @@
 export const publicationsData = [
   {
     "id": "legacy-2025-cilk1-is-essential-for-mesenchymal-cilia-mai-1",
-    "year": 2025,
+    "year": 2026,
     "title": "Cilk1 is essential for mesenchymal cilia maintenance and epithelial-mesenchymal crosstalk in intestinal villus morphogenesis",
     "authors": "Song J., Je S.Y., Lee B., and Ko H.W.",
     "journal": "Cellular and Molecular Gastroenterology and Hepatology",
