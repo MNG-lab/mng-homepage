@@ -52,8 +52,8 @@ const styles = {
     color: colors.text.inverse,
     display: "flex",
     flexDirection: "column",
-    gap: 2,
-    lineHeight: 1.15,
+    gap: 1,
+    lineHeight: 1.08,
   },
   brandTitle: {
     fontSize: typography.fontSize.md,
@@ -92,6 +92,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing[3],
+    minHeight: 38,
   },
   menuButton: {
     border: "1px solid rgba(255,255,255,0.24)",
@@ -247,9 +248,9 @@ export default function SiteLayout() {
   const headerInnerStyle = isCompactNav
     ? {
         ...styles.headerInner,
-        padding: "12px 16px",
-        gap: 10,
-        alignItems: "stretch",
+        padding: "12px 16px 3px",
+        gap: 8,
+        alignItems: "center",
       }
     : styles.headerInner;
   const controlsStyle = styles.controls;
@@ -257,7 +258,7 @@ export default function SiteLayout() {
   const languageWrapStyle = isCompactNav ? { ...styles.languageWrap, alignSelf: "flex-start" } : styles.languageWrap;
   const menuLabel = menuOpen ? (language === "ko" ? "메뉴 닫기" : "Close menu") : language === "ko" ? "메뉴" : "Menu";
   const menuButtonStyle = menuOpen
-    ? { ...styles.menuButton, background: "rgba(255,255,255,0.14)", borderColor: "rgba(255,255,255,0.38)" }
+    ? { ...styles.menuButton, background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.38)" }
     : styles.menuButton;
 
   return (
