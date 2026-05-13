@@ -1,4 +1,4 @@
-const DEFAULT_SITE_URL = "https://mng-lab.github.io/mng-homepage";
+const DEFAULT_SITE_URL = "https://dglab.yonsei.ac.kr";
 const RAW_SITE_URL = import.meta.env.VITE_SITE_URL || DEFAULT_SITE_URL;
 
 function normalizeSiteUrl(url) {
