@@ -399,11 +399,13 @@ export default function HomePage() {
     ? {
         ...styles.chip,
         width: "100%",
-        minHeight: 38,
-        padding: "0.42rem 0.4rem",
+        height: 48,
+        padding: "0.35rem 0.4rem",
         gap: spacing[1],
-        whiteSpace: "nowrap",
-        fontSize: "0.72rem",
+        whiteSpace: "normal",
+        fontSize: "0.68rem",
+        lineHeight: 1.15,
+        overflowWrap: "normal",
       }
     : styles.chip;
   const statsWrapStyle = isMobile ? { ...styles.statsWrap, padding: `0 ${spacing[4]}`, marginTop: -26 } : styles.statsWrap;
