@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 const PUBLIC_DIR = path.join(ROOT_DIR, "public");
 
-const DEFAULT_SITE_URL = "https://dglab.yonsei.ac.kr";
+const DEFAULT_SITE_URL = "https://www.dglab.yonsei.ac.kr";
 const RAW_SITE_URL = process.env.VITE_SITE_URL || process.env.SITE_URL || DEFAULT_SITE_URL;
 
 function normalizeSiteUrl(value) {
