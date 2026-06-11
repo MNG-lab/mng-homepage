@@ -17,7 +17,7 @@ const REPO = readArgValue("--repo", "mng-homepage");
 const BRANCH = readArgValue("--branch", "main");
 const WORKFLOW_FILE = readArgValue("--workflow", "deploy-pages.yml");
 const EXPECTED_SHA = readArgValue("--sha");
-const DEFAULT_BASE_URL = "https://www.dglab.yonsei.ac.kr";
+const DEFAULT_BASE_URL = "https://dglab.yonsei.ac.kr";
 const BASE_URL = readArgValue("--base-url", DEFAULT_BASE_URL).replace(/\/$/, "");
 const REPORT_PATH = readArgValue("--report-path", path.join(ROOT_DIR, "content", "p5-rollback-verification-report.md"));
 
