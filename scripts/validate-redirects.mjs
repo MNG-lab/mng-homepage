@@ -18,7 +18,7 @@ function hasFlag(name) {
   return process.argv.includes(name);
 }
 
-const BASE_URL = readArgValue("--base-url", "https://www.dglab.yonsei.ac.kr");
+const BASE_URL = readArgValue("--base-url", "https://dglab.yonsei.ac.kr");
 const REPORT_PATH = readArgValue("--report-path", DEFAULT_REPORT_PATH);
 const MAX_HOPS = Number(readArgValue("--max-hops", "8"));
 const WRITE_REPORT = hasFlag("--write-report");

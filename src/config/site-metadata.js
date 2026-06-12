@@ -1,4 +1,4 @@
-const DEFAULT_SITE_URL = "https://www.dglab.yonsei.ac.kr";
+const DEFAULT_SITE_URL = "https://dglab.yonsei.ac.kr";
 const RAW_SITE_URL = import.meta.env.VITE_SITE_URL || DEFAULT_SITE_URL;
 
 function normalizeSiteUrl(url) {

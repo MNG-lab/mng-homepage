@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 
-const DEFAULT_BASE_URL = "https://www.dglab.yonsei.ac.kr";
+const DEFAULT_BASE_URL = "https://dglab.yonsei.ac.kr";
 const DEFAULT_REPORT_PATH = path.join(ROOT_DIR, "content", "p5-route-verification-report.md");
 
 const CANONICAL_ROUTES = ["/", "/research", "/professor", "/members", "/publications", "/gallery", "/contact"];

@@ -8,8 +8,8 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 const REPORT_PATH = path.join(ROOT_DIR, "content", "member-verification-report.md");
 
-const MEMBERS_URL = "https://www.dglab.yonsei.ac.kr/members";
-const PROFESSOR_URL = "https://www.dglab.yonsei.ac.kr/professor";
+const MEMBERS_URL = "https://dglab.yonsei.ac.kr/members";
+const PROFESSOR_URL = "https://dglab.yonsei.ac.kr/professor";
 
 function decodeHtmlEntities(value) {
   return value
