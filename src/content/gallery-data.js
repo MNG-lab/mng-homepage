@@ -26,18 +26,18 @@ export const galleryData = [
     },
     images: [
       {
-        id: "lab-moments-professors-birthday-2024",
-        year: 2024,
-        src: "media/edited/gallery/lab-moments-professors-birthday-2024.jpg",
-        alt: { ko: "교수님 생신", en: "Professor's Birthday" },
-        caption: { ko: "교수님 생신", en: "Professor's Birthday" },
-      },
-      {
         id: "lab-moments-year-end-party-2024",
         year: 2024,
         src: "media/edited/gallery/lab-moments-year-end-party-2024.jpg",
         alt: { ko: "송년회", en: "Year-end Party" },
         caption: { ko: "송년회", en: "Year-end Party" },
+      },
+      {
+        id: "lab-moments-professors-birthday-2024",
+        year: 2024,
+        src: "media/edited/gallery/lab-moments-professors-birthday-2024.jpg",
+        alt: { ko: "교수님 생신", en: "Professor's Birthday" },
+        caption: { ko: "교수님 생신", en: "Professor's Birthday" },
       },
       {
         id: "lab-moments-kalas-2024",
