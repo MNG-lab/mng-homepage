@@ -287,7 +287,7 @@ jobs:
           set -euo pipefail
           codex exec \
             --dangerously-bypass-approvals-and-sandbox \
-            --model "gpt-5.3-codex" \
+            --model "gpt-5.5" \
             -o /tmp/codex_last_message.txt \
             - < /tmp/codex_prompt.txt | tee /tmp/codex_out.txt
 
@@ -372,7 +372,7 @@ jobs:
           set +e
           codex exec \
             --dangerously-bypass-approvals-and-sandbox \
-            --model "gpt-5.3-codex" \
+            --model "gpt-5.5" \
             -o /tmp/codex_pr_body.md \
             - < "$PR_DRAFT_PROMPT" > /tmp/codex_pr_body_run.txt
           PR_DRAFT_EXIT=$?
