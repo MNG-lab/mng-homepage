@@ -1,7 +1,7 @@
 export const galleryData = [
   {
     id: "gallery-lab-moments",
-    year: 2024,
+    year: 2026,
     category: "Lab Moments",
     displayOrder: 0,
     hideCaptions: false,
@@ -25,6 +25,41 @@ export const galleryData = [
       },
     },
     images: [
+      {
+        id: "lab-moments-graduation-koeun-2026",
+        year: 2026,
+        src: "media/edited/gallery/lab-moments-graduation-koeun-2026.jpg",
+        alt: { ko: "고은 졸업", en: "Graduation (Koeun)" },
+        caption: { ko: "고은 졸업", en: "Graduation (Koeun)" },
+      },
+      {
+        id: "lab-moments-a3-okinawa-2026",
+        year: 2026,
+        src: "media/edited/gallery/lab-moments-a3-okinawa-2026.jpg",
+        alt: { ko: "A3 오키나와 학회", en: "A3 Okinawa Conference" },
+        caption: { ko: "A3 오키나와 학회", en: "A3 Okinawa Conference" },
+      },
+      {
+        id: "lab-moments-farewell-hyerin-2025",
+        year: 2025,
+        src: "media/edited/gallery/lab-moments-farewell-hyerin-2025.jpg",
+        alt: { ko: "혜린 송별회", en: "Farewell for Hyerin" },
+        caption: { ko: "혜린 송별회", en: "Farewell for Hyerin" },
+      },
+      {
+        id: "lab-moments-graduation-suyeon-hyerin-2025",
+        year: 2025,
+        src: "media/edited/gallery/lab-moments-graduation-suyeon-hyerin-2025.jpg",
+        alt: { ko: "수연 혜린 졸업", en: "Graduation (Suyeon & Hyerin)" },
+        caption: { ko: "수연 혜린 졸업", en: "Graduation (Suyeon & Hyerin)" },
+      },
+      {
+        id: "lab-moments-busan-ksbmb-2025",
+        year: 2025,
+        src: "media/edited/gallery/lab-moments-busan-ksbmb-2025.jpg",
+        alt: { ko: "KSBMB 부산 학회", en: "KSBMB Busan Conference" },
+        caption: { ko: "KSBMB 부산 학회", en: "KSBMB Busan Conference" },
+      },
       {
         id: "lab-moments-year-end-party-2024",
         year: 2024,
