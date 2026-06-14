@@ -34,7 +34,7 @@ export const membersData = {
       "email": "hjji6739@naver.com",
       "photo": "media/edited/members/koeun-hwangbo.jpg",
       "role": {
-        "ko": "대학원 연구원",
+        "ko": "석사후 연구원",
         "en": "Postgraduate Researcher"
       }
     },
