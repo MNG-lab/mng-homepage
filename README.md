@@ -129,13 +129,14 @@ npm run preview
 
 - `.github/workflows/codex-comment.yml`
 - `.github/workflows/rollback-from-issue.yml`
-- `.github/workflows/deploy-pages.yml`
+- `.github/workflows/deploy-pages.yml` (GitHub Pages fallback only; automatic production deploy is disabled)
 - 롤백 템플릿:
   - 비개발자용: `.github/ISSUE_TEMPLATE/rollback-simple-request.yml`
   - 개발자용: `.github/ISSUE_TEMPLATE/rollback-request.yml`
 - 두 워크플로 모두 lockfile(`package-lock.json`/`npm-shrinkwrap.json`)이 있으면 `npm ci`, 없으면 `npm install`로 자동 분기
 - `codex-comment.yml`은 GitHub App 토큰을 사용해 이슈 할당/커밋/PR 생성 주체를 앱 봇으로 통일함
 - `rollback-from-issue.yml`은 두 롤백 템플릿(간단/개발자용)을 파싱해 자동으로 revert PR을 생성함
+- 운영 호스팅은 Cloudflare Pages이며, GitHub Pages는 수동 fallback 용도로만 보관합니다.
 
 ## GitHub App 설정 (Codex 자동화)
 
@@ -149,6 +150,7 @@ npm run preview
 - `content/migration-checklist.md`
 - `content/p5-pages-checklist.md`
 - `content/p5-custom-domain-guide.md`
+- `content/github-pages-disabled.md`
 - `content/release-handoff-summary-2026-03-03.md`
 
 </details>

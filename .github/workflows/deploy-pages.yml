@@ -1,8 +1,10 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (disabled fallback)
 
+# GitHub Pages is no longer the production host.
+# Production deploys are handled by Cloudflare Pages. Keep this workflow as a
+# manual fallback only, and re-enable the push trigger if GitHub Pages is needed
+# again.
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "github-pages-fallback"
   cancel-in-progress: true
 
 jobs:

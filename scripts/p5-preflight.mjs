@@ -17,7 +17,6 @@ const TASKS = [
   { label: "Run accessibility audit", command: "npm run qa:accessibility" },
   { label: "Validate redirect mapping", command: "npm run validate:redirects" },
   { label: "Verify published routes", command: "npm run verify:routes:published" },
-  { label: "Check pages deployment status", command: "npm run check:pages:status" },
 ];
 
 function runShellCommand(command, cwd) {
