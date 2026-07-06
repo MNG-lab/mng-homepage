@@ -337,7 +337,7 @@ export default function HomePage() {
   const currentSlide = slides[activeSlide];
   const newsItems = useMemo(() => {
     return [...publicationsData]
-      .sort((a, b) => b.year - a.year || Number(b.featured) - Number(a.featured) || a.title.localeCompare(b.title))
+      .sort((a, b) => b.year - a.year || Number(b.featured) - Number(a.featured))
       .slice(0, HOME_NEWS_LIMIT)
       .map((item) => ({
         id: item.id,
