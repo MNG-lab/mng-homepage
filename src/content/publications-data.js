@@ -1,5 +1,16 @@
 export const publicationsData = [
   {
+    "id": "legacy-2026-megf8-controls-osteogenic-differentiation--1",
+    "year": 2026,
+    "title": "MEGF8 controls osteogenic differentiation through post-transcriptional regulation of BMP-SMAD signaling in craniosynostosis",
+    "authors": "Hwangbo K., Park J., Rho H., Woo D.C., Sung Y.H., Kim S.H., Song J., and Ko H.W.",
+    "journal": "Cell Death & Differentiation",
+    "theme": "Cilia Biology",
+    "featured": true,
+    "verified": true,
+    "url": "https://www.nature.com/articles/s41418-026-01806-6"
+  },
+  {
     "id": "legacy-2025-cilk1-is-essential-for-mesenchymal-cilia-mai-1",
     "year": 2026,
     "title": "Cilk1 is essential for mesenchymal cilia maintenance and epithelial-mesenchymal crosstalk in intestinal villus morphogenesis",
