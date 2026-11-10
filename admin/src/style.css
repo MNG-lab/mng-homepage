@@ -1680,3 +1680,5 @@ select {
 .request-progress strong{display:block;font-weight:600}.request-progress small{display:block;margin-top:8px;line-height:1.5}.request-progress .active{border-color:#315c9c;color:#315c9c;background:#edf3ff}.request-progress .failed{border-color:#b94b35;color:#a53f2c}.request-progress .stopped{border-color:#8994a4;color:#65738a}.progress-note{font-size:12px;color:#718099}
 
 .brand-avatar { object-fit: contain; padding: 0; flex-shrink: 0; background: #fff; }
+
+.preview-panel .primary { text-decoration: none; display: inline-flex; align-items: center; }.preview-panel button:disabled { opacity: .55; cursor: not-allowed; }

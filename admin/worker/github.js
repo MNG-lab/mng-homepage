@@ -1,3 +1,4 @@
+import {previewStatus} from './preview.js';
 import nacl from 'tweetnacl';
 import {blake2b} from '@noble/hashes/blake2.js';
 import {SignJWT, importPKCS8} from 'jose';
@@ -109,12 +110,23 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       const [pulls,current]=await Promise.all([this.pulls(),this.current()]);
       return {current,revisions:pulls.filter(p=>p.merged).sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt))};
     },
+    async preview(head) {
+      try {
+        const checks=[];
+        for(let page=1;page<=3;page++) {
+          const batch=await call(`/commits/${head}/check-runs?per_page=100&page=${page}`);
+          if(!Array.isArray(batch.check_runs))throw new Error('Invalid checks');
+          checks.push(...batch.check_runs);
+          if(batch.check_runs.length<100)return previewStatus(checks,head);
+        }
+        return {state:'unavailable',head,url:null};
+      } catch {return {state:'unavailable',head,url:null};}
+    },
     async detail(id) {
       const pr=await this.pull(id);
-      const files=await call(`/pulls/${number(id)}/files?per_page=100`);
-      const runs=await call(`/actions/runs?head_sha=${pr.head.sha}&event=pull_request&per_page=100`);
+      const [files,runs,preview]=await Promise.all([call(`/pulls/${number(id)}/files?per_page=100`),call(`/actions/runs?head_sha=${pr.head.sha}&event=pull_request&per_page=100`),this.preview(pr.head.sha)]);
       const ci=selectQualityRun(runs.workflow_runs||[],pr,id,true);
-      return {head:pr.head.sha,files:files.map(f=>({path:f.filename,additions:f.additions,deletions:f.deletions,patch:f.patch||null})),truncated:files.length===100,ci:ci?{status:ci.status,conclusion:ci.conclusion,url:ci.html_url}:null};
+      return {head:pr.head.sha,preview,files:files.map(f=>({path:f.filename,additions:f.additions,deletions:f.deletions,patch:f.patch||null})),truncated:files.length===100,ci:ci?{status:ci.status,conclusion:ci.conclusion,url:ci.html_url}:null};
     },
     async runs() {
       const runs=await call('/actions/workflows/codex-comment.yml/runs?branch=codex%2Fadmin-portal&event=workflow_dispatch&per_page=100');
