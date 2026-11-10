@@ -72,6 +72,25 @@ try {
     "PASS: page URLs, back/forward, refresh, detail links and unknown requests",
   );
   await page.getByRole("button", { name: "새 수정 요청", exact: true }).click();
+  await page.getByLabel("어느 페이지인가요?").waitFor();
+  assert.deepEqual(
+    await page
+      .getByLabel("어느 페이지인가요?")
+      .locator("option")
+      .allTextContents(),
+    [
+      "Home",
+      "Research",
+      "Professor",
+      "Members",
+      "Publications",
+      "Gallery",
+      "Contact",
+    ],
+  );
+  await page
+    .getByLabel("어느 페이지인가요?")
+    .selectOption({ label: "Members" });
   await page
     .getByLabel("요청 제목", { exact: true })
     .fill("테스트 이메일 변경");
@@ -83,12 +102,28 @@ try {
     .getByRole("button", { name: "확인하고 반영하기" })
     .waitFor({ timeout: 10000 });
   await page.getByRole("button", { name: "확인하고 반영하기" }).click();
+  await page.waitForFunction(
+    () =>
+      JSON.parse(localStorage.getItem("mng-admin-demo-v1"))[0].status ===
+      "done",
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "이 시점으로 복원", exact: true })
+      .count(),
+    0,
+  );
+  await page.getByRole("button", { name: "창 닫기" }).click();
   await page
-    .getByRole("button", { name: "이 요청의 변경 취소" })
-    .waitFor({ timeout: 10000 });
-  await page.getByRole("button", { name: "이 요청의 변경 취소" }).click();
+    .locator(".request-link")
+    .filter({ hasText: "홈 화면의 연구실 소식을 업데이트해주세요" })
+    .click();
   await page
-    .getByRole("button", { name: "이 요청의 변경 취소하기", exact: true })
+    .getByRole("button", { name: "이 시점으로 복원", exact: true })
+    .click();
+  await page.getByText("현재 홈페이지에서 제거될 변경 · 1건").waitFor();
+  await page
+    .getByRole("button", { name: "복원 요청 만들기", exact: true })
     .click();
   await page
     .getByRole("button", { name: "확인하고 반영하기" })
@@ -103,16 +138,27 @@ try {
   assert.equal(
     await page
       .locator(".request-link")
-      .filter({ hasText: "되돌리기: 테스트 이메일 변경" })
+      .filter({ hasText: "시점 복원: #103 반영 직후" })
       .count(),
     1,
   );
-  console.log("PASS: create → review → apply → rollback → review → apply");
+  const snapshot = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("mng-admin-demo-v1")),
+  );
+  assert.deepEqual(snapshot[0].snapshotIds, [102, 103]);
+  assert(
+    snapshot.some(
+      (r) => r.title === "테스트 이메일 변경" && r.status === "done",
+    ),
+  );
+  console.log(
+    "PASS: restore entire snapshot, remove later change, retain all history",
+  );
   await page.reload();
   assert.equal(
     await page
       .locator(".request-link")
-      .filter({ hasText: "되돌리기: 테스트 이메일 변경" })
+      .filter({ hasText: "시점 복원: #103 반영 직후" })
       .count(),
     1,
   );

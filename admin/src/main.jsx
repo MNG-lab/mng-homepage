@@ -9,8 +9,14 @@ import {
   readRequests,
   makeRequest,
   canRollback,
+  pageLabel,
+  restoreImpact,
+  restoreFields,
+  transitionRequest,
+  latestRevision,
 } from "./model";
 import "./style.css";
+import AuthGate from "./AuthGate";
 
 function Icon({ name, size = 20, ...props }) {
   const paths = {
@@ -151,7 +157,7 @@ const VIEW_PATHS = {
   history: "/history",
   settings: "/settings",
 };
-function App() {
+function App({ authenticatedUser = null }) {
   const location = useLocation();
   const routeTo = useNavigate();
   const detailMatch = location.pathname.match(/^\/requests\/(\d+)$/);
@@ -170,19 +176,21 @@ function App() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [pageFilter, setPageFilter] = useState("전체 페이지");
-  const [role, setRole] = useState("admin");
+  const [role, setRole] = useState(authenticatedUser?.role || "admin");
   const [localModal, setLocalModal] = useState(null);
   const modal = localModal || routeModal;
   const selected = detailMatch ? Number(detailMatch[1]) : null;
   const [notice, setNotice] = useState("");
   const [storageWarning, setStorageWarning] = useState(false);
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "owner";
   const current = requests.find((r) => r.id === selected);
   const pending = requests.filter((r) => r.status === "review");
   const ongoing = requests.filter((r) =>
     ["queued", "working", "deploying"].includes(r.status),
   );
   const completed = requests.filter((r) => r.status === "done");
+  const currentRevision = latestRevision(requests);
+  const impact = current ? restoreImpact(current, requests) : null;
   useEffect(() => {
     setLocalModal(null);
     if (location.pathname === "/") routeTo("/dashboard", { replace: true });
@@ -220,20 +228,17 @@ function App() {
     const timers = active.map((r) =>
       setTimeout(
         () =>
-          setRequests((prev) =>
-            prev.map((x) =>
-              x.id === r.id && x.status === r.status
-                ? {
-                    ...x,
-                    status: {
-                      queued: "working",
-                      working: "review",
-                      deploying: "done",
-                    }[r.status],
-                  }
-                : x,
-            ),
-          ),
+          setRequests((prev) => {
+            if (prev.find((x) => x.id === r.id)?.status !== r.status)
+              return prev;
+            return transitionRequest(
+              prev,
+              r.id,
+              { queued: "working", working: "review", deploying: "done" }[
+                r.status
+              ],
+            );
+          }),
         r.status === "queued" ? 1400 : 2800,
       ),
     );
@@ -253,9 +258,7 @@ function App() {
     setPageFilter("전체 페이지");
   }
   function changeStatus(id, status) {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status } : r)),
-    );
+    setRequests((prev) => transitionRequest(prev, id, status));
   }
   function showDetail(id) {
     routeTo(`/requests/${id}`, {
@@ -283,15 +286,7 @@ function App() {
   }
   function rollback(source) {
     if (!isAdmin || !canRollback(source, requests)) return;
-    addRequest({
-      title: `되돌리기: ${source.title}`,
-      page: source.page,
-      description: `요청 #${source.id}의 변경만 되돌립니다. 이후 변경과 충돌하는지는 실제 연동 단계에서 검증합니다.`,
-      before: source.after,
-      after: source.before,
-      kind: "rollback",
-      sourceId: source.id,
-    });
+    addRequest(restoreFields(source, requests));
   }
   const shown = requests.filter(
     (r) =>
@@ -300,7 +295,7 @@ function App() {
         r.status === "done") &&
       (filter === "all" || r.status === filter) &&
       (pageFilter === "전체 페이지" || r.page === pageFilter) &&
-      `${r.title} ${r.id} ${r.page}`
+      `${r.title} ${r.id} ${pageLabel(r.page)}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
@@ -315,7 +310,7 @@ function App() {
     ],
     history: [
       "변경 이력",
-      "홈페이지에 반영된 변경을 확인하고, 원하는 요청의 변경만 취소하세요.",
+      "홈페이지에 반영된 변경을 확인하고, 원하는 반영 시점을 선택해 홈페이지 전체를 복원하세요.",
     ],
     settings: ["설정", "연결 상태와 관리자 권한을 관리하세요."],
   };
@@ -342,7 +337,9 @@ function App() {
                     className="request-link"
                     onClick={() => showDetail(r.id)}
                   >
-                    {r.kind === "rollback" && <Icon name="undo" size={16} />}
+                    {["rollback", "restore"].includes(r.kind) && (
+                      <Icon name="undo" size={16} />
+                    )}
                     <span>
                       {r.title}
                       <small>
@@ -352,10 +349,17 @@ function App() {
                   </button>
                 </td>
                 <td>
-                  <span className="page-tag">{r.page}</span>
+                  <span className="page-tag">{pageLabel(r.page)}</span>
                 </td>
                 <td>
                   <Badge status={r.status} />
+                  {r.status === "done" &&
+                    r.kind === "edit" &&
+                    !currentRevision?.snapshotIds?.includes(r.id) && (
+                      <small className="history-excluded">
+                        복원으로 제외됨
+                      </small>
+                    )}
                 </td>
                 <td className="date-cell">{date(r.date)}</td>
                 <td>
@@ -527,7 +531,7 @@ function App() {
                   className="stat-card"
                 >
                   <span>
-                    반영된 요청 <Icon name="check" />
+                    반영 이력 <Icon name="check" />
                   </span>
                   <div>
                     {completed.length}
@@ -620,8 +624,8 @@ function App() {
                 ) : (
                   <div className="history-help">
                     <Icon name="undo" size={17} />
-                    선택한 요청의 변경만 취소합니다. 그 이후의 다른 변경은
-                    유지돼요.
+                    선택한 요청이 반영된 직후의 홈페이지 전체로 복원합니다.
+                    이후 변경은 현재 화면에서 제외되고, 반영 이력은 보존돼요.
                   </div>
                 )}
                 <div className="filters">
@@ -640,7 +644,9 @@ function App() {
                     onChange={(e) => setPageFilter(e.target.value)}
                   >
                     {["전체 페이지", ...PAGES].map((p) => (
-                      <option key={p}>{p}</option>
+                      <option key={p} value={p}>
+                        {pageLabel(p)}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -690,10 +696,10 @@ function App() {
                 <div className="member-row">
                   <span className="avatar">C</span>
                   <div>
-                    <strong>chominho96@gmail.com</strong>
+                    <strong>{authenticatedUser?.email || "데모 관리자"}</strong>
                     <small>테스트 환경의 최초 관리자</small>
                   </div>
-                  <span className="badge blue">관리자</span>
+                  <span className="badge blue">{role === "owner" ? "최고 관리자" : role === "admin" ? "관리자" : "편집자"}</span>
                 </div>
                 <div className="role-description">
                   <p>
@@ -704,7 +710,7 @@ function App() {
                     <strong>편집자</strong> 요청 작성, 결과 확인
                   </p>
                 </div>
-                <label className="role-switch">
+                {!authenticatedUser && <label className="role-switch">
                   권한 체험{" "}
                   <select
                     aria-label="테스트 역할"
@@ -714,10 +720,9 @@ function App() {
                     <option value="admin">관리자로 보기</option>
                     <option value="editor">편집자로 보기</option>
                   </select>
-                </label>
+                </label>}
                 <p className="fine-print">
-                  화면 확인용 역할 전환입니다. 실제 접근 제어는 연동 단계에서
-                  서버에 적용합니다.
+                  {authenticatedUser ? "Google 로그인과 서버 접근 제어가 적용되었습니다. 요청·승인·복원은 아직 데모입니다." : "화면 확인용 역할 전환입니다. 실제 로그인은 별도 테스트 배포에서 확인합니다."}
                 </p>
               </section>
               <section className="panel setting-panel reset-panel">
@@ -780,32 +785,57 @@ function App() {
       )}
       {modal === "rollback" && current && (
         <Modal
-          title="이 요청의 변경만 취소할까요?"
+          title="이 시점으로 홈페이지를 복원할까요?"
           close={() => setModal("detail")}
         >
           <div className="modal-body">
             <div className="rollback-target">
-              <span className="page-tag">{current.page}</span>
+              <span className="page-tag">{pageLabel(current.page)}</span>
               <h3>{current.title}</h3>
               <p>
                 요청 #{current.id} · {date(current.date)}
               </p>
             </div>
             <p>
-              요청 #{current.id}의 변경을 취소하는 <strong>새 수정 요청</strong>
-              을 만듭니다. 결과를 확인하고 승인해야 홈페이지에 반영됩니다.
+              요청 #{current.id}가 반영된 직후의{" "}
+              <strong>홈페이지 전체 상태</strong>로 복원하는 새 요청을 만듭니다.
+              해당 요청의 변경은 유지됩니다.
             </p>
             <div className="rollback-scope">
-              <strong>다른 요청의 변경은 유지돼요</strong>
-              <p>
-                예를 들어 1 → 2 → 3 순서로 반영했다면, 1의 변경만 취소하고 2·3은
-                남깁니다. 홈페이지 전체를 1 시점으로 복원하는 기능은 아닙니다.
-              </p>
+              <strong>
+                현재 홈페이지에서 제거될 변경 · {impact.removed.length}건
+              </strong>
+              {impact.removed.length ? (
+                <ul className="impact-list">
+                  {impact.removed.map((r) => (
+                    <li key={r.id}>
+                      <span className="page-tag">{pageLabel(r.page)}</span>
+                      <span>
+                        #{r.id} {r.title}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>제거되는 변경은 없습니다.</p>
+              )}
+              {impact.restored.length > 0 && (
+                <>
+                  <strong>다시 포함될 변경 · {impact.restored.length}건</strong>
+                  <ul className="impact-list">
+                    {impact.restored.map((r) => (
+                      <li key={r.id}>
+                        #{r.id} {r.title}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
             <div className="inline-note">
               <Icon name="info" size={17} />
-              이후 요청이 같은 내용을 수정했다면 자동 취소가 어려울 수 있어요.
-              실제 연동 시 충돌을 확인하고, 승인 전 결과를 보여드립니다.
+              복원 결과를 확인하고 승인해야 반영됩니다. 기존 요청·배포 이력은
+              삭제하지 않으며 복원 기록이 새로 추가됩니다.
             </div>
           </div>
           <div className="modal-actions">
@@ -814,10 +844,11 @@ function App() {
             </button>
             <button
               className="primary"
-              disabled={!isAdmin}
+              disabled={!isAdmin || !canRollback(current, requests)}
               onClick={() => rollback(current)}
             >
-              <Icon name="undo" size={17} />이 요청의 변경 취소하기
+              <Icon name="undo" size={17} />
+              복원 요청 만들기
             </button>
           </div>
         </Modal>
@@ -841,7 +872,7 @@ function App() {
           <div className="modal-body">
             <div className="detail-meta">
               <span>#{current.id}</span>
-              <span className="page-tag">{current.page}</span>
+              <span className="page-tag">{pageLabel(current.page)}</span>
               <span>
                 {date(current.date)} · {current.author}
               </span>
@@ -868,6 +899,25 @@ function App() {
                 ),
               )}
             </div>
+            {current.kind === "restore" && (
+              <div className="restore-summary">
+                <strong>
+                  홈페이지 전체 복원 · 요청 #{current.sourceId} 반영 직후
+                </strong>
+                <p>
+                  현재 홈페이지에서 제거되는 변경{" "}
+                  {(current.removedRequestIds || []).length}건
+                </p>
+                <ul className="impact-list">
+                  {(current.removedRequestIds || []).map((id) => (
+                    <li key={id}>
+                      #{id}{" "}
+                      {requests.find((r) => r.id === id)?.title || "이전 요청"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <h3 className="detail-label">요청 내용</h3>
             <p className="request-description">{current.description}</p>
             {current.status === "failed" && (
@@ -941,7 +991,7 @@ function App() {
                     요청 취소
                   </button>
                 )}
-              {current.status === "failed" && (
+              {current.status === "failed" && current.kind !== "restore" && (
                 <button
                   className="primary"
                   onClick={() => changeStatus(current.id, "queued")}
@@ -968,14 +1018,16 @@ function App() {
                   className="secondary"
                   onClick={() => setModal("rollback")}
                 >
-                  <Icon name="undo" size={17} />이 요청의 변경 취소
+                  <Icon name="undo" size={17} />이 시점으로 복원
                 </button>
               )}
-              {current.status === "done" &&
-                current.kind !== "rollback" &&
-                !canRollback(current, requests) && (
-                  <span className="fine-print">되돌리기 요청이 있어요</span>
-                )}
+              {current.status === "done" && !canRollback(current, requests) && (
+                <span className="fine-print">
+                  {currentRevision?.id === current.id
+                    ? "현재 반영된 시점이에요"
+                    : "같은 상태이거나 진행 중인 복원 요청이 있어요"}
+                </span>
+              )}
             </div>
           </div>
         </Modal>
@@ -1012,7 +1064,9 @@ function RequestForm({ submit, cancel }) {
           어느 페이지인가요?
           <select value={page} onChange={(e) => setPage(e.target.value)}>
             {PAGES.map((p) => (
-              <option key={p}>{p}</option>
+              <option key={p} value={p}>
+                {pageLabel(p)}
+              </option>
             ))}
           </select>
         </label>
@@ -1065,7 +1119,7 @@ function RequestForm({ submit, cancel }) {
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <AuthGate>{(user) => <App authenticatedUser={user} />}</AuthGate>
     </BrowserRouter>
   </React.StrictMode>,
 );
