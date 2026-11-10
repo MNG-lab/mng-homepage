@@ -397,11 +397,17 @@ jobs:
           EOF
           fi
 
+          # Keep the closing keyword outside AI-generated Markdown, including code fences.
+          {
+            printf 'Closes #%s\n\n' "$ISSUE_NUMBER"
+            cat /tmp/codex_pr_body.md
+          } > /tmp/codex_pr_body_linked.md
+
           PR_URL="$(gh pr create \
             --base "$DEFAULT_BRANCH" \
             --head "${TARGET_REF}" \
             --title "$PR_TITLE" \
-            --body-file /tmp/codex_pr_body.md)"
+            --body-file /tmp/codex_pr_body_linked.md)"
           PR_NUMBER="$(gh pr view "$PR_URL" --json number -q .number)"
 
           if ! gh pr edit "$PR_NUMBER" --add-label "codex-auto"; then

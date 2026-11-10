@@ -130,6 +130,7 @@ npm run preview
 ## Codex 워크플로 파일
 
 - `.github/workflows/codex-comment.yml`
+- `.github/workflows/close-codex-issue.yml`: 자동 생성된 PR이 닫히면 원본 이슈도 종료합니다. 병합 시 `completed`, 병합 없이 닫으면 `not planned`로 처리하며 이미 닫힌 이슈는 유지합니다.
 - `.github/workflows/rollback-from-issue.yml`
 - `.github/workflows/deploy-pages.yml` (GitHub Pages fallback only; automatic production deploy is disabled)
 - 롤백 템플릿:

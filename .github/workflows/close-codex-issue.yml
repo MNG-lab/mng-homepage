@@ -1,0 +1,38 @@
+name: Close source issue when Codex PR closes
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  issues: write
+
+jobs:
+  close-issue:
+    if: github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'codex/issue-')
+    runs-on: ubuntu-latest
+    steps:
+      # Only read event metadata; never check out or execute PR code.
+      - name: Close source issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          HEAD_REF="$(jq -r --arg repo "$GH_REPO" 'if .pull_request.head.repo.full_name == $repo then .pull_request.head.ref else "" end' "$GITHUB_EVENT_PATH")"
+          if [[ ! "$HEAD_REF" =~ ^codex/issue-([0-9]+)-[0-9]+$ ]]; then
+            echo "Not a generated Codex issue branch; skipping."
+            exit 0
+          fi
+          ISSUE_NUMBER="${BASH_REMATCH[1]}"
+          STATE="$(gh issue view "$ISSUE_NUMBER" --repo "$GH_REPO" --json state --jq .state)"
+          if [[ "$STATE" == "CLOSED" ]]; then
+            echo "Issue #${ISSUE_NUMBER} is already closed."
+            exit 0
+          fi
+          REASON="not planned"
+          if [[ "$(jq -r '.pull_request.merged' "$GITHUB_EVENT_PATH")" == "true" ]]; then
+            REASON="completed"
+          fi
+          gh issue close "$ISSUE_NUMBER" --repo "$GH_REPO" --reason "$REASON"
