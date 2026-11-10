@@ -1642,8 +1642,6 @@ select {
   margin-top: 4px;
 }
 
-.auth-session { position: sticky; top: 0; z-index: 100; background: #17253e; color: white; padding: 8px 20px; display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
-.auth-session button { color: white; background: transparent; border: 1px solid #8493ad; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
 .auth-status { padding: 40px; text-align: center; }
 
 .connected-main {max-width:1100px;margin:auto;padding:32px;display:grid;gap:24px;}
@@ -1656,3 +1654,10 @@ select {
 .connected-list button {width:100%;padding:20px 0;display:flex;justify-content:space-between;text-align:left;gap:20px;background:transparent;}
 .connected-description {white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;}
 @media(max-width:700px){.connected-main{padding:20px 14px}.connected-list button{display:grid;gap:8px}.connected-panel{padding:20px}.auth-session{flex-wrap:wrap}}
+
+.connected-top-actions {display:flex;align-items:center;gap:20px;}
+.connected-top-actions form {margin:0;}
+.connected-empty {color:#7d899a;padding:12px 0;}
+.connected-main .stats {margin:0;}
+.connected-main .stat-card {text-align:left;}
+@media(max-width:700px){.connected-top-actions{gap:10px}.connected-top-actions .demo-pill{display:none}}

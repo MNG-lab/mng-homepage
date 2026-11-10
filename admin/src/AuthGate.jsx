@@ -15,5 +15,5 @@ export default function AuthGate({children}) {
   if(state.local) return children(null);
   if(state.loading) return <p className="auth-status">로그인 확인 중…</p>;
   if(state.error) return <p className="auth-status">로그인을 확인하지 못했습니다. <a href="/login">다시 로그인</a></p>;
-  return <><div className="auth-session"><span>{state.user.email} · {state.user.role === 'owner' ? '최고 관리자' : state.user.role === 'admin' ? '관리자' : '편집자'} · {state.mode === "github" ? "GitHub 연동 테스트" : "요청·복원은 데모입니다"}</span><form method="post" action="/auth/logout"><button type="submit">로그아웃</button></form></div>{children(state.user,state.mode)}</>;
+  return children(state.user,state.mode);
 }

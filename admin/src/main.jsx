@@ -446,7 +446,7 @@ function App({ authenticatedUser = null }) {
             <span className="avatar">C</span>
             <div>
               <strong>{isAdmin ? "관리자" : "편집자"}</strong>
-              <small>chominho96@gmail.com</small>
+              <small>{authenticatedUser?.email || "데모 계정"}</small>
             </div>
             <span className="online-dot" />
           </div>
@@ -454,6 +454,7 @@ function App({ authenticatedUser = null }) {
       </aside>
       <div className="main-wrap">
         <header className="topbar">
+          {authenticatedUser && <form method="post" action="/auth/logout"><button className="text-button" type="submit">로그아웃</button></form>}
           <div className="breadcrumb">
             워크스페이스 <Icon name="arrow" size={13} />{" "}
             <span>{titles[view][0]}</span>
