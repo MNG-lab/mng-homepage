@@ -37,7 +37,7 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
   const privateKey=await importPKCS8(env.GITHUB_APP_PRIVATE_KEY,'RS256');
   const now=Math.floor(Date.now()/1000);
   const jwt=await new SignJWT({}).setProtectedHeader({alg:'RS256'}).setIssuer(env.GITHUB_APP_ID).setIssuedAt(now-60).setExpirationTime(now+540).sign(privateKey);
-  const headers=(token)=>({'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2026-03-10','User-Agent':'mng-admin-preview','Content-Type':'application/json'});
+  const headers=(token)=>({'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'mng-admin-preview','Content-Type':'application/json'});
   const r=await fetcher(`${API}/app/installations/${env.GITHUB_INSTALLATION_ID}/access_tokens`,{method:'POST',headers:headers(jwt),body:JSON.stringify({repositories:['mng-homepage'],permissions:options.secrets?{secrets:'write'}:permissions}),redirect:'manual',signal:AbortSignal.timeout(10000)});
   if(!r.ok) throw new GitHubError('GitHub App 인증에 실패했습니다.');
   const installation=await r.json();
