@@ -24,8 +24,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  admin-preview:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/admin-portal'
+    uses: ./.github/workflows/admin-preview.yml
+    with:
+      issue: ${{ inputs.issue }}
+    secrets: inherit
   codex:
     if: >
+      github.ref != 'refs/heads/codex/admin-portal' && (
       github.event_name == 'workflow_dispatch' || (
       (
         github.event_name == 'issues' &&
@@ -44,6 +51,7 @@ jobs:
         github.event_name == 'pull_request_review_comment' &&
         github.event.comment.user.type != 'Bot' &&
         (contains(github.event.comment.body, '@codex') || contains(github.event.comment.body, '/codex'))
+      )
       )
       )
     runs-on: ubuntu-latest

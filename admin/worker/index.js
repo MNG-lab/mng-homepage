@@ -1,5 +1,7 @@
+import { requestsAPI } from './requests.js';
 import { SignJWT, jwtVerify, createRemoteJWKSet } from 'jose';
 
+const handleRequests = requestsAPI();
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const encoder = new TextEncoder();
 const ROLES = new Set(['owner', 'admin', 'editor']);
@@ -113,9 +115,11 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
       const user = await session(request,env);
       if (path === '/login' && request.method === 'GET') return secure(user ? redirect('/dashboard') : loginPage(url.searchParams.has('error')));
       if (!user) return secure(path.startsWith('/api/') ? json({error:'Unauthenticated'},401) : redirect('/login'));
-      if (path === '/api/session' && request.method === 'GET') return secure(json({user,mode:'demo'}));
-      // No GitHub mutations are enabled in the authenticated preview.
-      if (path.startsWith('/api/')) return secure(json({error:'Not implemented in preview'},404));
+      if (path === '/api/session' && request.method === 'GET') return secure(json({user,mode:env.GITHUB_ENABLED==='true'?'github':'demo'}));
+      if (path.startsWith('/api/')) {
+        if(env.GITHUB_ENABLED !== 'true') return secure(json({error:'Not implemented in preview'},404));
+        return secure(await handleRequests(request,env,user));
+      }
       if (request.method !== 'GET' && request.method !== 'HEAD') return secure(json({error:'Method not allowed'},405));
       return secure(await env.ASSETS.fetch(request));
     } catch { return secure(json({error:'Service unavailable'},503)); }

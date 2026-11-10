@@ -2,7 +2,7 @@ name: CI Quality Gate
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "codex/admin-sandbox"]
   workflow_dispatch:
 
 permissions:

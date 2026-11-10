@@ -1,0 +1,93 @@
+name: Admin preview isolated Codex job
+on:
+  workflow_call:
+    inputs:
+      issue:
+        required: true
+        type: string
+    secrets:
+      MNG_AI_CODE_BOT_APP_ID:
+        required: true
+      MNG_AI_CODE_BOT_PRIVATE_KEY:
+        required: true
+      CODEX_CLI_KEY:
+        required: true
+      CODEX_MODEL:
+        required: true
+permissions:
+  contents: read
+jobs:
+  preview:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/admin-portal' && github.repository == 'MNG-lab/mng-homepage'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: admin-preview-${{ inputs.issue }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/create-github-app-token@v3.3.0
+        id: app
+        with:
+          app-id: ${{ secrets.MNG_AI_CODE_BOT_APP_ID }}
+          private-key: ${{ secrets.MNG_AI_CODE_BOT_PRIVATE_KEY }}
+          owner: MNG-lab
+          repositories: mng-homepage
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: codex/admin-portal
+          path: automation
+          persist-credentials: false
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: codex/admin-sandbox
+          path: site
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: site/.nvmrc
+      - name: Validate test request and prepare prompt
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REQUEST_ISSUE: ${{ inputs.issue }}
+        run: node automation/admin/scripts/preview-job.mjs prepare
+      - name: Install dependencies and Codex
+        working-directory: site
+        run: |
+          npm ci
+          npm install --prefix "$RUNNER_TEMP/codex-cli" @openai/codex
+      - name: Generate website changes in sandbox
+        working-directory: site
+        env:
+          CODEX_CLI_KEY: ${{ secrets.CODEX_CLI_KEY }}
+          CODEX_MODEL: ${{ secrets.CODEX_MODEL }}
+          CODEX_HOME: ${{ runner.temp }}/admin-preview-codex
+        run: |
+          set -euo pipefail
+          test -n "$CODEX_CLI_KEY"
+          test -n "$CODEX_MODEL"
+          mkdir -p "$CODEX_HOME"
+          printf '%s' "$CODEX_CLI_KEY" > "$CODEX_HOME/auth.json"
+          chmod 600 "$CODEX_HOME/auth.json"
+          trap 'rm -f "$CODEX_HOME/auth.json"' EXIT
+          unset CODEX_CLI_KEY
+          "$RUNNER_TEMP/codex-cli/node_modules/.bin/codex" --ask-for-approval never exec --sandbox workspace-write --model "$CODEX_MODEL" - < "$RUNNER_TEMP/admin-preview-prompt.txt"
+      - name: Validate scope and build
+        run: |
+          node automation/admin/scripts/preview-job.mjs validate
+          cd site
+          npm run build
+          node scripts/validate-content.mjs
+          node ../automation/admin/scripts/preview-job.mjs validate
+      - name: Publish test branch and PR
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REQUEST_ISSUE: ${{ inputs.issue }}
+          BOT_SLUG: ${{ steps.app.outputs.app-slug }}
+        run: node automation/admin/scripts/preview-job.mjs publish
+      - name: Remove temporary Codex credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/admin-preview-codex/auth.json"

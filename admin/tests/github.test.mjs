@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {generateKeyPair,exportPKCS8} from 'jose';
+import {createGitHub,assertPreviewConfig,assertTestPull,assertTestIssue,REPOSITORY,TEST_BASE,WORKFLOW_REF} from '../worker/github.js';
+const env={GITHUB_REPOSITORY:REPOSITORY,GITHUB_TEST_BASE:TEST_BASE,GITHUB_WORKFLOW_REF:WORKFLOW_REF,GITHUB_APP_ID:'1',GITHUB_INSTALLATION_ID:'2'};
+const sha='a'.repeat(40);
+const pr={base:{repo:{full_name:REPOSITORY},ref:TEST_BASE},head:{repo:{full_name:REPOSITORY},ref:'admin-preview/issue-123-456',sha},state:'open',draft:false,mergeable:true};
+const issue={number:123,labels:[{name:'admin-preview'}],body:'<!-- mng-admin-preview:v1 -->\nrequest'};
+test('production branches, other repositories, forks and stale heads are rejected',()=>{
+ assertPreviewConfig(env);assertTestPull(pr,sha);assertTestIssue(issue);
+ for(const key of ['GITHUB_REPOSITORY','GITHUB_TEST_BASE','GITHUB_WORKFLOW_REF']) assert.throws(()=>assertPreviewConfig({...env,[key]:'main'}));
+ assert.throws(()=>assertTestPull({...pr,base:{...pr.base,ref:'main'}}));
+ assert.throws(()=>assertTestPull({...pr,head:{...pr.head,repo:{full_name:'other/repo'}}}));
+ assert.throws(()=>assertTestPull({...pr,head:{...pr.head,ref:'codex/issue-123-456'}}));
+ assert.throws(()=>assertTestPull(pr,'b'.repeat(40)));
+ assert.throws(()=>assertTestIssue({...issue,labels:[{name:'codex-auto'}]}));
+ assert.throws(()=>assertTestIssue({...issue,pull_request:{}}));
+});
+test('installation token is restricted to one repo; requests never add production triggers',async()=>{
+ const {privateKey}=await generateKeyPair('RS256',{extractable:true});
+ const config={...env,GITHUB_APP_PRIVATE_KEY:await exportPKCS8(privateKey)};
+ const calls=[];
+ const gh=await createGitHub(config,async(url,options)=>{
+  const body=options.body?JSON.parse(options.body):null;calls.push({url,body,method:options.method});
+  if(url.includes('/access_tokens')) return Response.json({token:'mock'});
+  if(url.endsWith('/issues/123')) return Response.json(issue);
+  if(url.endsWith('/pulls/123')) return Response.json(pr);
+  if(url.includes('/actions/runs?')) return Response.json({workflow_runs:[{id:1,path:'.github/workflows/ci-quality.yml',head_sha:sha,pull_requests:[{number:123}],status:'completed',conclusion:'success'}]});
+  if(url.endsWith('/dispatches')) return new Response(null,{status:204});
+  return Response.json({number:123,merged:true});
+ });
+ assert.deepEqual(calls[0].body.repositories,['mng-homepage']);
+ assert.equal(calls[0].body.permissions.secrets,undefined);
+ await gh.createRequest({title:'Update members',description:'Test text',page:'Members',requestId:'12345678-1234-1234-1234-123456789abc'});
+ assert.deepEqual(calls.at(-1).body.labels,['admin-preview']);
+ assert.ok(!calls.at(-1).body.body.includes('@gmail.com'));
+ await gh.dispatch(123);assert.equal(calls.at(-1).body.ref,WORKFLOW_REF);
+ const count=calls.length;
+ await assert.rejects(gh.merge(123,'b'.repeat(40)));assert.equal(calls.length,count+1);
+ await gh.merge(123,sha);assert.deepEqual(calls.at(-1).body,{sha,merge_method:'merge'});
+ await assert.rejects(gh.issue('../main'));
+});

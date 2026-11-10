@@ -17,6 +17,7 @@ import {
 } from "./model";
 import "./style.css";
 import AuthGate from "./AuthGate";
+import ConnectedApp from "./ConnectedApp";
 
 function Icon({ name, size = 20, ...props }) {
   const paths = {
@@ -1119,7 +1120,7 @@ function RequestForm({ submit, cancel }) {
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthGate>{(user) => <App authenticatedUser={user} />}</AuthGate>
+      <AuthGate>{(user,mode) => mode === "github" ? <ConnectedApp user={user}/> : <App authenticatedUser={user} />}</AuthGate>
     </BrowserRouter>
   </React.StrictMode>,
 );

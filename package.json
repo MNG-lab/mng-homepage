@@ -27,8 +27,9 @@
     "admin:dev": "vite --config admin/vite.config.js",
     "admin:build": "vite build --config admin/vite.config.js",
     "admin:preview": "vite preview --config admin/vite.config.js",
-    "admin:test": "node --test admin/tests/model.test.mjs admin/tests/auth.test.mjs && npm run admin:build && node admin/tests/smoke.mjs",
-    "admin:build:auth": "VITE_ADMIN_AUTH=required vite build --config admin/vite.config.js"
+    "admin:test": "node --test admin/tests/model.test.mjs admin/tests/auth.test.mjs admin/tests/github.test.mjs admin/tests/requests.test.mjs && npm run admin:build && node admin/tests/smoke.mjs",
+    "admin:build:auth": "VITE_ADMIN_AUTH=required vite build --config admin/vite.config.js",
+    "admin:test:connected": "npm run admin:build:auth && node admin/tests/connected-smoke.mjs"
   },
   "dependencies": {
     "jose": "6.2.17",
