@@ -1,3 +1,4 @@
+import organizationAvatar from "./assets/mng-lab-avatar.png";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, useLocation, useNavigate } from "react-router-dom";
@@ -397,9 +398,7 @@ function App({ authenticatedUser = null }) {
             navigate("overview");
           }}
         >
-          <span className="brand-symbol">
-            m<span>·</span>
-          </span>
+          <img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40" />
           <span>
             MNG Lab<small>홈페이지 관리</small>
           </span>

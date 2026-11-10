@@ -1,3 +1,4 @@
+import organizationAvatar from "./assets/mng-lab-avatar.png";
 import React,{useEffect,useState,useRef} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router-dom';
 import {api,requestState,labels,date,description as cleanDescription} from './api.js';
@@ -36,7 +37,7 @@ export default function ConnectedApp({user}) {
   try{const data=await api('/api/requests',{requestId,title,page,description});sessionStorage.removeItem('mng-request-id');setRequestId(crypto.randomUUID());setTitle('');setDescription('');await refresh();navigate(`/requests/${data.issue}`);setNotice(data.warning||'요청을 접수했습니다. 작업 상태는 자동으로 갱신됩니다.');}catch(e){setError(e.message);}finally{setBusy(false);}
  }
  return <div className="app-shell">
-  <aside className="sidebar"><Link className="brand" to="/dashboard"><span className="brand-symbol">m<span>·</span></span><span>MNG Lab<small>홈페이지 관리</small></span></Link><div className="workspace-label">WORKSPACE <span>연동 테스트</span></div>
+  <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리</small></span></Link><div className="workspace-label">WORKSPACE <span>연동 테스트</span></div>
    <nav aria-label="주 메뉴">{[['/dashboard','대시보드'],['/requests','수정 요청'],['/history','변경 이력'],['/settings','설정']].map(([path,label])=><button key={path} className={`nav-item ${location.pathname===path||location.pathname.startsWith(path+'/')?'active':''}`} onClick={()=>navigate(path)}>{label}</button>)}</nav>
    <div className="sidebar-bottom"><div className="help-card"><strong>운영 홈페이지와 분리돼요</strong><p>테스트 환경에서 작성·검토·복원을 체험하세요.</p></div><div className="profile"><div><strong>{user.role==='owner'?'최고 관리자':user.role==='admin'?'관리자':'편집자'}</strong><small>{user.email}</small></div></div></div>
   </aside>

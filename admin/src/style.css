@@ -1678,3 +1678,5 @@ select {
 @media(max-width:700px){.request-tools,.member-list>li {flex-direction:column;align-items:stretch;}.connection-grid {grid-template-columns:1fr;}.connected-list a {align-items:flex-start;flex-direction:column;gap:10px;}.timeline-content{padding-left:12px;}.history-timeline>li{gap:10px;}.timeline-content .connected-heading{align-items:flex-start;gap:10px;}.request-progress{gap:5px;}.request-progress li{font-size:10px;}.connected-main .connected-heading h1{font-size:25px;}}
 
 .request-progress strong{display:block;font-weight:600}.request-progress small{display:block;margin-top:8px;line-height:1.5}.request-progress .active{border-color:#315c9c;color:#315c9c;background:#edf3ff}.request-progress .failed{border-color:#b94b35;color:#a53f2c}.request-progress .stopped{border-color:#8994a4;color:#65738a}.progress-note{font-size:12px;color:#718099}
+
+.brand-avatar { object-fit: contain; padding: 0; flex-shrink: 0; background: #fff; }
