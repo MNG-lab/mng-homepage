@@ -5,7 +5,28 @@
   "compatibility_date": "2026-11-10",
   "workers_dev": true,
   "preview_urls": false,
-  "assets": {"directory": "../dist-admin", "binding": "ASSETS", "not_found_handling": "single-page-application", "run_worker_first": true},
-  "observability": {"enabled": false},
-  "vars": {"APP_ORIGIN": "https://mng-admin-preview.chominho96-aaa.workers.dev"}
+  "assets": {
+    "directory": "../dist-admin",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "APP_ORIGIN": "https://mng-admin-preview.chominho96-aaa.workers.dev",
+    "GITHUB_REPOSITORY": "MNG-lab/mng-homepage",
+    "GITHUB_TEST_BASE": "codex/admin-sandbox",
+    "GITHUB_WORKFLOW_REF": "codex/admin-portal",
+    "GITHUB_ENABLED": "true"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mng-admin-preview",
+      "database_id": "d70ab0f8-ffef-4448-9811-2e0ab3947cbe",
+      "migrations_dir": "migrations"
+    }
+  ]
 }

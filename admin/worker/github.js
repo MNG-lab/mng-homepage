@@ -36,14 +36,14 @@ export async function createGitHub(env, fetcher=fetch) {
   const now=Math.floor(Date.now()/1000);
   const jwt=await new SignJWT({}).setProtectedHeader({alg:'RS256'}).setIssuer(env.GITHUB_APP_ID).setIssuedAt(now-60).setExpirationTime(now+540).sign(privateKey);
   const headers=(token)=>({'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2026-03-10','User-Agent':'mng-admin-preview','Content-Type':'application/json'});
-  const r=await fetcher(`${API}/app/installations/${env.GITHUB_INSTALLATION_ID}/access_tokens`,{method:'POST',headers:headers(jwt),body:JSON.stringify({repositories:['mng-homepage'],permissions}),redirect:'error',signal:AbortSignal.timeout(10000)});
+  const r=await fetcher(`${API}/app/installations/${env.GITHUB_INSTALLATION_ID}/access_tokens`,{method:'POST',headers:headers(jwt),body:JSON.stringify({repositories:['mng-homepage'],permissions}),redirect:'manual',signal:AbortSignal.timeout(10000)});
   if(!r.ok) throw new GitHubError('GitHub App 인증에 실패했습니다.');
   const installation=await r.json();
   if(!installation.token) throw new GitHubError('GitHub 인증 응답이 올바르지 않습니다.');
   async function call(path, method='GET', body) {
     // Internal, relative repository paths only. Never accept arbitrary URLs.
     if (!path.startsWith('/') || path.includes('..') || path.includes('://')) throw new GitHubError('잘못된 GitHub 경로입니다.',400);
-    const response=await fetcher(`${API}/repos/${REPOSITORY}${path}`,{method,headers:headers(installation.token),body:body===undefined?undefined:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(15000)});
+    const response=await fetcher(`${API}/repos/${REPOSITORY}${path}`,{method,headers:headers(installation.token),body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',signal:AbortSignal.timeout(15000)});
     if (!response.ok) throw new GitHubError(response.status===409 || response.status===422 ? 'GitHub 상태가 변경되었습니다. 새로고침 후 확인해 주세요.' : 'GitHub 요청을 완료하지 못했습니다.',response.status===404?404:response.status===409||response.status===422?409:502);
     return response.status===204?null:response.json();
   }

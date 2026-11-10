@@ -21,6 +21,7 @@ test('installation token is restricted to one repo; requests never add productio
  const config={...env,GITHUB_APP_PRIVATE_KEY:await exportPKCS8(privateKey)};
  const calls=[];
  const gh=await createGitHub(config,async(url,options)=>{
+  assert.equal(options.redirect,'manual');
   const body=options.body?JSON.parse(options.body):null;calls.push({url,body,method:options.method});
   if(url.includes('/access_tokens')) return Response.json({token:'mock'});
   if(url.endsWith('/issues/123')) return Response.json(issue);
