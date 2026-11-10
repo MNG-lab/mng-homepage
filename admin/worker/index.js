@@ -1,7 +1,9 @@
+import {readMember, managementAPI} from './management.js';
 import { requestsAPI } from './requests.js';
 import { SignJWT, jwtVerify, createRemoteJWKSet } from 'jose';
 
 const handleRequests = requestsAPI();
+const handleManagement = managementAPI();
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const encoder = new TextEncoder();
 const ROLES = new Set(['owner', 'admin', 'editor']);
@@ -34,17 +36,12 @@ async function sign(data, env, audience, seconds) {
 async function verify(token, env, audience) {
   return (await jwtVerify(token, key(env), {algorithms:['HS256'], issuer:origin(env), audience})).payload;
 }
-function membership(env, email, sub) {
-  const users = JSON.parse(env.MEMBERS_JSON || '{}');
-  const member = Object.hasOwn(users, email) ? users[email] : null;
-  if (!member || !ROLES.has(member.role) || (member.sub && member.sub !== sub)) return null;
-  return {email, sub, role:member.role};
-}
 export async function session(request, env) {
   try {
     const p = await verify(cookies(request)[sessionName], env, 'mng-session');
     if (typeof p.email !== 'string' || typeof p.sub !== 'string') return null;
-    return membership(env, p.email, p.sub);
+    const member=await readMember(env,p.email,p.sub);
+    return member?{...member,authTime:p.iat}:null;
   } catch { return null; }
 }
 function json(data, status=200) {
@@ -63,7 +60,7 @@ function secure(response) {
   return result;
 }
 function loginPage(error=false) {
-  return new Response(`<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>MNG 관리자 로그인</title><style>body{font-family:system-ui;background:#f5f7fb;color:#17253e;display:grid;place-items:center;min-height:95vh;margin:0}main{padding:36px;background:white;border:1px solid #dbe2ee;border-radius:18px;max-width:420px;margin:24px}p{line-height:1.7;color:#526079}a{display:block;background:#275edc;color:white;text-align:center;padding:14px;border-radius:10px;text-decoration:none;margin-top:24px}small{display:block;margin-top:22px;color:#526079}</style><main><h1>MNG 홈페이지 관리</h1><p>허용된 Google 계정으로 로그인해 주세요.</p>${error?'<p role="alert">로그인을 완료하지 못했어요. 허용된 계정인지 확인한 뒤 다시 시도해 주세요.</p>':''}<a href="/auth/google/start">Google 계정으로 로그인</a><small>테스트 환경 · 로그인은 실제 인증이며, 수정 요청과 복원은 데모입니다.</small></main></html>`, {headers:{'Content-Type':'text/html; charset=utf-8'}});
+  return new Response(`<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>MNG 관리자 로그인</title><style>body{font-family:system-ui;background:#f5f7fb;color:#17253e;display:grid;place-items:center;min-height:95vh;margin:0}main{padding:36px;background:white;border:1px solid #dbe2ee;border-radius:18px;max-width:420px;margin:24px}p{line-height:1.7;color:#526079}a{display:block;background:#275edc;color:white;text-align:center;padding:14px;border-radius:10px;text-decoration:none;margin-top:24px}small{display:block;margin-top:22px;color:#526079}</style><main><h1>MNG 홈페이지 관리</h1><p>허용된 Google 계정으로 로그인해 주세요.</p>${error?'<p role="alert">로그인을 완료하지 못했어요. 허용된 계정인지 확인한 뒤 다시 시도해 주세요.</p>':''}<a href="/auth/google/start">Google 계정으로 로그인</a><small>테스트 환경 · 로그인은 실제 인증이며, 작업은 운영 홈페이지와 분리된 테스트 브랜치에만 반영됩니다.</small></main></html>`, {headers:{'Content-Type':'text/html; charset=utf-8'}});
 }
 async function verifyGoogle(token, env) {
   return (await jwtVerify(token, googleKeys, {algorithms:['RS256'], issuer:['https://accounts.google.com','accounts.google.com'], audience:env.GOOGLE_CLIENT_ID})).payload;
@@ -95,10 +92,10 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
           const identity = await verifyIdentity(tokens.id_token,env);
           if (identity.nonce !== flow.nonce || identity.email_verified !== true || typeof identity.sub !== 'string' || typeof identity.email !== 'string') throw new Error('Invalid identity');
           const email = identity.email.toLowerCase();
-          const user = membership(env,email,identity.sub);
+          const user = await readMember(env,email,identity.sub,true);
           // For non-Google-managed email, require a pre-bound immutable subject.
           const member = JSON.parse(env.MEMBERS_JSON || '{}')[email];
-          if (!user || (!email.endsWith('@gmail.com') && !identity.hd && member.sub !== identity.sub)) throw new Error('Not allowed');
+          if (!user || (!email.endsWith('@gmail.com') && !identity.hd && member?.sub !== identity.sub)) throw new Error('Not allowed');
           const token = await sign({email,sub:identity.sub},env,'mng-session',ttl);
           const result = redirect('/dashboard');
           result.headers.append('Set-Cookie',cookie(flowName,'',0));
@@ -118,7 +115,7 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
       if (path === '/api/session' && request.method === 'GET') return secure(json({user,mode:env.GITHUB_ENABLED==='true'?'github':'demo'}));
       if (path.startsWith('/api/')) {
         if(env.GITHUB_ENABLED !== 'true') return secure(json({error:'Not implemented in preview'},404));
-        return secure(await handleRequests(request,env,user));
+        return secure(await (path.startsWith('/api/settings')?handleManagement:handleRequests)(request,env,user));
       }
       if (request.method !== 'GET' && request.method !== 'HEAD') return secure(json({error:'Method not allowed'},405));
       return secure(await env.ASSETS.fetch(request));

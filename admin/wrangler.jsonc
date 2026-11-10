@@ -19,7 +19,8 @@
     "GITHUB_REPOSITORY": "MNG-lab/mng-homepage",
     "GITHUB_TEST_BASE": "codex/admin-sandbox",
     "GITHUB_WORKFLOW_REF": "codex/admin-portal",
-    "GITHUB_ENABLED": "true"
+    "GITHUB_ENABLED": "true",
+    "MEMBERS_DB": "true"
   },
   "d1_databases": [
     {

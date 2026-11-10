@@ -9,8 +9,44 @@ export function requestsAPI({github=createGitHub}={}) {
   try {
    const gh=await github(env);
    if(url.pathname==='/api/requests' && request.method==='GET') {
-    const [issues,pulls]=await Promise.all([gh.list(),gh.pulls()]);
-    return reply({requests:issues.map(issue=>({id:issue.number,title:issue.title.replace(/^\[Admin Preview\] /,''),description:issue.body,url:issue.html_url,state:issue.state,createdAt:issue.created_at,pull:pulls.filter(p=>p.head.ref.startsWith(`admin-preview/issue-${issue.number}-`)).sort((a,b)=>b.number-a.number)[0]||null}))});
+    const [issues,pulls,runs]=await Promise.all([gh.list(),gh.pulls(),gh.runs()]);
+    return reply({requests:issues.map(issue=>({id:issue.number,title:issue.title.replace(/^\[Admin Preview\] /,''),description:issue.body,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run:runs.find(r=>r.title===`Admin preview #${issue.number}`)||null,pull:pulls.filter(p=>p.head.ref.startsWith(`admin-preview/issue-${issue.number}-`)).sort((a,b)=>b.number-a.number)[0]||null}))});
+   }
+   if(url.pathname==='/api/history'&&request.method==='GET') return reply(await gh.history());
+   const detail=url.pathname.match(/^\/api\/pulls\/([1-9]\d*)$/);
+   if(detail&&request.method==='GET')return reply(await gh.detail(Number(detail[1])));
+   const plan=url.pathname.match(/^\/api\/history\/([1-9]\d*)$/);
+   if(plan&&request.method==='GET') {const value=await gh.restorePlan(Number(plan[1]));return reply({source:value.source,current:value.current,target:value.target,changes:value.changes});}
+   const close=url.pathname.match(/^\/api\/requests\/([1-9]\d*)\/close$/);
+   if(close&&request.method==='POST') {
+    if(user.role==='editor')return reply({error:'관리자만 요청을 종료할 수 있습니다.'},403);
+    return reply(await gh.close(Number(close[1])));
+   }
+   const restore=url.pathname.match(/^\/api\/history\/([1-9]\d*)\/restore$/);
+   const retry=url.pathname.match(/^\/api\/requests\/([1-9]\d*)\/retry$/);
+   if((restore||retry)&&request.method==='POST') {
+    if(user.role==='editor')return reply({error:'관리자만 실행할 수 있습니다.'},403);
+    const body=await request.json();
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(body.requestId||''))return reply({error:'요청 식별자가 필요합니다.'},400);
+    if(restore&&!/^[a-f0-9]{40}$/.test(body.base||''))return reply({error:'현재 기준 정보가 필요합니다.'},400);
+    const payload=JSON.stringify({path:url.pathname,base:body.base||null});
+    const reserved=await env.DB.prepare("INSERT OR IGNORE INTO operations(id,actor,payload,state) VALUES (?,?,?,'pending')").bind(body.requestId,user.sub,payload).run();
+    if(!reserved.meta.changes) {
+     const row=await env.DB.prepare('SELECT * FROM operations WHERE id=?').bind(body.requestId).first();
+     if(row.actor!==user.sub||row.payload!==payload)return reply({error:'이미 사용된 식별자입니다.'},409);
+     return row.result?reply(JSON.parse(row.result)):reply({error:'이미 처리 중이거나 결과 확인이 필요합니다. 목록을 확인해 주세요.'},409);
+    }
+    const claim=async resource=>{
+     const lock=await env.DB.prepare('INSERT OR IGNORE INTO operation_claims(resource,operation) VALUES (?,?)').bind(resource,body.requestId).run();
+     if(!lock.meta.changes)throw new GitHubError('같은 작업이 이미 접수됐습니다. 목록에서 결과를 확인해 주세요.',409);
+    };
+    let result;
+    try {
+     if(restore){await claim(`restore:${restore[1]}:${body.base}`);result=await gh.restore(Number(restore[1]),body.base,body.requestId,async issue=>{await env.DB.prepare('UPDATE operations SET issue=? WHERE id=?').bind(issue,body.requestId).run();});}
+     else {await gh.retry(Number(retry[1]),claim);result={issue:Number(retry[1])};}
+    } catch(e) {await env.DB.prepare("UPDATE operations SET state='uncertain' WHERE id=?").bind(body.requestId).run();throw e;}
+    await env.DB.prepare("UPDATE operations SET state='complete',result=? WHERE id=?").bind(JSON.stringify(result),body.requestId).run();
+    return reply(result,201);
    }
    if(url.pathname==='/api/requests' && request.method==='POST') {
     if(!request.headers.get('Content-Type')?.startsWith('application/json')) return reply({error:'JSON 요청이 필요합니다.'},415);
@@ -46,7 +82,7 @@ export function requestsAPI({github=createGitHub}={}) {
      const body=await request.json();
      const merged=await gh.merge(Number(match[1]),body.head);
      if(!merged.merged) return reply({error:'PR이 반영되지 않았습니다. 상태를 확인해 주세요.'},409);
-     return reply({merged:true,sha:merged.sha});
+     return reply({merged:true,sha:merged.sha,warning:merged.warning});
    }
    return reply({error:'지원하지 않는 작업입니다.'},404);
   } catch(error) {

@@ -1,5 +1,7 @@
 name: Codex comment-to-code (Issue/PR) - no approval prompts
 
+run-name: ${{ github.ref == 'refs/heads/codex/admin-portal' && format('Admin preview #{0}', inputs.issue) || 'Codex comment-to-code' }}
+
 on:
   issues:
     types: [opened]

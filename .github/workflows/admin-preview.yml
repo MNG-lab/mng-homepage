@@ -10,8 +10,10 @@ on:
         required: true
       MNG_AI_CODE_BOT_PRIVATE_KEY:
         required: true
+      CODEX_AUTH_JSON_PREVIEW:
+        required: false
       CODEX_CLI_KEY:
-        required: true
+        required: false
       CODEX_MODEL:
         required: true
 permissions:
@@ -62,7 +64,7 @@ jobs:
       - name: Generate website changes in sandbox
         working-directory: site
         env:
-          CODEX_CLI_KEY: ${{ secrets.CODEX_CLI_KEY }}
+          CODEX_CLI_KEY: ${{ secrets.CODEX_AUTH_JSON_PREVIEW || secrets.CODEX_CLI_KEY }}
           CODEX_MODEL: ${{ secrets.CODEX_MODEL }}
           CODEX_HOME: ${{ runner.temp }}/admin-preview-codex
         run: |
