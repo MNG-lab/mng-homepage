@@ -31,6 +31,29 @@ function number(value) {
   if (!Number.isSafeInteger(value) || value < 1) throw new GitHubError('올바른 요청 번호가 필요합니다.',400);
   return value;
 }
+export function describePulls(pulls) {
+  const byId=new Map(pulls.map(p=>[p.number,p]));
+  const clean=p=>(p.title||'이전 변경').replace(/^\[Admin Preview\] /,'');
+  function sourceName(p,seen=new Set()) {
+    if(seen.has(p.number))return '이전 홈페이지';
+    seen.add(p.number);
+    const match=p.body?.match(/<!-- restore:([1-9]\d*):[a-f0-9]{40} -->/);
+    const source=match&&byId.get(Number(match[1]));
+    return source?sourceName(source,seen):clean(p);
+  }
+  return pulls.map(p=>{
+    const match=p.body?.match(/<!-- restore:([1-9]\d*):[a-f0-9]{40} -->/);
+    const target=match&&byId.get(Number(match[1]));
+    const restoration=match?{number:Number(match[1]),name:target?sourceName(target):'이전 홈페이지',mergedAt:target?.mergedAt||null}:null;
+    return {...p,restoration,displayTitle:restoration?`${restoration.name} 상태로 복원`:clean(p)};
+  });
+}
+export function selectQualityRun(runs,pr,id,allowMergedFallback=false) {
+ return runs.filter(r=>r.path==='.github/workflows/ci-quality.yml'&&r.head_sha===pr.head.sha&&(
+  r.pull_requests?.some(p=>p.number===id)||
+  (allowMergedFallback&&!!pr.merged_at&&r.event==='pull_request'&&r.head_branch===pr.head.ref&&r.head_repository?.full_name===REPOSITORY&&r.repository?.full_name===REPOSITORY&&!r.pull_requests?.length)
+ )).sort((a,b)=>b.id-a.id)[0];
+}
 export async function createGitHub(env, fetcher=fetch, options={}) {
   assertPreviewConfig(env);
   if (!/^\d+$/.test(env.GITHUB_APP_ID || '') || !/^\d+$/.test(env.GITHUB_INSTALLATION_ID || '') || !env.GITHUB_APP_PRIVATE_KEY) throw new GitHubError('GitHub App 연결이 필요합니다.',503);
@@ -65,7 +88,7 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       for(let page=1;page<=10;page++) {
         const batch=await call(`/pulls?state=all&base=${encodeURIComponent(TEST_BASE)}&per_page=100&page=${page}`);
         for(const pull of batch) {try{assertTestPull(pull);result.push(pull);}catch{}}
-        if(batch.length<100) return result.map(p=>({number:p.number,title:p.title,url:p.html_url,state:p.state,merged:!!p.merged_at,head:{ref:p.head.ref,sha:p.head.sha},draft:p.draft,mergedAt:p.merged_at,mergeSha:p.merge_commit_sha,body:p.body}));
+        if(batch.length<100) return describePulls(result.map(p=>({number:p.number,title:p.title,url:p.html_url,state:p.state,merged:!!p.merged_at,head:{ref:p.head.ref,sha:p.head.sha},draft:p.draft,mergedAt:p.merged_at,mergeSha:p.merge_commit_sha,body:p.body})));
       }
       throw new GitHubError('PR 조회 범위를 초과했습니다.');
     },
@@ -84,13 +107,13 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     async current() {return (await call(`/git/ref/heads/${TEST_BASE}`)).object.sha;},
     async history() {
       const [pulls,current]=await Promise.all([this.pulls(),this.current()]);
-      return {current,revisions:pulls.filter(p=>p.merged).sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt)).map(p=>({...p,restoration:/<!-- restore:/.test(p.body||'')}))};
+      return {current,revisions:pulls.filter(p=>p.merged).sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt))};
     },
     async detail(id) {
       const pr=await this.pull(id);
       const files=await call(`/pulls/${number(id)}/files?per_page=100`);
       const runs=await call(`/actions/runs?head_sha=${pr.head.sha}&event=pull_request&per_page=100`);
-      const ci=(runs.workflow_runs||[]).filter(r=>r.path==='.github/workflows/ci-quality.yml'&&r.head_sha===pr.head.sha&&r.pull_requests?.some(p=>p.number===id)).sort((a,b)=>b.id-a.id)[0];
+      const ci=selectQualityRun(runs.workflow_runs||[],pr,id,true);
       return {head:pr.head.sha,files:files.map(f=>({path:f.filename,additions:f.additions,deletions:f.deletions,patch:f.patch||null})),truncated:files.length===100,ci:ci?{status:ci.status,conclusion:ci.conclusion,url:ci.html_url}:null};
     },
     async runs() {
@@ -130,13 +153,16 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     async restore(id,expectedBase,requestId,onIssue) {
       const plan=await this.restorePlan(id,expectedBase);
       if(!plan.changes.length)throw new GitHubError('현재 홈페이지가 이미 선택한 시점과 같습니다.',409);
-      const issue=await this.createRequest({requestId,title:`시점 복원: PR #${id}`,page:'Home',description:`PR #${id} 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`});
+      const source=(await this.pulls()).find(p=>p.number===id);
+      const name=(source?.restoration?.name||source?.displayTitle||plan.title.replace(/^\[Admin Preview\] /,'')).slice(0,75);
+      const title=`${name} 상태로 복원`;
+      const issue=await this.createRequest({requestId,title,page:'Home',description:`‘${name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`});
       await onIssue(issue.number);
       const tree=await call('/git/trees','POST',{tree:plan.entries});
       const commit=await call('/git/commits','POST',{message:`Restore website snapshot from PR #${id}`,tree:tree.sha,parents:[plan.current]});
       const branch=`admin-preview/issue-${issue.number}-${Date.now()}`;
       await call('/git/refs','POST',{ref:`refs/heads/${branch}`,sha:commit.sha});
-      const pr=await call('/pulls','POST',{title:`[Admin Preview] 시점 복원: PR #${id}`,head:branch,base:TEST_BASE,body:`<!-- mng-admin-preview:v1 -->\n<!-- issue:${issue.number} -->\n<!-- restore:${id}:${plan.current} -->\n\nPR #${id} 직후 홈페이지 전체 상태로 복원합니다. src/, public/, index.html만 복원하며 요청과 이력은 보존합니다.`});
+      const pr=await call('/pulls','POST',{title:`[Admin Preview] ${title}`,head:branch,base:TEST_BASE,body:`<!-- mng-admin-preview:v1 -->\n<!-- issue:${issue.number} -->\n<!-- restore:${id}:${plan.current} -->\n\n‘${name}’ 반영 직후 홈페이지 전체 상태로 복원합니다. src/, public/, index.html만 복원하며 요청과 이력은 보존합니다.`});
       return {issue:issue.number,pull:pr.number};
     },
     async credentialStatus() {

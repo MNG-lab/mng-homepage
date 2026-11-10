@@ -10,7 +10,11 @@ export function requestsAPI({github=createGitHub}={}) {
    const gh=await github(env);
    if(url.pathname==='/api/requests' && request.method==='GET') {
     const [issues,pulls,runs]=await Promise.all([gh.list(),gh.pulls(),gh.runs()]);
-    return reply({requests:issues.map(issue=>({id:issue.number,title:issue.title.replace(/^\[Admin Preview\] /,''),description:issue.body,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run:runs.find(r=>r.title===`Admin preview #${issue.number}`)||null,pull:pulls.filter(p=>p.head.ref.startsWith(`admin-preview/issue-${issue.number}-`)).sort((a,b)=>b.number-a.number)[0]||null}))});
+    return reply({requests:issues.map(issue=>{
+      const pull=pulls.filter(p=>p.head.ref.startsWith(`admin-preview/issue-${issue.number}-`)).sort((a,b)=>b.number-a.number)[0]||null;
+      const restoration=pull?.restoration||null;
+      return {id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin Preview\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run:runs.find(r=>r.title===`Admin preview #${issue.number}`)||null,pull};
+    })});
    }
    if(url.pathname==='/api/history'&&request.method==='GET') return reply(await gh.history());
    const detail=url.pathname.match(/^\/api\/pulls\/([1-9]\d*)$/);

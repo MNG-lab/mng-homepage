@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useState,useRef} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router-dom';
 import {api,requestState,labels,date,description as cleanDescription} from './api.js';
 import History from './History.jsx';
@@ -12,6 +12,7 @@ export default function ConnectedApp({user}) {
  const [title,setTitle]=useState(''),[page,setPage]=useState('Members'),[description,setDescription]=useState('');
  const [requestId,setRequestId]=useState(()=>sessionStorage.getItem('mng-request-id')||crypto.randomUUID());
  const [query,setQuery]=useState('');
+ const refreshSequence=useRef(0);
  const detailId=location.pathname.match(/^\/requests\/(\d+)$/)?.[1];
  const selected=requests.find(r=>String(r.id)===detailId);
  const isDashboard=location.pathname==='/dashboard'||location.pathname==='/';
@@ -22,8 +23,13 @@ export default function ConnectedApp({user}) {
  const working=requests.filter(r=>requestState(r)==='working');
  const failed=requests.filter(r=>requestState(r)==='failed');
  const visible=requests.filter(r=>(filter==='all'||requestState(r)===filter)&&`${r.id} ${r.title} ${cleanDescription(r.description)}`.toLowerCase().includes(query.toLowerCase()));
- async function refresh(){try{const data=await api('/api/requests');setRequests(data.requests);setError('');}catch(e){setError(e.message);}finally{setLoading(false);}}
- useEffect(()=>{refresh();const id=setInterval(()=>{if(document.visibilityState==='visible')refresh();},30000);return()=>clearInterval(id);},[]);
+ async function refresh(){const seq=++refreshSequence.current;try{const data=await api('/api/requests');if(seq===refreshSequence.current){setRequests(data.requests);setError('');}}catch(e){if(seq===refreshSequence.current)setError(e.message);}finally{if(seq===refreshSequence.current)setLoading(false);}}
+ useEffect(()=>{
+  if(isHistory||isSettings){++refreshSequence.current;return;}
+  refresh();const update=()=>{if(document.visibilityState==='visible')refresh();};
+  const timer=setInterval(update,30000);document.addEventListener('visibilitychange',update);
+  return()=>{++refreshSequence.current;clearInterval(timer);document.removeEventListener('visibilitychange',update);};
+ },[isHistory,isSettings]);
  useEffect(()=>{document.title=`${pageTitle} · MNG 홈페이지 관리`;setNotice('');},[location.pathname,pageTitle]);
  async function submit(event){
   event.preventDefault();if(busy)return;setBusy(true);setError('');sessionStorage.setItem('mng-request-id',requestId);
@@ -37,7 +43,7 @@ export default function ConnectedApp({user}) {
   <div className="main-wrap"><header className="topbar"><span>{pageTitle}</span><div className="connected-top-actions"><span className="demo-pill">GitHub 연동 테스트</span><form method="post" action="/auth/logout"><button className="text-button" type="submit">로그아웃</button></form></div></header>
    <main className="connected-main"><div className="connected-heading"><div><h1>{pageTitle}</h1><p>{isDashboard?'확인할 작업과 최근 요청을 한눈에 살펴보세요.':isHistory?'반영된 순서와 복원 가능한 시점을 확인하세요.':isSettings?'구성원과 서비스 연결을 관리하세요.':'수정할 내용을 요청하고 진행 상황을 확인하세요.'}</p></div>{!isNew&&<button className="primary" onClick={()=>navigate('/requests/new')}>새 수정 요청</button>}</div>
     <div className="inline-note">테스트 환경입니다. main 및 운영 홈페이지에는 반영되지 않습니다.</div>
-    {error&&<p role="alert" className="error-note">{error} <button className="text-button" onClick={refresh}>다시 불러오기</button></p>}{notice&&<p role="status">{notice}</p>}
+    {error&&!isHistory&&!isSettings&&<p role="alert" className="error-note">{error} <button className="text-button" onClick={refresh}>다시 불러오기</button></p>}{notice&&<p role="status">{notice}</p>}
     {isDashboard?<>
      <section className="stats" aria-label="작업 요약">{[['확인할 변경',needsReview.length,'변경 내용을 검토하고 반영하세요.','review'],['진행 중',working.length,'요청한 작업이 진행되고 있어요.','working'],['확인이 필요한 실패',failed.length,'실행 결과를 확인하고 다시 시도하세요.','failed']].map(([label,count,text,state])=><button className="stat-card" key={state} onClick={()=>navigate(`/requests?status=${state}`)}><span>{label}</span><div>{loading?'—':count}<small>건</small></div><p>{text}</p></button>)}</section>
      <section className="panel connected-panel"><h2>지금 확인할 작업</h2>{loading?<p>불러오는 중…</p>:needsReview.length||failed.length?<RequestRows requests={[...needsReview,...failed]}/>:<p className="connected-empty">확인을 기다리는 작업이 없습니다.</p>}</section>

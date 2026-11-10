@@ -1,15 +1,11 @@
 import React, {useEffect,useState} from 'react';
+import {api} from './api.js';
 export default function AuthGate({children}) {
   const [state,setState] = useState({loading:true});
   useEffect(() => {
     if (import.meta.env.VITE_ADMIN_AUTH !== 'required') { setState({local:true}); return; }
     let active=true;
-    fetch('/api/session',{credentials:'same-origin',cache:'no-store'}).then(async response => {
-      if (response.status===401) { window.location.assign('/login'); return; }
-      if (!response.ok) throw new Error('Failed');
-      const value=await response.json();
-      if (active) setState({user:value.user,mode:value.mode});
-    }).catch(() => {if(active) setState({error:true});});
+    api('/api/session').then(value=>{if(active)setState({user:value.user,mode:value.mode});}).catch(() => {if(active) setState({error:true});});
     return () => {active=false;};
   },[]);
   if(state.local) return children(null);
