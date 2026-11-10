@@ -97,3 +97,19 @@ GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 - 이미지 업로드, 이메일 알림, 시각적 페이지 diff는 후속 범위
 - PR 파일 diff가 100개 이상인 대규모 변경은 어드민 승인을 차단
 - 불명확한 GitHub 응답은 관리자 수동 확인 필요; 자동 재시도로 중복 작업하지 않음
+
+## API 호환성
+
+복원 지점의 병합 커밋을 조회하기 위해 GitHub REST API 버전을 `2022-11-28`로 고정합니다.
+`2026-03-10`에서는 PR 응답의 `merge_commit_sha` 필드가 제거되었습니다.
+버전 변경 시 [GitHub breaking changes](https://docs.github.com/en/rest/about-the-rest-api/breaking-changes)를 확인하고 복원 테스트를 먼저 실행하세요.
+
+## 검증 기록 (2026-11-10)
+
+- 실제 요청 #54 → Codex 실행 42784338635 성공 → PR #55 → CI 42784469620 성공 → 어드민 승인
+- 변경 이력에서 PR #53 시점 선택 → 복원 요청 #56 / PR #57 → CI 42784723701 성공 → 어드민 승인
+- 복원 후 테스트 파일은 처음의 한 줄로 돌아왔으며, PR #55와 #57 이력은 모두 유지됨
+- #54, #56 원본 이슈 자동 종료 확인
+- 실제 최고 관리자 이전은 수행하지 않음. SQLite 권한/원자성/취소/만료 테스트로 검증
+- 실제 Codex 인증 원문을 임의로 바꾸지 않음. GitHub Secrets 권한 확인, 암호화·권한 테스트 통과
+- main은 89f55b5a38cef792d37a84856263c9a8a7fda2be 유지

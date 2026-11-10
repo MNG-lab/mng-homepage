@@ -4,7 +4,7 @@ import {api,requestState,labels,date,description} from './api.js';
 export default function RequestDetail({request:r,user,refresh}) {
  const [detail,setDetail]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[confirm,setConfirm]=useState(null),[notice,setNotice]=useState('');
  const retryId=useRef(crypto.randomUUID());const state=requestState(r);
- useEffect(()=>{let active=true;setDetail(null);if(r.pull)api(`/api/pulls/${r.pull.number}`).then(d=>{if(active)setDetail(d);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[r.pull?.number,r.pull?.head.sha,r.pull?.state]);
+ useEffect(()=>{let active=true;setDetail(null);const load=()=>{if(r.pull)api(`/api/pulls/${r.pull.number}`).then(d=>{if(active)setDetail(d);}).catch(e=>{if(active)setError(e.message);});};load();const timer=r.pull?.state==='open'?setInterval(()=>{if(document.visibilityState==='visible')load();},15000):null;return()=>{active=false;clearInterval(timer);};},[r.pull?.number,r.pull?.head.sha,r.pull?.state]);
  async function act(){setBusy(true);setError('');try{
   let result;if(confirm==='approve')result=await api(`/api/pulls/${r.pull.number}/approve`,{head:detail.head});
   else result=await api(`/api/requests/${r.id}/${confirm}`,confirm==='retry'?{requestId:retryId.current}:{});

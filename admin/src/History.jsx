@@ -1,14 +1,14 @@
 import React,{useEffect,useState,useRef} from 'react';
 import {Link,useNavigate,useLocation} from 'react-router-dom';
 import {api,date} from './api.js';
-export default function History({user}) {
+export default function History({user,refresh}) {
  const navigate=useNavigate(),location=useLocation();const id=location.pathname.match(/^\/history\/(\d+)$/)?.[1];
  const [data,setData]=useState(null),[plan,setPlan]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[confirm,setConfirm]=useState(false);
  const operation=useRef(crypto.randomUUID());
  async function load(){try{setData(await api('/api/history'));setError('');}catch(e){setError(e.message);}}
  useEffect(()=>{load();},[]);
- useEffect(()=>{let active=true;setPlan(null);setConfirm(false);operation.current=crypto.randomUUID();if(id)api(`/api/history/${id}`).then(p=>{if(active)setPlan(p);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[id]);
- async function restore(){setBusy(true);setError('');try{const result=await api(`/api/history/${id}/restore`,{base:plan.current,requestId:operation.current});navigate(`/requests/${result.issue}`);}catch(e){setError(e.message);}finally{setBusy(false);}}
+ useEffect(()=>{let active=true;setError('');setPlan(null);setConfirm(false);operation.current=crypto.randomUUID();if(id)api(`/api/history/${id}`).then(p=>{if(active)setPlan(p);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[id]);
+ async function restore(){setBusy(true);setError('');try{const result=await api(`/api/history/${id}/restore`,{base:plan.current,requestId:operation.current});await refresh();navigate(`/requests/${result.issue}`);}catch(e){setError(e.message);}finally{setBusy(false);}}
  const selected=data?.revisions.find(r=>String(r.number)===id);
  return <>{error&&<p role="alert" className="error-note">{error}</p>}
  <section className="panel connected-panel history-intro"><span className="page-tag">CHANGE HISTORY</span><h2>홈페이지가 바뀐 순간들</h2><p>요청이 실제로 반영될 때마다 복원 지점이 생깁니다. 특정 시점으로 돌아가면 이후 수정은 현재 홈페이지에서 제외되지만, 기록은 삭제되지 않습니다.</p><div className="action-row"><span className="state-pill done">{data?`${data.revisions.length}개 반영 기록`:'불러오는 중…'}</span><button className="text-button" onClick={load}>새로고침</button></div></section>

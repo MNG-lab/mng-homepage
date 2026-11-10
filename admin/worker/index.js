@@ -40,7 +40,7 @@ export async function session(request, env) {
   try {
     const p = await verify(cookies(request)[sessionName], env, 'mng-session');
     if (typeof p.email !== 'string' || typeof p.sub !== 'string') return null;
-    const member=await readMember(env,p.email,p.sub);
+    const member=await readMember(env,p.email,p.sub,true);
     return member?{...member,authTime:p.iat}:null;
   } catch { return null; }
 }
