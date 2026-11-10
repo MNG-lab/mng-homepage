@@ -198,7 +198,7 @@ function App({ authenticatedUser = null }) {
     if (location.pathname === "/") routeTo("/dashboard", { replace: true });
   }, [location.key, location.pathname, routeTo]);
   useEffect(() => {
-    document.title = `${{ overview: "대시보드", requests: "수정 요청", history: "변경 이력", settings: "설정" }[view]} · MNG 홈페이지 관리`;
+    document.title = `${{ overview: "대시보드", requests: "수정 요청", history: "변경 이력", settings: "설정" }[view]} · MNG 홈페이지 관리 어드민`;
   }, [view]);
   function setModal(next) {
     if (next === "new") {
@@ -303,7 +303,7 @@ function App({ authenticatedUser = null }) {
   );
   const titles = {
     overview: [
-      "홈페이지 관리",
+      "홈페이지 관리 어드민",
       "작은 수정부터 새로운 소식까지, 여기서 편하게 관리하세요.",
     ],
     requests: [
@@ -400,7 +400,7 @@ function App({ authenticatedUser = null }) {
         >
           <img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40" />
           <span>
-            MNG Lab<small>홈페이지 관리</small>
+            MNG Lab<small>홈페이지 관리 어드민</small>
           </span>
         </a>
         <div className="workspace-label">
@@ -740,7 +740,7 @@ function App({ authenticatedUser = null }) {
             </div>
           )}
           <footer className="page-footer">
-            <span>MNG Lab · 홈페이지 관리</span>
+            <span>MNG Lab · 홈페이지 관리 어드민</span>
             <span>
               테스트 환경 <i />
               운영 홈페이지와 분리되어 있어요
