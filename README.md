@@ -115,6 +115,12 @@ npm run build
 npm run preview
 ```
 
+### Node.js 보안 패치 기준
+
+- 개발·CI·Cloudflare Pages 빌드는 `.nvmrc`의 Node.js 24.22.2를 사용합니다.
+- Cloudflare Pages에 `NODE_VERSION` 환경변수가 별도로 설정되어 있으면 24.22.2로 맞추거나 제거해 `.nvmrc`를 적용하세요.
+- 의존성 보안 점검: `npm audit` (개발 의존성 포함).
+
 ## 주요 스크립트
 
 - `npm run build`: 프로덕션 빌드 (`prebuild` 포함)
@@ -157,9 +163,3 @@ npm run preview
 - `content/release-handoff-summary-2026-03-03.md`
 
 </details>
-
-### Node.js 보안 패치 기준
-
-- 개발·CI·Cloudflare Pages 빌드는 `.nvmrc`의 Node.js 24.22.2를 사용합니다.
-- Cloudflare Pages에 `NODE_VERSION` 환경변수가 별도로 설정되어 있으면 24.22.2로 맞추거나 제거해 `.nvmrc`를 적용하세요.
-- 의존성 보안 점검: `npm audit` (개발 의존성 포함).
