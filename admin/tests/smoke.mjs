@@ -37,6 +37,40 @@ try {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(url);
+  await page.waitForURL("**/dashboard");
+  await page
+    .getByRole("button", { name: /^수정 요청/ })
+    .first()
+    .click();
+  await page.waitForURL("**/requests");
+  await page.getByRole("button", { name: "변경 이력", exact: true }).click();
+  await page.waitForURL("**/history");
+  await page.goBack();
+  await page.waitForURL("**/requests");
+  await page.goForward();
+  await page.waitForURL("**/history");
+  await page.reload();
+  await page.getByRole("heading", { name: "변경 이력", exact: true }).waitFor();
+  await page.getByRole("button", { name: "대시보드", exact: true }).click();
+  await page.getByRole("button", { name: "변경 확인하기" }).click();
+  await page.waitForURL("**/requests/104");
+  await page.goBack();
+  await page.waitForURL("**/dashboard");
+  assert.equal(await page.locator("dialog").count(), 0);
+  await page.goForward();
+  await page.waitForURL("**/requests/104");
+  await page.reload();
+  await page.getByRole("dialog").waitFor();
+  await page.getByRole("button", { name: "창 닫기" }).click();
+  await page.waitForURL("**/dashboard");
+  await page.goto(`${url}/requests/99999`);
+  await page.getByRole("heading", { name: "요청을 찾을 수 없어요" }).waitFor();
+  await page.getByRole("button", { name: "목록으로 돌아가기" }).click();
+  await page.waitForURL("**/requests");
+  await page.getByRole("button", { name: "대시보드", exact: true }).click();
+  console.log(
+    "PASS: page URLs, back/forward, refresh, detail links and unknown requests",
+  );
   await page.getByRole("button", { name: "새 수정 요청", exact: true }).click();
   await page
     .getByLabel("요청 제목", { exact: true })
@@ -50,11 +84,11 @@ try {
     .waitFor({ timeout: 10000 });
   await page.getByRole("button", { name: "확인하고 반영하기" }).click();
   await page
-    .getByRole("button", { name: "이 변경 되돌리기" })
+    .getByRole("button", { name: "이 요청의 변경 취소" })
     .waitFor({ timeout: 10000 });
-  await page.getByRole("button", { name: "이 변경 되돌리기" }).click();
+  await page.getByRole("button", { name: "이 요청의 변경 취소" }).click();
   await page
-    .getByRole("button", { name: "되돌리기 요청", exact: true })
+    .getByRole("button", { name: "이 요청의 변경 취소하기", exact: true })
     .click();
   await page
     .getByRole("button", { name: "확인하고 반영하기" })

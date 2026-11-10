@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter, useLocation, useNavigate } from "react-router-dom";
 import {
   STORAGE_KEY,
   PAGES,
@@ -144,15 +145,35 @@ function Modal({ title, children, close, wide = false }) {
     </dialog>
   );
 }
+const VIEW_PATHS = {
+  overview: "/dashboard",
+  requests: "/requests",
+  history: "/history",
+  settings: "/settings",
+};
 function App() {
-  const [view, setView] = useState("overview");
+  const location = useLocation();
+  const routeTo = useNavigate();
+  const detailMatch = location.pathname.match(/^\/requests\/(\d+)$/);
+  const newRequestRoute = location.pathname === "/requests/new";
+  const routeModal = detailMatch ? "detail" : newRequestRoute ? "new" : null;
+  const backgroundPath = Object.values(VIEW_PATHS).includes(
+    location.state?.backgroundPath,
+  )
+    ? location.state.backgroundPath
+    : "/requests";
+  const activePath = routeModal ? backgroundPath : location.pathname;
+  const view =
+    Object.keys(VIEW_PATHS).find((key) => VIEW_PATHS[key] === activePath) ||
+    "overview";
   const [requests, setRequests] = useState(readRequests);
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [pageFilter, setPageFilter] = useState("전체 페이지");
   const [role, setRole] = useState("admin");
-  const [modal, setModal] = useState(null);
-  const [selected, setSelected] = useState(null);
+  const [localModal, setLocalModal] = useState(null);
+  const modal = localModal || routeModal;
+  const selected = detailMatch ? Number(detailMatch[1]) : null;
   const [notice, setNotice] = useState("");
   const [storageWarning, setStorageWarning] = useState(false);
   const isAdmin = role === "admin";
@@ -162,6 +183,28 @@ function App() {
     ["queued", "working", "deploying"].includes(r.status),
   );
   const completed = requests.filter((r) => r.status === "done");
+  useEffect(() => {
+    setLocalModal(null);
+    if (location.pathname === "/") routeTo("/dashboard", { replace: true });
+  }, [location.key, location.pathname, routeTo]);
+  useEffect(() => {
+    document.title = `${{ overview: "대시보드", requests: "수정 요청", history: "변경 이력", settings: "설정" }[view]} · MNG 홈페이지 관리`;
+  }, [view]);
+  function setModal(next) {
+    if (next === "new") {
+      routeTo("/requests/new", {
+        state: { backgroundPath: VIEW_PATHS[view], openedInApp: true },
+      });
+    } else if (next === "detail") {
+      setLocalModal(null);
+    } else if (next === null) {
+      if (localModal) setLocalModal(null);
+      else if (routeModal) {
+        if (location.state?.openedInApp) routeTo(-1);
+        else routeTo(backgroundPath, { replace: true });
+      }
+    } else setLocalModal(next);
+  }
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
@@ -203,7 +246,8 @@ function App() {
     }
   }, [notice]);
   function navigate(target) {
-    setView(target);
+    routeTo(VIEW_PATHS[target]);
+    setLocalModal(null);
     setFilter("all");
     setQuery("");
     setPageFilter("전체 페이지");
@@ -214,8 +258,9 @@ function App() {
     );
   }
   function showDetail(id) {
-    setSelected(id);
-    setModal("detail");
+    routeTo(`/requests/${id}`, {
+      state: { backgroundPath: VIEW_PATHS[view], openedInApp: true },
+    });
   }
   function addRequest(fields) {
     const request = makeRequest(
@@ -224,8 +269,14 @@ function App() {
       isAdmin ? "관리자" : "편집자",
     );
     setRequests((prev) => [request, ...prev]);
-    setSelected(request.id);
-    setModal("detail");
+    setLocalModal(null);
+    routeTo(`/requests/${request.id}`, {
+      replace: Boolean(routeModal),
+      state: {
+        backgroundPath: VIEW_PATHS[view],
+        openedInApp: location.state?.openedInApp || false,
+      },
+    });
     setNotice(
       "테스트 요청이 접수되었어요. 실제 GitHub 작업은 실행되지 않습니다.",
     );
@@ -264,7 +315,7 @@ function App() {
     ],
     history: [
       "변경 이력",
-      "홈페이지에 반영된 변경을 확인하고, 필요한 요청만 되돌리세요.",
+      "홈페이지에 반영된 변경을 확인하고, 원하는 요청의 변경만 취소하세요.",
     ],
     settings: ["설정", "연결 상태와 관리자 권한을 관리하세요."],
   };
@@ -569,7 +620,8 @@ function App() {
                 ) : (
                   <div className="history-help">
                     <Icon name="undo" size={17} />
-                    되돌리기는 과거 요청의 변경을 취소하는 새 요청으로 진행돼요.
+                    선택한 요청의 변경만 취소합니다. 그 이후의 다른 변경은
+                    유지돼요.
                   </div>
                 )}
                 <div className="filters">
@@ -728,7 +780,7 @@ function App() {
       )}
       {modal === "rollback" && current && (
         <Modal
-          title="이 요청의 변경을 되돌릴까요?"
+          title="이 요청의 변경만 취소할까요?"
           close={() => setModal("detail")}
         >
           <div className="modal-body">
@@ -740,12 +792,20 @@ function App() {
               </p>
             </div>
             <p>
-              이 요청의 변경을 되돌리는 <strong>새 수정 요청</strong>을
-              만듭니다. 결과를 확인하고 승인해야 홈페이지에 반영됩니다.
+              요청 #{current.id}의 변경을 취소하는 <strong>새 수정 요청</strong>
+              을 만듭니다. 결과를 확인하고 승인해야 홈페이지에 반영됩니다.
             </p>
+            <div className="rollback-scope">
+              <strong>다른 요청의 변경은 유지돼요</strong>
+              <p>
+                예를 들어 1 → 2 → 3 순서로 반영했다면, 1의 변경만 취소하고 2·3은
+                남깁니다. 홈페이지 전체를 1 시점으로 복원하는 기능은 아닙니다.
+              </p>
+            </div>
             <div className="inline-note">
               <Icon name="info" size={17} />
-              같은 부분에 다른 수정이 있었다면 검토가 필요할 수 있어요.
+              이후 요청이 같은 내용을 수정했다면 자동 취소가 어려울 수 있어요.
+              실제 연동 시 충돌을 확인하고, 승인 전 결과를 보여드립니다.
             </div>
           </div>
           <div className="modal-actions">
@@ -757,8 +817,21 @@ function App() {
               disabled={!isAdmin}
               onClick={() => rollback(current)}
             >
-              <Icon name="undo" size={17} />
-              되돌리기 요청
+              <Icon name="undo" size={17} />이 요청의 변경 취소하기
+            </button>
+          </div>
+        </Modal>
+      )}
+      {modal === "detail" && !current && (
+        <Modal title="요청을 찾을 수 없어요" close={() => setModal(null)}>
+          <div className="modal-body">
+            <p>
+              이 브라우저에 저장되지 않은 요청이거나 초기화된 테스트 요청입니다.
+            </p>
+          </div>
+          <div className="modal-actions">
+            <button className="primary" onClick={() => setModal(null)}>
+              목록으로 돌아가기
             </button>
           </div>
         </Modal>
@@ -895,7 +968,7 @@ function App() {
                   className="secondary"
                   onClick={() => setModal("rollback")}
                 >
-                  <Icon name="undo" size={17} />이 변경 되돌리기
+                  <Icon name="undo" size={17} />이 요청의 변경 취소
                 </button>
               )}
               {current.status === "done" &&
@@ -991,6 +1064,8 @@ function RequestForm({ submit, cancel }) {
 }
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>,
 );

@@ -1589,3 +1589,21 @@ select {
     font-size: 9px;
   }
 }
+
+.rollback-scope {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #dfe8f4;
+  border-radius: 8px;
+  background: #f8fafd;
+}
+.rollback-scope strong {
+  font-size: 12px;
+  color: #536e91;
+}
+.rollback-scope p {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.9;
+  color: #70839d;
+}
