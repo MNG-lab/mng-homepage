@@ -23,7 +23,11 @@
     "preflight:p5": "node scripts/p5-preflight.mjs",
     "validate:redirects": "node scripts/validate-redirects.mjs --write-report",
     "validate:content": "node scripts/validate-content.mjs --write-report",
-    "validate:content:urls": "node scripts/validate-content.mjs --check-urls --write-report"
+    "validate:content:urls": "node scripts/validate-content.mjs --check-urls --write-report",
+    "admin:dev": "vite --config admin/vite.config.js",
+    "admin:build": "vite build --config admin/vite.config.js",
+    "admin:preview": "vite preview --config admin/vite.config.js",
+    "admin:test": "npm run admin:build && node admin/tests/smoke.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
