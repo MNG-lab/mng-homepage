@@ -1711,3 +1711,5 @@ select {
 .file-picker input {max-width:100%;min-width:0;}
 .form-actions {display:flex;gap:12px;flex-wrap:wrap;}
 @media(max-width:700px){.copy-box {align-items:flex-start;flex-direction:column;}.credential-guide{padding:16px;}.timeline-content time{width:100%;margin-left:0;}.connected-form>button{justify-self:stretch;}}
+
+.connection-steps{display:flex;gap:24px;flex-wrap:wrap;padding-left:24px;margin:0;color:#62768f}.connection-state{display:grid;gap:16px;padding:22px;background:#f1f5fc;border-radius:10px}.device-code{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.device-code code{font-size:24px;font-weight:700;letter-spacing:2px;user-select:all}.device-help .guide-steps{margin:18px 0}.connection-consent{display:flex;align-items:flex-start;gap:12px;line-height:1.8}.connection-consent input{margin-top:7px;flex-shrink:0}#codex-connection .primary{justify-self:start}#codex-connection .action-row button{white-space:normal}

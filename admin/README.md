@@ -139,3 +139,13 @@ GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 - 최고 관리자 변경은 후임자의 로그인·수락이 필요하며 기존 최고 관리자는 관리자가 됩니다. 외부 서비스 계정 소유권은 별도입니다. 실제 권한 변경은 이번 화면 개선에 포함하지 않습니다.
 - Codex 안내는 Mac/Windows 파일 경로와 공식 CLI 로그인 명령을 복사합니다. 인증 내용은 화면·클립보드에 출력하지 않습니다. 경로는 기본 CODEX_HOME 기준이며, 별도 경로/조직 보안 정책은 개발 담당자가 확인해야 합니다. 파일 저장 옵션은 로그인 명령에만 적용합니다. Node.js가 필요하며 실제 Windows 로그인은 별도로 확인해야 합니다.
 - 용어 참고: [Google 문서 버전 기록](https://support.google.com/docs/answer/190843?hl=ko), [Microsoft 이전 버전 복원](https://support.microsoft.com/ko-kr/onedrive/restore-a-previous-version-of-a-file-stored-in-onedrive), [Notion 버전 기록](https://www.notion.com/ko/help/duplicate-delete-and-restore-content). 로그인 안내: [OpenAI 인증 문서](https://developers.openai.com/codex/auth/).
+
+### 브라우저 재연결 체험
+
+설정의 `Codex 재연결 체험`은 최고 관리자 전용입니다. 만료 재현 → 기기 로그인 → `CODEX_AUTH_JSON_PREVIEW` 실제 갱신 → 읽기 전용 Codex 확인 실행 순서입니다. 만료 재현은 실제 토큰을 훼손하지 않으며 홈페이지·main·운영 인증은 변경하지 않습니다. 확인 실행은 Codex 사용량을 소비합니다. 일반 수정 요청의 실패 감지·복구 연결과는 별도의 체험 작업입니다.
+
+- Actions 콜백은 GitHub OIDC 서명·audience·저장소/조직 ID·브랜치·워크플로·커밋·실행 ID로 제한합니다. 브라우저 세션만으로 콜백을 호출할 수 없습니다.
+- 연결 시작에는 최근 10분 내 최고 관리자 로그인이 필요합니다. 완료 시에도 현재 최고 관리자 권한을 확인합니다. 기기 코드 로그인은 ChatGPT 보안 설정 또는 워크스페이스 관리자 허용이 필요합니다.
+- 인증 본문은 D1·로그·artifact에 저장하지 않습니다. Worker에서 GitHub 공개키로 암호화해 테스트 Secret으로 전송하고 러너 임시 파일을 삭제합니다. D1에는 연결 상태와 만료되는 일회용 코드만 저장합니다.
+- 동시에 하나의 연결만 허용하며 15분 후 만료됩니다. 모호한 저장 응답은 성공으로 표시하거나 자동 재시도하지 않습니다. 새 인증으로 재실행은 별도 사용자 클릭입니다.
+- D1 추가 migration: `0003_device_login.sql`. 일반 수정/복원 흐름은 기존대로 유지합니다.

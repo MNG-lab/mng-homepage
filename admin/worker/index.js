@@ -1,3 +1,5 @@
+import {deviceAPI} from './device-login.js';
+const handleDevice=deviceAPI();
 import {readMember, managementAPI} from './management.js';
 import { requestsAPI } from './requests.js';
 import { SignJWT, jwtVerify, createRemoteJWKSet } from 'jose';
@@ -109,13 +111,14 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
         if (request.method !== 'POST' || request.headers.get('Origin') !== origin(env)) return secure(json({error:'Forbidden'},403));
         return secure(redirect('/login',{'Set-Cookie':cookie(sessionName,'',0)}));
       }
+      if(path==='/api/internal/device-login')return secure(await handleDevice(request,env,null));
       const user = await session(request,env);
       if (path === '/login' && request.method === 'GET') return secure(user ? redirect('/dashboard') : loginPage(url.searchParams.has('error')));
       if (!user) return secure(path.startsWith('/api/') ? json({error:'Unauthenticated'},401) : redirect('/login'));
       if (path === '/api/session' && request.method === 'GET') return secure(json({user,mode:env.GITHUB_ENABLED==='true'?'github':'demo'}));
       if (path.startsWith('/api/')) {
         if(env.GITHUB_ENABLED !== 'true') return secure(json({error:'Not implemented in preview'},404));
-        return secure(await (path.startsWith('/api/settings')?handleManagement:handleRequests)(request,env,user));
+        return secure(await (path.startsWith('/api/settings/device-login')?handleDevice:path.startsWith('/api/settings')?handleManagement:handleRequests)(request,env,user));
       }
       if (request.method !== 'GET' && request.method !== 'HEAD') return secure(json({error:'Method not allowed'},405));
       return secure(await env.ASSETS.fetch(request));

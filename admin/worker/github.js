@@ -100,6 +100,11 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       // No personal email or credentials are copied into the public repository.
       return call('/issues','POST',{title:`[Admin Preview] ${input.title.trim()}`,body:`<!-- mng-admin-preview:v1 -->\n<!-- request-id:${input.requestId} -->\n\n## 테스트 대상\n${TEST_BASE}\n\n## 페이지\n${input.page}\n\n## 수정 요청\n${input.description.trim()}\n\n운영 홈페이지에 반영되지 않는 어드민 연동 테스트 요청입니다.`,labels:[TEST_LABEL]});
     },
+    async automationHead() {return (await call(`/git/ref/heads/${WORKFLOW_REF}`)).object.sha;},
+    async dispatchDevice(id) {
+      if(!/^[0-9a-f-]{36}$/.test(id))throw new GitHubError('잘못된 연결 요청입니다.',400);
+      return call('/actions/workflows/codex-comment.yml/dispatches','POST',{ref:WORKFLOW_REF,inputs:{issue:'0',device_session:id}});
+    },
     async dispatch(id) {
       await this.issue(id);
       return call('/actions/workflows/codex-comment.yml/dispatches','POST',{ref:WORKFLOW_REF,inputs:{issue:String(number(id))}});
