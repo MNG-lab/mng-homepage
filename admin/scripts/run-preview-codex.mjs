@@ -1,10 +1,12 @@
+import {deployment} from '../shared/deployment.js';
+const config=deployment({ADMIN_ENV:process.env.ADMIN_ENV});
 import {spawn} from 'node:child_process';
 import {mkdir,readFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {isAuthFailure} from './codex-errors.mjs';
 const endpoint='https://mng-admin-preview.chominho96-aaa.workers.dev/api/internal/request-result';
 const issue=Number(process.env.REQUEST_ISSUE),home=path.join(process.env.RUNNER_TEMP,'admin-preview-codex');
-if(!Number.isSafeInteger(issue)||issue<1||process.env.GITHUB_REPOSITORY!=='MNG-lab/mng-homepage'||process.env.GITHUB_REF!=='refs/heads/codex/admin-portal')throw Error('Invalid preview invocation');
+if(!Number.isSafeInteger(issue)||issue<1||process.env.GITHUB_REPOSITORY!=='MNG-lab/mng-homepage'||process.env.GITHUB_REF!==`refs/heads/${config.ref}`)throw Error('Invalid preview invocation');
 process.umask(0o077);
 async function report(reason){
  const url=new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);url.searchParams.set('audience',endpoint);
@@ -16,13 +18,13 @@ async function report(reason){
  }
 }
 async function generate(){
- const auth=process.env.CODEX_AUTH_JSON_PREVIEW;
+ const auth=process.env.CODEX_AUTH_JSON;
  if(!auth)return 'auth_required';
  try{const value=JSON.parse(auth);if(!value.tokens?.access_token||!value.tokens?.refresh_token)return 'auth_required';}catch{return 'auth_required';}
  if(!process.env.CODEX_MODEL)return 'failed';
  await mkdir(home,{recursive:true,mode:0o700});await writeFile(path.join(home,'auth.json'),auth,{mode:0o600});
  const childEnv={...process.env,CODEX_HOME:home};
- for(const key of Object.keys(childEnv))if(/^(ACTIONS_|GITHUB_TOKEN$|GH_TOKEN$|OPENAI_API_KEY$|CODEX_API_KEY$|CODEX_ACCESS_TOKEN$|CODEX_AUTH_JSON_PREVIEW$|CODEX_CLI_KEY$)/.test(key))delete childEnv[key];
+ for(const key of Object.keys(childEnv))if(/^(ACTIONS_|GITHUB_TOKEN$|GH_TOKEN$|OPENAI_API_KEY$|CODEX_API_KEY$|CODEX_ACCESS_TOKEN$|CODEX_AUTH_JSON(?:_PREVIEW)?$|CODEX_CLI_KEY$|CODEX_CLI_KEY$)/.test(key))delete childEnv[key];
  const prompt=await readFile(path.join(process.env.RUNNER_TEMP,'admin-preview-prompt.txt'));
  const result=await new Promise((resolve,reject)=>{
   const child=spawn(path.join(process.env.RUNNER_TEMP,'codex-cli/node_modules/.bin/codex'),['-c','cli_auth_credentials_store="file"','--ask-for-approval','never','exec','--json','--sandbox','workspace-write','--model',process.env.CODEX_MODEL,'-'],{env:childEnv,stdio:['pipe','pipe','pipe']});

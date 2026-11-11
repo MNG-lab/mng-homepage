@@ -2,6 +2,9 @@ name: Admin browser Codex connection
 on:
   workflow_call:
     inputs:
+      environment:
+        type: string
+        default: preview
       session:
         required: true
         type: string
@@ -10,7 +13,9 @@ permissions:
   id-token: write
 jobs:
   connect:
-    if: github.repository == 'MNG-lab/mng-homepage' && github.ref == 'refs/heads/codex/admin-portal' && github.event_name == 'workflow_dispatch'
+    if: github.repository == 'MNG-lab/mng-homepage' && ((inputs.environment == 'preview' && github.ref == 'refs/heads/codex/admin-portal') || (inputs.environment == 'production' && github.ref == 'refs/heads/main')) && github.event_name == 'workflow_dispatch'
+    env:
+      ADMIN_ENV: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     timeout-minutes: 13
     steps:

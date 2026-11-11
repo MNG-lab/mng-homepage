@@ -8,7 +8,7 @@ const reply=(data,status=200)=>Response.json(data,{status});
 export function requestsAPI({github=createGitHub}={}) {
  return async function(request,env,user) {
   const url=new URL(request.url);
-  if(env.GITHUB_ENABLED!=='true' || !env.DB) return reply({error:'GitHub 테스트 연결을 준비 중입니다.'},503);
+  if(env.GITHUB_ENABLED!=='true' || !env.DB) return reply({error:'GitHub 연결을 준비 중입니다.'},503);
   if(!user || !['owner','admin','editor'].includes(user.role)) return reply({error:'권한이 없습니다.'},403);
   if(!['GET','HEAD'].includes(request.method) && request.headers.get('Origin')!==env.APP_ORIGIN) return reply({error:'잘못된 요청 출처입니다.'},403);
   try {

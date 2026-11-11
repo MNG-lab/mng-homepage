@@ -1,3 +1,4 @@
+import {production} from './environment.js';
 import React,{useEffect,useRef,useState} from 'react';
 import {Link} from 'react-router-dom';
 import {api,date,requestState,requestTitle} from './api.js';
@@ -72,7 +73,7 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
   return <>{processing&&<span className="spinner" aria-hidden="true"/>}{text}</>;
  }
  return <section className="panel connected-panel" id="codex-connection" aria-label="Codex 연결">
- <header className="connection-intro"><div className="connection-title-row"><h2>Codex 연결</h2><span className="state-pill review">테스트 환경</span></div><p>홈페이지 자동 수정에 사용할 ChatGPT 계정을 연결하세요. 인증 문제로 멈춘 요청도 다시 연결한 뒤 이어서 실행할 수 있습니다.</p></header>
+ <header className="connection-intro"><div className="connection-title-row"><h2>Codex 연결</h2><span className="state-pill review">{production?'운영 홈페이지':'테스트 환경'}</span></div><p>홈페이지 자동 수정에 사용할 ChatGPT 계정을 연결하세요. 인증 문제로 멈춘 요청도 다시 연결한 뒤 이어서 실행할 수 있습니다.</p></header>
  <section className="connection-guide" aria-labelledby="connection-guide-heading">
  <h3 id="connection-guide-heading">연결 순서</h3>
  <ol className="connection-steps" role="list">
@@ -84,7 +85,7 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
  </section>
  <section className="connection-workspace" aria-labelledby="connection-action-heading">
  <div className="connection-section-heading"><h3 id="connection-action-heading">계정 연결하기</h3><p>아래 항목에 동의한 뒤 버튼을 누르면 로그인 코드가 표시됩니다.</p></div>
- <label className="connection-consent"><input type="checkbox" disabled={busy||running} checked={consent} onChange={e=>setConsent(e.target.checked)}/> 로그인한 계정의 인증으로 테스트 환경의 Codex 인증을 저장·교체하는 데 동의합니다. 운영 인증은 유지됩니다.</label>
+ <label className="connection-consent"><input type="checkbox" disabled={busy||running} checked={consent} onChange={e=>setConsent(e.target.checked)}/> {production?'로그인한 계정을 홈페이지 자동 수정에 사용합니다. 기존 Codex 연결이 이 계정으로 교체됩니다.':'로그인한 계정의 인증으로 테스트 환경의 Codex 인증을 저장·교체하는 데 동의합니다. 운영 인증은 유지됩니다.'}</label>
  <div className="action-row connection-actions"><button className="primary" disabled={busy||running||!consent||!loaded} aria-busy={processing} onClick={()=>start('login')}>{buttonContent('login','Codex 연결')}</button></div>
  {(error||readError)&&<p role="alert" className="error-note">{error||readError}</p>}
  {showStatus&&<div className={`connection-state ${success?'is-success':warning?'is-warning':''}`} role="status" aria-live="polite"><div className="connection-state-heading">{processing?<span className="spinner" aria-hidden="true"/>:success?<span className="connection-check" aria-hidden="true">✓</span>:null}<strong>{busy?'연결 요청을 보내고 있습니다':view?states[view.state]||'상태 확인 중':loaded?'Codex를 연결할 수 있습니다':'상태를 불러오는 중…'}</strong></div>

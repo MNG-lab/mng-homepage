@@ -1,3 +1,5 @@
+import {deployment} from '../shared/deployment.js';
+import {relatedRequest} from '../shared/version.js';
 import {allReads} from './github-catalog.js';
 import {requestState,requestGroup,description} from '../shared/requests.js';
 import {appliedVersion,versionLabel,versionReference} from '../shared/version.js';
@@ -31,9 +33,9 @@ export function requestSummary(requests){
 export async function requestCatalog(gh,env,{issue:single,run:singleRun}={}){
  const [issues,pulls,runs,recovery]=await allReads([single?[single]:gh.list(),gh.pulls(),single?[]:gh.runs(),recoveryMetadata(env)]);
  const byIssue=new Map(),byTitle=new Map(runs.map(run=>[run.title,run]));
- for(const pull of [...pulls].sort((a,b)=>a.number-b.number)){const id=Number(pull.head.ref.match(/^admin-preview\/issue-(\d+)-/)?.[1]);byIssue.set(id,pull);}
+ for(const pull of [...pulls].sort((a,b)=>a.number-b.number)){const id=relatedRequest(pull);byIssue.set(id,pull);}
  return issues.map(issue=>{
-  const pull=byIssue.get(issue.number)||null,restoration=pull?.restoration||null,run=single?singleRun:byTitle.get(`Admin preview #${issue.number}`)||null;
-  return {id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin Preview\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run,pull,...(!pull&&issue.state==='open'?recovery(issue.number,run):{})};
+  const pull=byIssue.get(issue.number)||null,restoration=pull?.restoration||null,run=single?singleRun:byTitle.get(`${deployment(env).runTitle}${issue.number}`)||null;
+  return {id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin(?: Preview)?\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run,pull,...(!pull&&issue.state==='open'?recovery(issue.number,run):{})};
  }).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id-a.id);
 }

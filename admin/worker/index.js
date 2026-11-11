@@ -134,7 +134,7 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
       if(path==='/api/internal/request-result')return secure(await requestResultAPI()(request,env));
       if(path==='/api/internal/device-login')return secure(await handleDevice(request,env,null));
       const user = await session(request,env);
-      if (path === '/login' && request.method === 'GET') return secure(user ? redirect('/dashboard') : loginPage(url.searchParams.has('error')));
+      if (path === '/login' && request.method === 'GET') return secure(user ? redirect('/dashboard') : loginPage(url.searchParams.has('error'),env.ADMIN_ENV==='production'));
       if (!user) return secure(path.startsWith('/api/') ? json({error:'Unauthenticated'},401) : redirect('/login'));
       if (path === '/api/session' && request.method === 'GET') return secure(json({user:publicUser(user),mode:env.GITHUB_ENABLED==='true'?'github':'demo'}));
       if (path === '/api/session/refresh') {

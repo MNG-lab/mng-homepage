@@ -1,3 +1,54 @@
+# MNG 홈페이지 관리 어드민 — 운영 안내
+
+1차 운영 배포는 기존 무료 Worker와 D1을 그대로 사용합니다. 주소의 `preview`는 기존 리소스 이름이며 현재 동작 모드는 **운영**입니다.
+
+- 어드민: https://mng-admin-preview.chominho96-aaa.workers.dev
+- 홈페이지: https://dglab.yonsei.ac.kr/
+- 작업 대상 및 자동화 실행: `main`
+- 운영 요청: `admin-request` 라벨 + `<!-- mng-admin:v1 -->` 본문 표시
+- 검토 브랜치: `admin/issue-<이슈 번호>-<실행 ID>`
+- Codex 연결: 기존 운영 Secret `CODEX_CLI_KEY`. GitHub에서 직접 실행하는 기존 자동화도 같은 인증을 사용합니다.
+
+## 운영 순서
+
+요청 작성 → Codex 실행 → PR 생성 → 홈페이지 미리보기·CI 확인 → 관리자 승인 → main 병합 → Cloudflare Pages 운영 배포.
+PR을 만들었다고 바로 운영 홈페이지가 바뀌지는 않습니다. 승인 후에도 Pages 배포가 완료되기까지 잠시 걸립니다.
+어드민 UI 배포는 홈페이지 배포와 별개입니다. GitHub main 갱신만으로 Worker가 자동 배포되지는 않으며 아래 명령으로 배포합니다.
+
+```sh
+npm ci
+node --test admin/tests/*.test.mjs
+npm run admin:build:production
+ADMIN_TEST_ENV=production node admin/tests/connected-smoke.mjs
+npx wrangler d1 migrations apply mng-admin-preview --remote --config admin/wrangler.jsonc
+npx wrangler deploy --config admin/wrangler.jsonc
+```
+
+Wrangler 배포는 운영 UI를 다시 빌드합니다. 운영 config는 `ADMIN_ENV=production`, `GITHUB_BASE=main`, `GITHUB_WORKFLOW_REF=main`만 허용하며 잘못 섞인 설정은 거부합니다. 무료 플랜을 유지하고 새로운 유료 서비스는 사용하지 않습니다.
+
+## 데이터와 인증
+
+기존 D1을 초기화하지 않습니다. 구성원·로그인 세션·관리 기록은 보존합니다. 테스트 요청 캐시와 운영 요청 캐시는 다른 이름으로 저장하고, 운영 화면에는 테스트 요청을 표시하지 않습니다. 테스트 로그인 기록이 운영 Codex 연결 완료로 표시되지 않으며, 테스트 runner는 운영 인증 갱신 콜백을 호출할 수 없습니다.
+
+`0007_production.sql`은 기기 로그인 기록에 환경을 추가하고 운영 인증 갱신 시각을 별도 테이블에 저장합니다. 기존 데이터 삭제는 없습니다. 모든 마이그레이션을 적용한 뒤 Worker를 배포하세요.
+
+로그인 계정은 현재 승인된 `chominho96@gmail.com`이며, 6시간 활동 기반 서버 세션 및 접근 제한을 유지합니다. Google OAuth 앱은 제한된 허용 계정으로 운영합니다. 새 구성원은 어드민 구성원과 Google 테스트 사용자 양쪽에 추가해야 합니다. OAuth 앱 공개 전환은 이번 배포 범위에 포함하지 않습니다.
+
+## GitHub와 함께 사용하기
+
+기존 GitHub 이슈 템플릿과 댓글 자동화는 그대로 작동합니다. 어드민 형식으로 생성한 이슈·PR을 GitHub에서 직접 병합하거나 닫으면 어드민 조회에도 반영됩니다. 일반 GitHub 템플릿(`codex-auto`)으로 생성한 이슈의 요청 목록·실행 상태 통합은 아직 지원하지 않습니다.
+홈페이지 버전은 같은 저장소에서 main에 병합한 PR을 가져오므로 GitHub에서 직접 병합한 결과도 볼 수 있습니다. 외부 fork, 테스트 브랜치, 미병합된 일반 PR은 어드민 승인 대상으로 사용하지 않습니다. 일반 PR 변경은 GitHub에서 검토합니다.
+홈페이지 버전의 되돌리기는 src/public/index.html 전체 스냅샷을 새 PR로 준비하며, 자동화·의존성·어드민 설정은 되돌리지 않습니다. 직접 push한 커밋에 대응하는 PR이 없으면 현재 버전을 임의로 추정하지 않습니다.
+
+## 장애 시
+
+인증 오류로 멈춘 요청은 최고 관리자가 설정 → Codex 연결에서 로그인한 뒤 같은 요청을 다시 실행합니다. 운영 인증은 `CODEX_CLI_KEY`만 갱신하며 인증 원문은 DB·로그에 남기지 않습니다.
+Worker UI 문제는 Cloudflare의 직전 Worker 버전으로 되돌릴 수 있습니다. 홈페이지 복원은 어드민 버전 화면 또는 기존 GitHub 절차로 수행합니다. 테스트 환경으로 되돌릴 때는 운영 config를 임의 수정해 배포하지 말고, 운영/테스트 설정·UI·인증 검증을 함께 점검해야 합니다.
+
+## 개발·기존 검증 참고 기록
+
+아래 내용은 운영 전 테스트 단계의 동작·검증 기록입니다. 테스트용 브랜치/Secret/배포 명령은 과거 기록이며, 현재 운영 설정은 위 안내를 따릅니다.
+
 # MNG 홈페이지 어드민 — 1차 MVP
 
 운영과 분리된 테스트 어드민입니다. Google 로그인 후 실제 GitHub 이슈·PR·Actions 및 Cloudflare D1을 사용합니다.

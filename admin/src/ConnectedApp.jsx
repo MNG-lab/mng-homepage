@@ -1,3 +1,4 @@
+import {production} from './environment.js';
 import organizationAvatar from "./assets/mng-lab-avatar.png";
 import React,{useEffect,useState,useRef} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router-dom';
@@ -74,13 +75,13 @@ export default function ConnectedApp({user}) {
   try{const data=await api('/api/requests',{requestId,title,page,description});sessionStorage.removeItem('mng-request-id');setRequestId(crypto.randomUUID());setTitle('');setDescription('');setData({path:`/api/requests/${data.issue}`,value:{request:{id:data.issue,title:title.trim(),description,state:'open',createdAt:new Date().toISOString(),url:`https://github.com/MNG-lab/mng-homepage/issues/${data.issue}`,pull:null,run:null}}});navigate(`/requests/${data.issue}`);setNotice(data.warning||'요청을 접수했습니다. 작업 상태는 자동으로 갱신됩니다.');}catch(e){setError(e.message);}finally{setBusy(false);}
  }
  return <div className="app-shell">
-  <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리 어드민</small></span></Link><div className="workspace-label">WORKSPACE <span>연동 테스트</span></div>
+  <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리 어드민</small></span></Link><div className="workspace-label">WORKSPACE <span>{production?'운영':'연동 테스트'}</span></div>
    <nav aria-label="주 메뉴">{[['/dashboard','대시보드'],['/requests','요청 관리'],['/history','홈페이지 버전'],['/settings','설정']].map(([path,label])=><button key={path} className={`nav-item ${location.pathname===path||location.pathname.startsWith(path+'/')?'active':''}`} onClick={()=>navigate(path)}>{label}</button>)}</nav>
-   <div className="sidebar-bottom"><div className="help-card"><strong>운영 홈페이지와 분리돼요</strong><p>테스트 환경에서 수정 요청과 이전 버전으로 되돌리기를 확인하세요.</p></div><div className="profile"><div><strong>{user.role==='owner'?'최고 관리자':user.role==='admin'?'관리자':'편집자'}</strong><small>{user.email}</small></div></div></div>
+   <div className="sidebar-bottom"><div className="help-card"><strong>{production?'승인하면 홈페이지에 반영됩니다':'운영 홈페이지와 분리돼요'}</strong><p>{production?'변경된 홈페이지 미리보기를 확인한 뒤 승인해 주세요.':'테스트 환경에서 수정 요청과 이전 버전으로 되돌리기를 확인하세요.'}</p></div><div className="profile"><div><strong>{user.role==='owner'?'최고 관리자':user.role==='admin'?'관리자':'편집자'}</strong><small>{user.email}</small></div></div></div>
   </aside>
-  <div className="main-wrap"><header className="topbar"><span>{pageTitle}</span><div className="connected-top-actions"><span className="demo-pill">GitHub 연동 테스트</span><form method="post" action="/auth/logout"><button className="text-button" type="submit">로그아웃</button></form></div></header>
+  <div className="main-wrap"><header className="topbar"><span>{pageTitle}</span><div className="connected-top-actions"><span className="demo-pill">{production?'운영 홈페이지':'GitHub 연동 테스트'}</span><form method="post" action="/auth/logout"><button className="text-button" type="submit">로그아웃</button></form></div></header>
    <main className="connected-main"><div className="connected-heading"><div><h1>{pageTitle}</h1><p>{isDashboard?'확인할 작업과 최근 요청을 한눈에 살펴보세요.':isHistory?'현재 홈페이지를 확인하고, 필요한 이전 버전을 찾아보세요.':isSettings?'구성원과 서비스 연결을 관리하세요.':isNew?'바꾸고 싶은 내용을 알려 주세요.':detailId?'요청의 진행 상황을 확인하고 필요한 작업을 처리하세요.':'검토·재실행이 필요한 요청을 확인하고 처리하세요.'}</p></div>{!isNew&&!isHistory&&<button className="primary" onClick={()=>navigate('/requests/new')}>새 수정 요청</button>}</div>
-    <div className="inline-note">테스트 환경입니다. main 및 운영 홈페이지에는 반영되지 않습니다.</div>
+    {!production&&<div className="inline-note">테스트 환경입니다. main 및 운영 홈페이지에는 반영되지 않습니다.</div>}
     {error&&!isHistory&&<p role="alert" className="error-note">{error} {location.pathname!=='/requests'&&<RefreshButton key={path} onRefresh={refresh} label="다시 불러오기" description={pageTitle}/>}</p>}{notice&&<p role="status" className="inline-note">{notice}</p>}
     {isDashboard?<>
      <section className="stats" aria-label="작업 요약">{[['확인할 변경',counts.review||0,'변경 내용을 검토하고 반영하세요.','review'],['진행 중',counts.working||0,'요청한 작업이 진행되고 있어요.','working'],['확인이 필요한 실패',counts.failed||0,'실행 결과를 확인하고 다시 시도하세요.','failed']].map(([label,count,text,state])=><button className="stat-card" key={state} onClick={()=>navigate(`/requests?status=${state}`)}><span>{label}</span><div>{!current?'—':count}<small>건</small></div><p>{text}</p></button>)}</section>

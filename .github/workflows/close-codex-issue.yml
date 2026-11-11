@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   close-issue:
-    if: github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'codex/issue-')
+    if: github.event.pull_request.head.repo.full_name == github.repository && (startsWith(github.event.pull_request.head.ref, 'codex/issue-') || startsWith(github.event.pull_request.head.ref, 'admin/issue-'))
     runs-on: ubuntu-latest
     steps:
       # Only read event metadata; never check out or execute PR code.
@@ -21,11 +21,11 @@ jobs:
         run: |
           set -euo pipefail
           HEAD_REF="$(jq -r --arg repo "$GH_REPO" 'if .pull_request.head.repo.full_name == $repo then .pull_request.head.ref else "" end' "$GITHUB_EVENT_PATH")"
-          if [[ ! "$HEAD_REF" =~ ^codex/issue-([0-9]+)-[0-9]+$ ]]; then
+          if [[ ! "$HEAD_REF" =~ ^(codex|admin)/issue-([0-9]+)-[0-9]+$ ]]; then
             echo "Not a generated Codex issue branch; skipping."
             exit 0
           fi
-          ISSUE_NUMBER="${BASH_REMATCH[1]}"
+          ISSUE_NUMBER="${BASH_REMATCH[2]}"
           STATE="$(gh issue view "$ISSUE_NUMBER" --repo "$GH_REPO" --json state --jq .state)"
           if [[ "$STATE" == "CLOSED" ]]; then
             echo "Issue #${ISSUE_NUMBER} is already closed."
