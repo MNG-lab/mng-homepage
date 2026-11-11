@@ -1713,3 +1713,18 @@ select {
 @media(max-width:700px){.copy-box {align-items:flex-start;flex-direction:column;}.credential-guide{padding:16px;}.timeline-content time{width:100%;margin-left:0;}.connected-form>button{justify-self:stretch;}}
 
 .connection-steps{display:flex;gap:24px;flex-wrap:wrap;padding-left:24px;margin:0;color:#62768f}.connection-state{display:grid;gap:16px;padding:22px;background:#f1f5fc;border-radius:10px}.device-code{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.device-code code{font-size:24px;font-weight:700;letter-spacing:2px;user-select:all}.device-help .guide-steps{margin:18px 0}.connection-consent{display:flex;align-items:flex-start;gap:12px;line-height:1.8}.connection-consent input{margin-top:7px;flex-shrink:0}#codex-connection .primary{justify-self:start}#codex-connection .action-row button{white-space:normal}
+
+/* Keep reconnect feedback next to its actions, with stable consent placement. */
+#codex-connection>.state-pill{justify-self:start}
+.connection-actions{margin-top:0;gap:12px}
+.connection-actions button{min-height:44px}
+.connection-actions button[aria-busy="true"]{opacity:1;background:#edf3ff;border-color:#b7c8e3;color:#315c9c}
+.connection-actions .spinner,.connection-state-heading .spinner{width:16px;height:16px;border-color:currentColor;border-top-color:transparent;flex-shrink:0}
+.connection-state{padding:18px 20px;gap:10px;border:1px solid #e0e7f1}
+.connection-state-heading{display:flex;gap:10px;align-items:center}
+.connection-state.is-success{background:#eef8f2;border-color:#cfe6d9;color:#246548}
+.connection-check{display:grid;place-items:center;width:22px;height:22px;flex-shrink:0;background:#d6ecde;border-radius:50%;font-weight:700}
+.connection-state.is-warning{background:#fff8ed;border-color:#ecddbd}
+.connection-status-tools{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+#codex-connection .device-help{margin-top:0}
+@media(max-width:700px){.connection-actions{display:grid;grid-template-columns:1fr}.connection-actions button{width:100%}.connection-state{padding:16px}.connection-steps{gap:12px}}

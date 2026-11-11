@@ -149,3 +149,5 @@ GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 - 인증 본문은 D1·로그·artifact에 저장하지 않습니다. Worker에서 GitHub 공개키로 암호화해 테스트 Secret으로 전송하고 러너 임시 파일을 삭제합니다. D1에는 연결 상태와 만료되는 일회용 코드만 저장합니다.
 - 동시에 하나의 연결만 허용하며 15분 후 만료됩니다. 모호한 저장 응답은 성공으로 표시하거나 자동 재시도하지 않습니다. 새 인증으로 재실행은 별도 사용자 클릭입니다.
 - D1 추가 migration: `0003_device_login.sql`. 일반 수정/복원 흐름은 기존대로 유지합니다.
+
+재연결 화면은 요청 중인 버튼에 즉시 로딩을 표시합니다. 접수 후 새 조회를 시작해 이전 조회 결과가 새 상태를 덮어쓰지 않도록 하고, 5초 주기 및 창 복귀/온라인 전환 시 상태를 갱신합니다. 안내·동의·버튼 다음에 진행/결과 메시지를 배치합니다. 참고: [Carbon inline loading](https://www.carbondesignsystem.com/building-blocks/core/components/inline-loading/guidelines), [Atlassian section message](https://atlassian.design/components/section-message/usage). 화면 테스트는 느린 POST, 이전 GET과의 경합, 자동 갱신, 창 복귀, 결과 위치를 포함합니다.

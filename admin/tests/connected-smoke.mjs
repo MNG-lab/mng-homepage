@@ -6,11 +6,19 @@ let browser;
 try {
  for(let i=0;i<80;i++){try{if((await fetch('http://127.0.0.1:4193')).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
- let records=[],submissions=0,approvals=0,restores=0,readFailures=1;const sha='a'.repeat(40);let role='owner';let sameSnapshot=false;let previewState='building';let historyCurrent=sha;let deviceFlow=null;let deviceStarts=0;
+ let records=[],submissions=0,approvals=0,restores=0,readFailures=1;const sha='a'.repeat(40);let role='owner';let sameSnapshot=false;let previewState='building';let historyCurrent=sha;let deviceFlow=null;let deviceStarts=0,holdDeviceRead=false,heldDeviceRead,releaseDeviceRead,holdLogin=false,releaseLogin;
  await page.route('**/api/**',async route=>{
   const req=route.request(),path=new URL(req.url()).pathname;const body=req.method()==='POST'?req.postDataJSON():null;
-  if(path==='/api/settings/device-login')return route.fulfill({json:{flow:deviceFlow}});
-  if(path==='/api/settings/device-login/start'){deviceStarts++;deviceFlow={id:'mock',kind:body.kind,state:body.kind==='simulate'?'auth_required':body.kind==='login'?'waiting':'completed',code:body.kind==='login'?'ABCD-12345':null};return route.fulfill({json:{ok:true}});}
+  if(path==='/api/settings/device-login'){
+   const captured=structuredClone(deviceFlow);
+   if(holdDeviceRead){holdDeviceRead=false;heldDeviceRead=true;await new Promise(resolve=>{releaseDeviceRead=resolve;});}
+   return route.fulfill({json:{flow:captured}});
+  }
+  if(path==='/api/settings/device-login/start'){
+   deviceStarts++;
+   if(body.kind==='login'&&holdLogin)await new Promise(resolve=>{releaseLogin=resolve;});
+   deviceFlow={id:'mock-'+deviceStarts,kind:body.kind,state:body.kind==='simulate'?'auth_required':body.kind==='login'?'queued':'completed',code:null};return route.fulfill({json:{ok:true,id:deviceFlow.id}});
+  }
   if(path==='/api/session')return route.fulfill({json:{user:{email:'owner@example.test',role},mode:'github'}});
   if(path==='/api/requests'){
    if(body){submissions++;assert.match(body.requestId,/^[0-9a-f-]{36}$/);records=[{id:123,title:body.title,description:body.description,url:'https://github.com/MNG-lab/mng-homepage/issues/123',state:'open',createdAt:'2026-11-10T01:00:00Z',pull:null}];return route.fulfill({json:{issue:123}});}
@@ -48,10 +56,21 @@ try {
  await page.getByText('체험할 준비가 됐습니다',{exact:true}).waitFor();
  await page.getByRole('button',{name:'인증 만료 상황 체험하기',exact:true}).click();await page.getByText('Codex 재연결이 필요합니다',{exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:'Codex 다시 연결',exact:true}).isDisabled(),true);
- await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Codex 다시 연결',exact:true}).click();await page.getByText('ABCD-12345',{exact:true}).waitFor();
+ await page.getByRole('checkbox').check();
+ holdDeviceRead=true;heldDeviceRead=false;await page.getByRole('button',{name:'상태 새로고침',exact:true}).click();
+ for(let i=0;i<100&&!heldDeviceRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldDeviceRead,true);
+ holdLogin=true;await page.getByRole('button',{name:'Codex 다시 연결',exact:true}).click();
+ const busyLogin=page.getByRole('button',{name:'연결 요청 중…',exact:true});await busyLogin.waitFor();assert.equal(await busyLogin.getAttribute('aria-busy'),'true');assert.equal(await busyLogin.locator('.spinner').count(),1);assert.equal(await busyLogin.isDisabled(),true);
+ for(let i=0;i<100&&!releaseLogin;i++)await new Promise(r=>setTimeout(r,20));assert.ok(releaseLogin);releaseLogin();
+ await page.getByText('작업을 준비하고 있습니다',{exact:true}).waitFor();
+ releaseDeviceRead();await new Promise(r=>setTimeout(r,150));assert.equal(await page.getByText('작업을 준비하고 있습니다',{exact:true}).count(),1,'stale read must not replace post-submit state');
+ deviceFlow={...deviceFlow,state:'waiting',code:'ABCD-12345'};await page.getByText('ABCD-12345',{exact:true}).waitFor({timeout:10000});
+
  assert.equal(await page.getByRole('link',{name:'OpenAI에서 로그인하기 ↗',exact:true}).getAttribute('href'),'https://auth.openai.com/codex/device');
- deviceFlow={...deviceFlow,state:'connected',code:null};await page.getByRole('button',{name:'상태 새로고침',exact:true}).click();await page.getByText('Codex 재연결 완료',{exact:true}).waitFor();
+ deviceFlow={...deviceFlow,state:'connected',code:null};await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.getByText('Codex 재연결 완료',{exact:true}).waitFor();
  await page.getByRole('button',{name:'멈춘 테스트 작업 다시 실행',exact:true}).click();await page.getByText('다시 실행 완료',{exact:true}).waitFor();assert.equal(deviceStarts,3);
+ assert.equal(await page.locator('#codex-connection .connection-state').evaluate(el=>{const actions=document.querySelector('.connection-actions').getBoundingClientRect();return el.getBoundingClientRect().top>=actions.bottom&&el.classList.contains('is-success');}),true,'success feedback belongs below the related actions');
+
 
  await page.getByRole('button',{name:'Windows',exact:true}).click();await page.getByText('%USERPROFILE%\\.codex\\auth.json',{exact:true}).waitFor();
  await page.getByRole('button',{name:'Mac',exact:true}).click();await page.getByText('~/.codex/auth.json',{exact:true}).waitFor();
