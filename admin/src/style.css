@@ -1682,3 +1682,32 @@ select {
 .brand-avatar { object-fit: contain; padding: 0; flex-shrink: 0; background: #fff; }
 
 .preview-panel .primary { text-decoration: none; display: inline-flex; align-items: center; }.preview-panel button:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Settings forms and clear version history */
+.connected-form {display:grid;gap:24px;min-width:0;}
+.connected-form>button,.form-actions {justify-self:start;}
+.connected-form>button {margin-top:4px;}
+.connected-panel>*,.member-list>li>div,.connected-list a>div {min-width:0;}
+.connected-list strong {display:block;overflow-wrap:anywhere;}
+.request-kind {display:block;font-size:12px;color:#617185;margin-bottom:6px;}
+.request-kind.restore {color:#6c4d91;}
+.state-pill.current {background:#315c9c;color:white;}
+.current-note {font-size:12px;color:#315c9c;}
+.timeline-content .connected-heading {justify-content:flex-start;margin-bottom:12px;}
+.timeline-content time {margin-left:auto;}
+.timeline-content .restoration-note {padding:12px;background:#f5f2fa;border-radius:8px;color:#604b7a;margin-top:12px;}
+.technical-details {font-size:12px;color:#718099;}
+.connected-panel summary {cursor:pointer;}
+.credential-guide {padding:20px;background:#f6f8fb;border:1px solid #e3e9f2;border-radius:10px;display:grid;gap:16px;}
+.os-options {display:flex;gap:12px;}
+.os-options [aria-pressed="true"] {background:#e9f0ff;border-color:#315c9c;color:#315c9c;}
+.guide-steps {padding-left:24px;margin:0;display:grid;gap:16px;line-height:1.85;}
+.guide-help {display:grid;gap:16px;margin-top:16px;}
+.guide-help a {text-decoration:underline;}
+.copy-box {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px;background:white;border:1px solid #dfe6ef;border-radius:8px;margin-top:12px;}
+.copy-box code {white-space:pre-wrap;overflow-wrap:anywhere;min-width:0;user-select:all;font-size:12px;}
+.copy-box button {flex-shrink:0;}
+.file-picker {margin:0;overflow-wrap:anywhere;}
+.file-picker input {max-width:100%;min-width:0;}
+.form-actions {display:flex;gap:12px;flex-wrap:wrap;}
+@media(max-width:700px){.copy-box {align-items:flex-start;flex-direction:column;}.credential-guide{padding:16px;}.timeline-content time{width:100%;margin-left:0;}.connected-form>button{justify-self:stretch;}}

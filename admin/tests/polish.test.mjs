@@ -25,7 +25,7 @@ test('progress describes queued, running, failed, review, restoration and merged
  assert.equal(progress({...r,run:{status:'completed',conclusion:'failure'}})[1].state,'failed');
  assert.equal(progress({...r,pull:{state:'open'}},{ci:{status:'completed',conclusion:'success'}})[2].text,'승인 대기');
  assert.equal(progress({...r,pull:{state:'open'}},{ci:{status:'completed',conclusion:'failure'}})[2].state,'failed');
- assert.equal(progress({...r,restoration:{},pull:{state:'open'}})[1].label,'복원 준비');
+ assert.equal(progress({...r,restoration:{},pull:{state:'open'}})[1].label,'되돌리기 준비');
  assert.equal(progress({...r,pull:{merged:true}}).every(s=>s.state==='complete'),true);
  assert.equal(progress({...r,state:'closed'})[1].state,'stopped');
  assert.equal(ciLabel({ci:null}),'검사 기록 없음');assert.equal(ciLabel({ci:{status:'completed',conclusion:'cancelled'}}),'검사 취소');assert.equal(ciLabel(null,'timeout'),'검사 조회 실패');
@@ -50,4 +50,14 @@ test('read retries temporary HTTP failures but not permission failures; handles 
   await assert.rejects(api('/test/403'),/권한 없음/);assert.equal(count,1);
   globalThis.fetch=async()=>new Response('<html>bad gateway</html>',{status:502});await assert.rejects(api('/test/html'),/조회 응답/);
  } finally {globalThis.fetch=original;}
+});
+
+
+test('request labels distinguish restored content without calling historical edits cancelled',async()=>{
+ const {requestLabel,requestTitle}=await import('../src/api.js');
+ assert.equal(requestLabel({pull:{merged:true}}),'수정 반영 완료');
+ const restore={pull:{merged:true},restoration:{name:'Members 소개 수정'}};
+ assert.equal(requestLabel(restore),'되돌리기 완료');
+ assert.equal(requestTitle(restore),'‘Members 소개 수정’ 버전으로 되돌리기');
+ assert.equal(requestLabel({...restore,pull:{merged:false,state:'open'}}),'확인 필요');
 });

@@ -130,3 +130,12 @@ GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 다른 커밋, 다른 앱, 외부 도메인, 갱신되는 브랜치 별칭은 사용하지 않습니다. 체크의 배포 ID와 URL도 대조합니다.
 진행 중인 배포는 15초마다 조회하고 수동 새로고침을 지원합니다. 배포 조회가 실패해도 코드 diff와 CI 조회 결과는 유지합니다.
 미리보기는 내용·디자인을 직접 검토하기 위한 것이며, 기존 서버 승인 조건(현재 SHA의 CI 통과)은 유지합니다.
+
+### 비개발자용 버전 기록·설정 안내
+
+- `현재 버전`은 현재 테스트 브랜치의 반영 기록이며 되돌리기 링크를 표시하지 않습니다. 같은 내용의 과거 버전도 서버 비교 결과 차이가 없으면 요청을 만들 수 없습니다.
+- `수정 반영`과 `이전 버전으로 되돌림`은 작업 종류입니다. 과거 기록 자체가 취소되었다는 의미가 아닙니다. 되돌린 기록은 대상 버전 이름·날짜·링크를 표시하고, 과거의 되돌린 결과도 다시 선택할 수 있습니다.
+- 대시보드/목록/상세는 수정과 되돌리기의 종류·완료 문구를 구분합니다. 저장된 GitHub 제목이나 이력은 변경하지 않습니다.
+- 최고 관리자 변경은 후임자의 로그인·수락이 필요하며 기존 최고 관리자는 관리자가 됩니다. 외부 서비스 계정 소유권은 별도입니다. 실제 권한 변경은 이번 화면 개선에 포함하지 않습니다.
+- Codex 안내는 Mac/Windows 파일 경로와 공식 CLI 로그인 명령을 복사합니다. 인증 내용은 화면·클립보드에 출력하지 않습니다. 경로는 기본 CODEX_HOME 기준이며, 별도 경로/조직 보안 정책은 개발 담당자가 확인해야 합니다. 파일 저장 옵션은 로그인 명령에만 적용합니다. Node.js가 필요하며 실제 Windows 로그인은 별도로 확인해야 합니다.
+- 용어 참고: [Google 문서 버전 기록](https://support.google.com/docs/answer/190843?hl=ko), [Microsoft 이전 버전 복원](https://support.microsoft.com/ko-kr/onedrive/restore-a-previous-version-of-a-file-stored-in-onedrive), [Notion 버전 기록](https://www.notion.com/ko/help/duplicate-delete-and-restore-content). 로그인 안내: [OpenAI 인증 문서](https://developers.openai.com/codex/auth/).
