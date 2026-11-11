@@ -1745,11 +1745,22 @@ select {
 .recovery-requests li>div{min-width:0}.recovery-requests a{font-weight:600;overflow-wrap:anywhere}.recovery-requests small{display:block;color:#62768f;margin-top:6px}.recovery-requests button{flex-shrink:0}
 @media(max-width:700px){.recovery-requests li{align-items:stretch;flex-direction:column}}
 
-.request-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid #e0e7f1;padding-top:20px;margin-top:12px}
-.request-pagination p{font-size:13px;color:#52657e;margin:0}.request-pagination p span{white-space:nowrap}
-.request-pagination>div{display:flex;align-items:center;gap:16px}.request-pagination>div>span{font-size:13px;white-space:nowrap}
-.request-pagination button{min-width:64px;min-height:44px}.request-pagination button:disabled{cursor:default}
-@media(max-width:700px){.request-pagination{align-items:stretch;flex-direction:column}.request-pagination>div{justify-content:space-between}}
+.request-pagination{display:flex;align-items:center;justify-content:center;gap:12px;border-top:1px solid #e0e7f1;padding-top:20px;margin-top:12px}
+.request-pagination .page-numbers{display:flex;align-items:center;gap:4px}
+.request-pagination button{min-width:44px;min-height:44px;padding:8px 12px;box-shadow:none}
+.request-pagination .page-number{padding:8px;font-variant-numeric:tabular-nums;border-color:transparent;background:transparent}
+.request-pagination .page-number:hover:not(:disabled){background:#f0f4fa;border-color:#dce5f1}
+.request-pagination .page-number[aria-current="page"]{background:#315e9f;border-color:#315e9f;color:#fff;opacity:1;font-weight:700}
+.request-pagination button:disabled{cursor:default}
+.request-pagination .page-ellipsis{display:grid;place-items:center;width:24px;color:#7d899a}
+@media(max-width:1000px){
+ .request-pagination{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .request-pagination .page-numbers{grid-column:1/-1;grid-row:1;justify-content:center}
+ .request-pagination .page-number{min-width:32px;padding:6px}
+ .request-pagination .page-ellipsis{width:20px}
+ .request-pagination .page-previous{grid-row:2;justify-self:start}
+ .request-pagination .page-next{grid-row:2;justify-self:end}
+}
 
 /* Requests are a work queue; versions describe the state of the whole site. */
 .request-tabs{display:flex;gap:8px;border-bottom:1px solid #e1e7f0;padding-bottom:12px}
