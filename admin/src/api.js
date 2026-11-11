@@ -1,3 +1,5 @@
+import {isRevert} from '../shared/github-sync.js';
+export {isRevert} from '../shared/github-sync.js';
 import {requestState} from '../shared/requests.js';
 import {versionReference} from '../shared/version.js';
 export {requestState,description} from '../shared/requests.js';
@@ -27,7 +29,7 @@ export function api(path,body) {
  pendingReads.set(path,read);return read;
 }
 export const isRestoration=r=>!!(r.restoration||r.pull?.restoration)||/<!-- restore:/.test(r.pull?.body||'');
-export const requestLabel=r=>requestState(r)==='done'?(isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':labels[requestState(r)];
+export const requestLabel=r=>requestState(r)==='done'?(isRevert(r)?'변경 취소 완료':isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':labels[requestState(r)];
 export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`${versionReference(target)}으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin(?: Preview)?\] /,'');};
 export const labels={done:'반영 완료',closed:'종료',review:'확인 필요',failed:'작업 실패',auth_required:'Codex 연결 필요',working:'진행 중'};
 export const date=value=>value?new Date(value).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
@@ -41,7 +43,7 @@ export function ciLabel(detail,error) {
  return {success:'검사 통과',failure:'검사 실패',cancelled:'검사 취소',timed_out:'검사 시간 초과',skipped:'검사 건너뜀',neutral:'검사 완료 (중립)',action_required:'검사 조치 필요'}[detail.ci.conclusion]||'검사 결과 확인 필요';
 }
 export function progress(r,detail,{approving=false}={}) {
- const state=requestState(r),restore=!!r.restoration||/<!-- restore:/.test(r.pull?.body||'');
+ const state=requestState(r),restore=isRevert(r)||!!r.restoration||/<!-- restore:/.test(r.pull?.body||'');
  const steps=[{label:'요청 접수',state:'complete',text:'접수 완료'},{label:restore?'되돌리기 준비':'자동 수정',state:'waiting',text:'실행 확인 대기'},{label:'변경 검토',state:'waiting',text:'준비 후 검토'},{label:'홈페이지 반영',state:'waiting',text:'승인 후 반영'}];
  if(state==='done')return steps.map(s=>({...s,state:'complete',text:'완료'}));
  if(r.pull){steps[1]={...steps[1],state:'complete',text:'변경 준비 완료'};steps[2]={...steps[2],state:'active',text:detail?.ci?.conclusion==='success'?'승인 대기':detail?.ci?.status==='completed'?'검사 결과 확인 필요':detail?.ci?'자동 검사 중':'검사 조회 대기'};}

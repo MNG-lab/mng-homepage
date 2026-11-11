@@ -1,3 +1,4 @@
+import {branchRequest} from './github-sync.js';
 const pages=['Home','Research','Professor','Members','Publications','Gallery','Contact'];
 export function changedAreas(files){
  const result=new Set();
@@ -11,7 +12,7 @@ export function changedAreas(files){
  }
  return [...result];
 }
-export const relatedRequest=revision=>Number(revision.head?.ref?.match(/^(?:admin-preview|admin)\/issue-([1-9]\d*)-\d+$/)?.[1])||null;
+export const relatedRequest=revision=>branchRequest(revision.head?.ref)?.issue||null;
 
 // GitHub PR numbers are immutable identifiers, not deployment sequence numbers.
 export const versionLabel=number=>Number.isSafeInteger(number)&&number>0?`버전 ${number}`:'';

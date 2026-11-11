@@ -1,38 +1,45 @@
-name: Close source issue when Codex PR closes
-
+name: Synchronize request and PR state
 on:
   pull_request_target:
-    types: [closed]
+    types: [closed, reopened]
     branches: [main]
-
+  issues:
+    types: [closed]
 permissions:
   issues: write
-
+  pull-requests: write
 jobs:
-  close-issue:
-    if: github.event.pull_request.head.repo.full_name == github.repository && (startsWith(github.event.pull_request.head.ref, 'codex/issue-') || startsWith(github.event.pull_request.head.ref, 'admin/issue-'))
+  synchronize:
     runs-on: ubuntu-latest
     steps:
-      # Only read event metadata; never check out or execute PR code.
-      - name: Close source issue
+      - name: Synchronize generated request links
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          HEAD_REF="$(jq -r --arg repo "$GH_REPO" 'if .pull_request.head.repo.full_name == $repo then .pull_request.head.ref else "" end' "$GITHUB_EVENT_PATH")"
-          if [[ ! "$HEAD_REF" =~ ^(codex|admin)/issue-([0-9]+)-[0-9]+$ ]]; then
-            echo "Not a generated Codex issue branch; skipping."
-            exit 0
+          if [[ "$GITHUB_EVENT_NAME" == "issues" ]]; then
+            if ! jq -e '.issue.labels | any(.name == "codex-auto" or .name == "admin-request" or .name == "rollback-request" or .name == "rollback-simple-request")' "$GITHUB_EVENT_PATH" > /dev/null; then exit 0; fi
+            ISSUE_NUMBER="$(jq -r '.issue.number' "$GITHUB_EVENT_PATH")"
+            # Recheck current state so a delayed close event cannot undo a reopen.
+            if [[ "$(gh issue view "$ISSUE_NUMBER" --json state --jq .state)" != "CLOSED" ]]; then exit 0; fi
+            gh api --paginate "repos/$GH_REPO/pulls?state=open&base=main&per_page=100" --jq '.[] | [.number,.head.repo.full_name,.head.ref] | @tsv' > "$RUNNER_TEMP/linked-prs.tsv"
+            while IFS=$'\t' read -r PR REPO REF; do
+              if [[ "$REPO" == "$GH_REPO" && "$REF" =~ ^(codex|admin)/(rollback-)?issue-([0-9]+)-[0-9]+$ && "${BASH_REMATCH[3]}" == "$ISSUE_NUMBER" ]]; then
+                gh pr close "$PR" --repo "$GH_REPO"
+              fi
+            done < "$RUNNER_TEMP/linked-prs.tsv"
+          else
+            PR="$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")"
+            gh api "repos/$GH_REPO/pulls/$PR" > "$RUNNER_TEMP/current-pr.json"
+            HEAD_REF="$(jq -r --arg repo "$GH_REPO" 'if .head.repo.full_name == $repo and .base.ref == "main" then .head.ref else "" end' "$RUNNER_TEMP/current-pr.json")"
+            if [[ ! "$HEAD_REF" =~ ^(codex|admin)/(rollback-)?issue-([0-9]+)-[0-9]+$ ]]; then exit 0; fi
+            ISSUE_NUMBER="${BASH_REMATCH[3]}"
+            if [[ "$(jq -r '.state' "$RUNNER_TEMP/current-pr.json")" == "open" ]]; then
+              gh issue reopen "$ISSUE_NUMBER" --repo "$GH_REPO"
+            else
+              REASON="not planned"
+              if [[ "$(jq -r '.merged' "$RUNNER_TEMP/current-pr.json")" == "true" ]]; then REASON="completed"; fi
+              gh issue close "$ISSUE_NUMBER" --repo "$GH_REPO" --reason "$REASON"
+            fi
           fi
-          ISSUE_NUMBER="${BASH_REMATCH[2]}"
-          STATE="$(gh issue view "$ISSUE_NUMBER" --repo "$GH_REPO" --json state --jq .state)"
-          if [[ "$STATE" == "CLOSED" ]]; then
-            echo "Issue #${ISSUE_NUMBER} is already closed."
-            exit 0
-          fi
-          REASON="not planned"
-          if [[ "$(jq -r '.pull_request.merged' "$GITHUB_EVENT_PATH")" == "true" ]]; then
-            REASON="completed"
-          fi
-          gh issue close "$ISSUE_NUMBER" --repo "$GH_REPO" --reason "$REASON"

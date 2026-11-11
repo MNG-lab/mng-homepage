@@ -1,3 +1,4 @@
+import {selectRequestPull,issueType} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
 import {relatedRequest} from '../shared/version.js';
 import {allReads} from './github-catalog.js';
@@ -32,10 +33,10 @@ export function requestSummary(requests){
 }
 export async function requestCatalog(gh,env,{issue:single,run:singleRun}={}){
  const [issues,pulls,runs,recovery]=await allReads([single?[single]:gh.list(),gh.pulls(),single?[]:gh.runs(),recoveryMetadata(env)]);
- const byIssue=new Map(),byTitle=new Map(runs.map(run=>[run.title,run]));
- for(const pull of [...pulls].sort((a,b)=>a.number-b.number)){const id=relatedRequest(pull);byIssue.set(id,pull);}
+ const associated=run=>run.issue||(run.pullNumber?relatedRequest(pulls.find(p=>p.number===run.pullNumber)||{}):Number(run.title?.match(/#([1-9]\d*)$/)?.[1]));
+ const ordered=[...runs].sort((a,b)=>b.id-a.id);
  return issues.map(issue=>{
-  const pull=byIssue.get(issue.number)||null,restoration=pull?.restoration||null,run=single?singleRun:byTitle.get(`${deployment(env).runTitle}${issue.number}`)||null;
-  return {id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin(?: Preview)?\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run,pull,...(!pull&&issue.state==='open'?recovery(issue.number,run):{})};
+  const pull=selectRequestPull(pulls,issue.number),restoration=pull?.restoration||null,run=single?singleRun:ordered.find(r=>associated(r)===issue.number)||null;
+  return {...(issueType(issue,deployment(env))||{source:issue.source,kind:issue.kind}),id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin(?: Preview)?\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run,pull,...(!pull&&issue.state==='open'?recovery(issue.number,run):{})};
  }).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id-a.id);
 }

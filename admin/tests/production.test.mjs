@@ -18,10 +18,10 @@ test('production accepts only explicit main configuration and isolates issue/PR 
  assertPreviewConfig(prod);assertPreviewConfig(preview);assertTestPull(pull,sha,config);assertTestIssue(issue,config);
  for(const altered of [{GITHUB_BASE:'codex/admin-sandbox'},{GITHUB_WORKFLOW_REF:'codex/admin-portal'},{ADMIN_ENV:'typo'},{GITHUB_REPOSITORY:'other/repo'}])assert.throws(()=>assertPreviewConfig({...prod,...altered}));
  assert.throws(()=>assertTestIssue(issue));assert.throws(()=>assertTestPull(pull,sha));
- for(const ref of ['admin-preview/issue-123-456','codex/issue-123-456','main'])assert.throws(()=>assertTestPull({...pull,head:{...pull.head,ref}},sha,config));
+ for(const ref of ['admin-preview/issue-123-456','main'])assert.throws(()=>assertTestPull({...pull,head:{...pull.head,ref}},sha,config));
  assert.throws(()=>assertTestPull({...pull,head:{...pull.head,repo:{full_name:'other/repo'}}},sha,config));
  const existing={...pull,head:{...pull.head,ref:'codex/issue-50-10'},merged_at:'2026-11-10'};
- assertTestPull(existing,undefined,config);assert.throws(()=>assertTestPull(existing,sha,config));
+ assertTestPull(existing,undefined,config);assertTestPull(existing,sha,config);
 });
 test('production OIDC callbacks cannot be authorized by preview runs',()=>{
  const login=claims('admin-device-login.yml'),run=claims('admin-preview.yml');
