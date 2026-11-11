@@ -1730,22 +1730,43 @@ select {
 
 @media(max-width:700px){.timeline-content time{width:100%;margin-left:0;}.connected-form>button{justify-self:stretch;}}
 
-.connection-steps{display:flex;gap:24px;flex-wrap:wrap;padding-left:24px;margin:0;color:#62768f}.connection-state{display:grid;gap:16px;padding:22px;background:#f1f5fc;border-radius:10px}.device-code{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.device-code code{font-size:24px;font-weight:700;letter-spacing:2px;user-select:all}.device-help .guide-steps{margin:18px 0}.connection-consent{display:flex;align-items:flex-start;gap:12px;line-height:1.8}.connection-consent input{margin-top:7px;flex-shrink:0}#codex-connection .primary{justify-self:start}#codex-connection .action-row button{white-space:normal}
-
-/* Keep reconnect feedback next to its actions, with stable consent placement. */
-#codex-connection>.state-pill{justify-self:start}
-.connection-actions{margin-top:0;gap:12px}
-.connection-actions button{min-height:44px}
-.connection-actions button[aria-busy="true"]{opacity:1;background:#edf3ff;border-color:#b7c8e3;color:#315c9c}
-.connection-actions .spinner,.connection-state-heading .spinner{width:16px;height:16px;border-color:currentColor;border-top-color:transparent;flex-shrink:0}
-.connection-state{padding:18px 20px;gap:10px;border:1px solid #e0e7f1}
-.connection-state-heading{display:flex;gap:10px;align-items:center}
-.connection-state.is-success{background:#eef8f2;border-color:#cfe6d9;color:#246548}
-.connection-check{display:grid;place-items:center;width:22px;height:22px;flex-shrink:0;background:#d6ecde;border-radius:50%;font-weight:700}
-.connection-state.is-warning{background:#fff8ed;border-color:#ecddbd}
-.connection-status-tools{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
-#codex-connection .device-help{margin-top:0}
-@media(max-width:700px){.connection-actions{display:grid;grid-template-columns:1fr}.connection-actions button{width:100%}.connection-state{padding:16px}.connection-steps{gap:12px}}
+/* Separate connection instructions, account actions, and stopped requests. */
+#codex-connection {gap:24px;}
+.connection-intro {display:grid;gap:12px;}
+.connection-title-row {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.connection-title-row .state-pill {font-size:11px;padding:5px 10px;}
+.connection-guide {display:grid;gap:18px;padding:20px;background:#f7f9fc;border:1px solid #e0e7f0;border-radius:12px;}
+.connection-steps {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;list-style:none;padding:0;margin:0;}
+.connection-steps li {display:flex;align-items:flex-start;gap:10px;min-width:0;}
+.connection-steps li+li {border-left:1px solid #dce4ee;padding-left:16px;}
+.connection-step-number {display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;border:1px solid #cbd6e5;border-radius:50%;background:white;color:#536985;font-size:12px;font-weight:700;}
+.connection-steps strong {display:block;font-size:13px;line-height:1.65;word-break:keep-all;overflow-wrap:anywhere;}
+.connection-steps small {display:block;margin-top:5px;font-size:12px;line-height:1.7;color:#65738a;word-break:keep-all;overflow-wrap:anywhere;}
+#codex-connection .device-help {margin:0;padding-top:16px;border-top:1px solid #dce4ee;}
+.device-help summary {font-weight:600;font-size:13px;}
+.device-help p {margin-top:14px;font-size:13px;}
+.device-help .guide-steps {margin:16px 0;font-size:13px;}
+.connection-workspace {display:grid;gap:20px;padding:22px;border:1px solid #bfcfe5;border-radius:12px;background:white;}
+.connection-section-heading {display:grid;gap:6px;}
+.connection-section-heading p {font-size:13px;color:#65738a;}
+.connection-consent {display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#f7f9fc;border-radius:8px;line-height:1.8;font-size:13px;}
+.connection-consent input {margin-top:5px;flex-shrink:0;}
+#codex-connection .primary {justify-self:start;}
+#codex-connection .action-row button {white-space:normal;}
+.connection-actions {margin-top:0;gap:12px;}
+.connection-actions button {min-height:44px;}
+.connection-actions button[aria-busy="true"] {opacity:1;background:#edf3ff;border-color:#b7c8e3;color:#315c9c;}
+.connection-actions .spinner,.connection-state-heading .spinner {width:16px;height:16px;border-color:currentColor;border-top-color:transparent;flex-shrink:0;}
+.connection-state {display:grid;padding:18px 20px;gap:10px;background:#f1f5fc;border:1px solid #e0e7f1;border-radius:10px;}
+.connection-state-heading {display:flex;gap:10px;align-items:center;}
+.connection-state.is-success {background:#eef8f2;border-color:#cfe6d9;color:#246548;}
+.connection-check {display:grid;place-items:center;width:22px;height:22px;flex-shrink:0;background:#d6ecde;border-radius:50%;font-weight:700;}
+.connection-state.is-warning {background:#fff8ed;border-color:#ecddbd;}
+.connection-status-tools {display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-top:16px;border-top:1px solid #e5ebf3;}
+.device-code {display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+.device-code code {font-size:24px;font-weight:700;letter-spacing:2px;user-select:all;}
+@media(max-width:1000px){.connection-steps{grid-template-columns:1fr;gap:14px;}.connection-steps li+li{border-left:0;padding-left:0;border-top:1px solid #e0e7f0;padding-top:14px;}}
+@media(max-width:700px){.connection-guide,.connection-workspace{padding:16px;}.connection-consent{padding:12px;}.connection-actions{display:grid;grid-template-columns:1fr;}.connection-actions button{width:100%;}.connection-state{padding:16px;}}
 
 /* Copy feedback stays on the button that was pressed. */
 .copy-control{display:grid;gap:8px;justify-items:start;min-width:0}
@@ -1758,10 +1779,10 @@ select {
 
 .state-pill.auth_required{background:#fff1db;color:#805a1d}
 .auth-recovery-note{display:grid;gap:12px}.auth-recovery-note .primary{justify-self:start}
-.recovery-requests{display:grid;gap:14px;border-top:1px solid #e0e7f1;padding-top:24px}
+.recovery-requests{display:grid;gap:14px;padding:22px;border:1px solid #e0e7f1;border-radius:12px;background:white}.recovery-requests>.connected-empty{padding:12px 14px;background:#f7f9fc;border-radius:8px;font-size:13px}
 .recovery-requests ul{list-style:none;padding:0;margin:0}.recovery-requests li{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid #e0e7f1}
 .recovery-requests li>div{min-width:0}.recovery-requests a{font-weight:600;overflow-wrap:anywhere}.recovery-requests small{display:block;color:#62768f;margin-top:6px}.recovery-requests button{flex-shrink:0}
-@media(max-width:700px){.recovery-requests li{align-items:stretch;flex-direction:column}}
+@media(max-width:700px){.recovery-requests{padding:16px}.recovery-requests li{align-items:stretch;flex-direction:column}}
 
 .request-pagination{display:flex;align-items:center;justify-content:center;gap:12px;border-top:1px solid #e0e7f1;padding-top:20px;margin-top:12px}
 .request-pagination .page-numbers{display:flex;align-items:center;gap:4px}
