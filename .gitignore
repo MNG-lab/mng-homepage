@@ -2,3 +2,8 @@ node_modules
 dist
 .DS_Store
 migration-source
+
+dist-admin
+.wrangler
+.dev.vars*
+.env.local

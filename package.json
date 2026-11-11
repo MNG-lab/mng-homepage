@@ -23,12 +23,22 @@
     "preflight:p5": "node scripts/p5-preflight.mjs",
     "validate:redirects": "node scripts/validate-redirects.mjs --write-report",
     "validate:content": "node scripts/validate-content.mjs --write-report",
-    "validate:content:urls": "node scripts/validate-content.mjs --check-urls --write-report"
+    "validate:content:urls": "node scripts/validate-content.mjs --check-urls --write-report",
+    "admin:dev": "vite --config admin/vite.config.js",
+    "admin:build": "vite build --config admin/vite.config.js",
+    "admin:preview": "vite preview --config admin/vite.config.js",
+    "admin:test": "node --test admin/tests/model.test.mjs admin/tests/auth.test.mjs admin/tests/github.test.mjs admin/tests/requests.test.mjs admin/tests/management.test.mjs admin/tests/restore.test.mjs admin/tests/operations.test.mjs admin/tests/polish.test.mjs admin/tests/preview.test.mjs admin/tests/device-auth-proof.test.mjs admin/tests/device-login.test.mjs admin/tests/request-recovery.test.mjs admin/tests/pagination.test.mjs && npm run admin:build && node admin/tests/smoke.mjs",
+    "admin:build:production": "VITE_ADMIN_AUTH=required VITE_ADMIN_ENV=production vite build --config admin/vite.config.js",
+    "admin:build:auth": "VITE_ADMIN_AUTH=required vite build --config admin/vite.config.js",
+    "admin:test:connected": "npm run admin:build:auth && node admin/tests/connected-smoke.mjs && node admin/tests/session-smoke.mjs"
   },
   "dependencies": {
+    "@noble/hashes": "^2.4.0",
+    "jose": "6.2.17",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.18.5"
+    "react-router-dom": "^7.18.5",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.3.0",

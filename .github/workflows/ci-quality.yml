@@ -2,7 +2,7 @@ name: CI Quality Gate
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "codex/admin-sandbox"]
   workflow_dispatch:
 
 permissions:
@@ -32,3 +32,9 @@ jobs:
 
       - name: Run smoke test
         run: npm run qa:smoke -- --skip-build
+
+      - name: Test admin server and production boundaries
+        run: node --test admin/tests/*.test.mjs
+
+      - name: Build production admin
+        run: npm run admin:build:production

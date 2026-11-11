@@ -1,0 +1,36 @@
+name: Admin browser Codex connection
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: preview
+      session:
+        required: true
+        type: string
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  connect:
+    if: github.repository == 'MNG-lab/mng-homepage' && ((inputs.environment == 'preview' && github.ref == 'refs/heads/codex/admin-portal') || (inputs.environment == 'production' && github.ref == 'refs/heads/main')) && github.event_name == 'workflow_dispatch'
+    env:
+      ADMIN_ENV: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install official Codex
+        run: npm install --prefix "$RUNNER_TEMP/device-cli" @openai/codex@0.167.1
+      - name: Connect without printing credentials
+        env:
+          DEVICE_SESSION: ${{ inputs.session }}
+        run: node admin/scripts/device-login-job.mjs
+      - name: Delete temporary credentials
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/device-login-home"
