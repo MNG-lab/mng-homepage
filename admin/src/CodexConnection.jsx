@@ -4,6 +4,8 @@ import {api,date,requestState,requestTitle} from './api.js';
 import Pagination from './Pagination.jsx';
 import CopyButton from './CopyButton.jsx';
 import LoadingIndicator from './LoadingIndicator.jsx';
+import RefreshButton from './RefreshButton.jsx';
+import ActionButton from './ActionButton.jsx';
 const active=['queued','waiting','saving'];
 const states={auth_required:'Codex를 다시 연결해 주세요',queued:'작업을 준비하고 있습니다',waiting:'로그인을 기다리고 있습니다',saving:'새 인증을 저장하고 있습니다',connected:'Codex 연결 완료',expired:'연결 시간이 지났습니다',failed:'연결을 완료하지 못했습니다',uncertain:'처리 결과를 확인해야 합니다'};
 export default function CodexConnection({requests=[],refresh=async()=>{},onConnected=()=>{},pagination,connectionRequired,onPageChange,loading=false}){
@@ -13,16 +15,17 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
  const stopped=requests.filter(r=>r.auth&&requestState(r)==='auth_required');
  const inflight=useRef(null),mounted=useRef(true),sequence=useRef(0),submitting=useRef(false);
  function load(force=false){
-  if(submitting.current)return Promise.resolve();
+  if(submitting.current)return Promise.resolve(null);
   if(inflight.current&&!force)return inflight.current;
   const current=++sequence.current;
   const task=api('/api/settings/device-login').then(data=>{
    if(mounted.current&&current===sequence.current){
     // A past success is history. Only a flow started or followed on this visit gets a completion notice.
     if(data.flow?.id&&active.includes(data.flow.state))currentFlowId.current=data.flow.id;
-    setFlow(data.flow);setLoaded(true);setReadError('');
+    setFlow(data.flow);setLoaded(true);setReadError('');return true;
    }
-  }).catch(e=>{if(mounted.current&&current===sequence.current)setReadError(e.message);}).finally(()=>{if(inflight.current===task)inflight.current=null;});
+   return null;
+  }).catch(e=>{if(mounted.current&&current===sequence.current){setReadError(e.message);return false;}return null;}).finally(()=>{if(inflight.current===task)inflight.current=null;});
   inflight.current=task;return task;
  }
  useEffect(()=>{
@@ -56,6 +59,7 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
    if(mounted.current){setPending(null);void load(true);}
   }
  }
+ async function refreshStatus(){const results=await Promise.all([load(),refresh()]);return results.includes(false)?false:results.includes(null)?null:true;}
  const busy=!!pending,running=active.includes(flow?.state);
  const needsConnection=connectionRequired??stopped.some(r=>!r.auth.renewed);
  const view=pending?{kind:pending,state:'submitting'}:needsConnection&&(!flow||flow.state==='connected')?{kind:'login',state:'auth_required'}:flow;
@@ -93,9 +97,9 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
  {view?.state==='failed'&&<p>로그인을 완료하지 못했습니다. 기기 코드 로그인 설정을 확인하고 다시 연결해 주세요.</p>}
  {view?.state==='uncertain'&&<p>처리 결과를 확인하지 못했습니다. 작업 기록과 인증 갱신 시간을 확인해 주세요.</p>}
  </div>}
- <div className="connection-status-tools"><button className="text-button" disabled={busy} onClick={()=>{void load(true);void refresh();}}>상태 새로고침</button>{!busy&&flow?.runUrl&&<a className="text-button" href={flow.runUrl} target="_blank" rel="noreferrer">연결 작업 기록 ↗</a>}</div>
+ <div className="connection-status-tools"><RefreshButton key={pagination?.page||1} disabled={busy} onRefresh={refreshStatus} label="상태 새로고침" description="Codex 연결 상태와 멈춘 요청"/>{!busy&&flow?.runUrl&&<a className="text-button" href={flow.runUrl} target="_blank" rel="noreferrer">연결 작업 기록 ↗</a>}</div>
  </section>
- <section className="recovery-requests" aria-labelledby="recovery-heading"><h3 id="recovery-heading">인증 문제로 멈춘 요청</h3>{loading&&!pagination?<LoadingIndicator label="멈춘 요청 불러오는 중"/>:stopped.length?<><p>다시 실행하면 원래 요청으로 자동 수정을 시작합니다. Codex 사용량이 발생하며, 생성된 PR은 검토 후 승인해야 합니다.</p><ul>{stopped.map(r=>{const key=`${r.id}:${r.run.id}:${r.run.attempt||1}`,waiting=retrying===key||submitted.includes(key);return <li key={key}><div><Link to={`/requests/${r.id}`}>#{r.id} · {requestTitle(r)}</Link><small>{r.retry?.state==='uncertain'?'재실행 접수 여부를 확인해 주세요.':r.auth.renewed?'새 인증 저장됨 · 다시 실행할 수 있습니다':'위에서 Codex를 다시 연결해 주세요.'}</small></div><button className="secondary" disabled={busy||running||!!retrying||waiting||!r.auth.renewed||!!r.retry||r.run?.unavailable} aria-busy={retrying===key} onClick={()=>retry(r)}>{retrying===key?<><span className="spinner" aria-hidden="true"/>접수 중…</>:submitted.includes(key)?'재실행 접수됨':'이 요청 다시 실행'}</button></li>;})}</ul></>:<p className="connected-empty">현재 인증 문제로 멈춘 요청이 없습니다.</p>}{pagination?.pages>1&&<Pagination value={pagination} onChange={onPageChange} loading={loading} label="인증 문제로 멈춘 요청 페이지"/>}
+ <section className="recovery-requests" aria-labelledby="recovery-heading"><h3 id="recovery-heading">인증 문제로 멈춘 요청</h3>{loading&&!pagination?<LoadingIndicator label="멈춘 요청 불러오는 중"/>:stopped.length?<><p>다시 실행하면 원래 요청으로 자동 수정을 시작합니다. Codex 사용량이 발생하며, 생성된 PR은 검토 후 승인해야 합니다.</p><ul>{stopped.map(r=>{const key=`${r.id}:${r.run.id}:${r.run.attempt||1}`,waiting=retrying===key||submitted.includes(key);return <li key={key}><div><Link to={`/requests/${r.id}`}>#{r.id} · {requestTitle(r)}</Link><small>{r.retry?.state==='uncertain'?'재실행 접수 여부를 확인해 주세요.':r.auth.renewed?'새 인증 저장됨 · 다시 실행할 수 있습니다':'위에서 Codex를 다시 연결해 주세요.'}</small></div><ActionButton className="secondary" busy={retrying===key} busyLabel="접수 중…" disabled={busy||running||!!retrying||waiting||!r.auth.renewed||!!r.retry||r.run?.unavailable} onClick={()=>retry(r)}>{submitted.includes(key)?'재실행 접수됨':'이 요청 다시 실행'}</ActionButton></li>;})}</ul></>:<p className="connected-empty">현재 인증 문제로 멈춘 요청이 없습니다.</p>}{pagination?.pages>1&&<Pagination value={pagination} onChange={onPageChange} loading={loading} label="인증 문제로 멈춘 요청 페이지"/>}
  {retryError&&<p role="alert" className="error-note">{retryError}</p>}
  {notice&&<p role="status" className="inline-note">{notice}</p>}
  </section>

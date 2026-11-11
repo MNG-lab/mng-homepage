@@ -1920,3 +1920,15 @@ select {
 .refresh-button.is-success{color:#25694d;background:#edf8f2;border-color:#badfcd}
 .refresh-button.is-error{color:#a8342e;border-color:#e6b8b4}
 @media(prefers-reduced-motion:reduce){.refresh-button .spinner{animation:none!important}}
+
+/* Async reads share feedback; submitting a change remains a distinct action. */
+.refresh-labels{display:grid;min-width:0}
+.refresh-labels>span{grid-area:1/1;visibility:hidden}
+.refresh-labels>.is-visible{visibility:visible}
+.action-button{display:inline-flex;align-items:center;justify-content:center;gap:9px}
+.action-button[aria-busy="true"]{opacity:1;cursor:wait}
+.action-button .spinner{width:16px;height:16px;border-color:currentColor;border-top-color:transparent;flex-shrink:0}
+@media(prefers-reduced-motion:reduce){.action-button .spinner,.connection-actions .spinner,.connection-state-heading .spinner,.copy-button .spinner{animation:none!important}}
+
+.refresh-button{max-width:100%;white-space:normal}
+.refresh-labels{word-break:keep-all;overflow-wrap:anywhere}

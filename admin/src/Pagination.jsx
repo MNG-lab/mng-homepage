@@ -3,7 +3,7 @@ import React from 'react';
 const range=(start,end)=>Array.from({length:end-start+1},(_,i)=>start+i);
 
 export default function Pagination({value,onChange,loading=false,label='요청 목록 페이지'}) {
- if(!value)return null;
+ if(!value||value.pages<=1)return null;
  const {page,pages}=value;
  const numbers=pages<=7?range(1,pages):page<=4?[...range(1,5),'end',pages]:page>=pages-3?[1,'start',...range(pages-4,pages)]:[1,'start',page-1,page,page+1,'end',pages];
  return <nav className="request-pagination" aria-label={label}>

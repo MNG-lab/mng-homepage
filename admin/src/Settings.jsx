@@ -2,6 +2,9 @@ import React,{useEffect,useRef,useState} from 'react';
 import CodexConnection from './CodexConnection.jsx';
 import AuditLog from './AuditLog.jsx';
 import LoadingIndicator from './LoadingIndicator.jsx';
+import RefreshButton from './RefreshButton.jsx';
+import ActionButton from './ActionButton.jsx';
+import useReadResource from './useReadResource.js';
 import {api,date} from './api.js';
 function RoleBadge({role}) {
  const value=['owner','admin','editor'].includes(role)?role:'editor';
@@ -11,15 +14,15 @@ function ActionFeedback({scope,confirmation,feedback,busy,onConfirm,onCancel}) {
  const dialog=useRef(null),change=confirmation?.scope===scope?confirmation:null,result=feedback?.scope===scope?feedback:null;
  useEffect(()=>{if(change){dialog.current?.focus({preventScroll:true});dialog.current?.scrollIntoView({block:'nearest',behavior:'smooth'});}},[change]);
  return <>
-  {change&&<div ref={dialog} tabIndex={-1} className="settings-confirmation" role="dialog" aria-modal="false" aria-labelledby={`confirm-${scope}`}><h4 id={`confirm-${scope}`}>{change.title}</h4><p>{change.text}</p><div className="settings-form-actions"><button className="primary" disabled={busy} onClick={()=>onConfirm(change)}>{busy?'처리 중…':change.confirmLabel||'확인하고 저장'}</button><button className="secondary" disabled={busy} onClick={onCancel}>취소</button></div></div>}
+  {change&&<div ref={dialog} tabIndex={-1} className="settings-confirmation" role="dialog" aria-modal="false" aria-labelledby={`confirm-${scope}`}><h4 id={`confirm-${scope}`}>{change.title}</h4><p>{change.text}</p><div className="settings-form-actions"><ActionButton busy={busy} onClick={()=>onConfirm(change)}>{change.confirmLabel||'확인하고 저장'}</ActionButton><button className="secondary" disabled={busy} onClick={onCancel}>취소</button></div></div>}
   {result&&<p role={result.error?'alert':'status'} className={`settings-feedback ${result.error?'is-error':'is-success'}`}>{result.message}</p>}
  </>;
 }
 export default function Settings({user,requests,refresh,pagination,connectionRequired,onPageChange,loading}) {
- const [data,setData]=useState(null),[error,setError]=useState(''),[feedback,setFeedback]=useState(null),[busy,setBusy]=useState(false),[email,setEmail]=useState(''),[role,setRole]=useState('editor'),[target,setTarget]=useState(''),[confirmation,setConfirmation]=useState(null);
+ const [feedback,setFeedback]=useState(null),[busy,setBusy]=useState(false),[email,setEmail]=useState(''),[role,setRole]=useState('editor'),[target,setTarget]=useState(''),[confirmation,setConfirmation]=useState(null);
  const memberForm=useRef(null),memberEmail=useRef(null);
- async function load(){try{setData(await api('/api/settings'));setError('');}catch(e){setError(e.message);}}
- useEffect(()=>{load();},[]);
+ const settings=useReadResource('/api/settings'),data=settings.data,error=settings.error;
+ const load=()=>settings.refresh({force:true});
  function prepare(change){setFeedback(null);setConfirmation(change);}
  async function action(change){setBusy(true);setFeedback(null);try{const result=await api(change.path,change.body);setFeedback({scope:change.scope,message:change.success});setConfirmation(null);if(result.reload){window.location.reload();return;}await load();}catch(e){setFeedback({scope:change.scope,error:true,message:e.message});}finally{setBusy(false);}}
  const response=scope=><ActionFeedback scope={scope} confirmation={confirmation} feedback={feedback} busy={busy} onConfirm={action} onCancel={()=>{setConfirmation(null);setFeedback(null);}}/>;
@@ -32,7 +35,7 @@ export default function Settings({user,requests,refresh,pagination,connectionReq
   <header className="settings-intro"><h2 id="account-heading">로그인 정보</h2></header>
   <dl className="account-identity"><div className="account-email"><dt>Google 계정</dt><dd>{user.email}</dd></div><div className="account-role"><dt>내 권한</dt><dd><RoleBadge role={user.role}/></dd></div></dl>
  </section>
- {error&&<div role="alert" className="settings-feedback is-error">{error} <button className="text-button" disabled={busy} onClick={load}>설정 다시 불러오기</button></div>}
+ {error&&<div role="alert" className="settings-feedback is-error">{error} <RefreshButton disabled={busy} onRefresh={settings.refresh} label="설정 다시 불러오기" description="구성원과 권한 정보"/></div>}
  {data?.transfer?.to_email===user.email&&<section className="panel connected-panel settings-panel" aria-labelledby="incoming-heading">
   <header className="settings-intro"><h2 id="incoming-heading">최고 관리자 변경 요청</h2><p>최고 관리자 역할을 넘겨받을지 확인해 주세요.</p></header>
   <div className="settings-guide"><dl className="settings-facts"><div><dt>요청한 사람</dt><dd>{data.transfer.from_email}</dd></div><div><dt>수락 기한</dt><dd>{date(data.transfer.expires_at)}까지</dd></div></dl><p className="settings-help-note">수락하면 구성원 권한과 Codex 연결을 관리할 수 있습니다. 기존 최고 관리자는 관리자로 변경됩니다. GitHub·Cloudflare·Google 관리 권한은 별도로 넘겨받아야 합니다.</p></div>
