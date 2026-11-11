@@ -16,7 +16,6 @@ export default function Settings({user,requests,refresh,pagination,connectionReq
  <section className="panel connected-panel account-panel" aria-labelledby="account-heading">
   <h2 id="account-heading">로그인 정보</h2>
   <dl className="account-identity"><div className="account-email"><dt>Google 계정</dt><dd>{user.email}</dd></div><div className="account-role"><dt>내 권한</dt><dd><RoleBadge role={user.role}/></dd></div></dl>
-  <div className="account-environment"><h3>사용 환경</h3><p>로그인 방식과 수정 작업이 반영되는 환경입니다.</p><div className="connection-grid"><div><strong>어드민 로그인</strong><span>Google 계정 사용</span></div><div><strong>수정 작업</strong><span>GitHub 테스트 환경 사용</span></div><div><strong>운영 홈페이지</strong><span>이 어드민에서 변경하지 않음</span></div></div></div>
  </section>
  {error&&<p role="alert" className="error-note">{error} <button className="text-button" onClick={load}>설정 다시 불러오기</button></p>}{notice&&<p role="status">{notice}</p>}
  {data?.transfer?.to_email===user.email&&<section className="panel connected-panel"><h2>최고 관리자 변경 요청</h2><p>{data.transfer.from_email}님이 최고 관리자 이전을 요청했습니다. {date(data.transfer.expires_at)}까지 수락할 수 있습니다.</p><button className="primary" disabled={busy} onClick={()=>setConfirmation({title:'최고 관리자 역할을 수락할까요?',text:'기존 최고 관리자는 관리자로 변경됩니다. 외부 서비스 계정 소유권은 별도로 인수인계해야 합니다.',path:'/api/settings/transfer/accept',body:{}})}>최고 관리자 역할 수락</button></section>}

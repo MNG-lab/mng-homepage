@@ -1673,9 +1673,9 @@ select {
 .history-timeline {list-style:none;padding:0;margin:28px 0 0;}.history-timeline>li {display:flex;gap:20px;padding-bottom:30px;position:relative;}.timeline-dot {width:34px;height:34px;border-radius:50%;background:#315c9c;color:white;display:grid;place-items:center;flex-shrink:0;}.timeline-content {flex:1;border-left:2px solid #e7edf5;padding-left:20px;min-width:0;}.timeline-content h3 {font-size:18px;line-height:1.5;}.timeline-content p,.timeline-content time {font-size:12px;color:#7d899a;}.restore-explanation {padding:22px;background:#fff8e9;border-radius:12px;line-height:1.8;margin:22px 0;}
 .file-diff {margin:12px 0;border:1px solid #e3e9f2;border-radius:8px;overflow:hidden;}.file-diff summary {padding:14px;cursor:pointer;overflow-wrap:anywhere;}.file-diff summary span {color:#657995;}.file-diff pre {font:12px/1.7 monospace;overflow:auto;background:#f4f7fb;padding:16px;max-height:420px;}
 .request-progress {display:flex;padding:0;list-style:none;gap:10px;margin:28px 0;}.request-progress li {flex:1;padding:10px 4px;border-top:3px solid #dbe2ee;color:#7d899a;font-size:12px;}.request-progress .complete {border-color:#3c7b66;color:#286d50;}
-.confirmation {border:2px solid #6286bc!important;padding:22px;margin-top:18px;}.connection-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0;}.connection-grid>div {padding:16px;background:#f4f7fb;border-radius:8px;}.connection-grid span {display:block;margin-top:10px;font-size:12px;color:#657995;}
+.confirmation {border:2px solid #6286bc!important;padding:22px;margin-top:18px;}
 .member-list,.audit-list {padding:0;list-style:none;}.member-list>li {display:flex;gap:16px;justify-content:space-between;align-items:center;border-bottom:1px solid #e5ebf3;padding:18px 0;overflow-wrap:anywhere;}.audit-list li {display:grid;gap:7px;border-bottom:1px solid #e5ebf3;padding:14px 0;overflow-wrap:anywhere;}.audit-list span,.audit-list small {font-size:12px;color:#7d899a;}.file-picker {display:grid;gap:12px;margin:20px 0;}.connected-panel details {margin-top:18px;}.connected-panel p {line-height:1.75;}.connected-panel h2 {line-height:1.5;overflow-wrap:anywhere;}
-@media(max-width:700px){.request-tools,.member-list>li {flex-direction:column;align-items:stretch;}.connection-grid {grid-template-columns:1fr;}.connected-list a {align-items:flex-start;flex-direction:column;gap:10px;}.timeline-content{padding-left:12px;}.history-timeline>li{gap:10px;}.timeline-content .connected-heading{align-items:flex-start;gap:10px;}.request-progress{gap:5px;}.request-progress li{font-size:10px;}.connected-main .connected-heading h1{font-size:25px;}}
+@media(max-width:700px){.request-tools,.member-list>li {flex-direction:column;align-items:stretch;}.connected-list a {align-items:flex-start;flex-direction:column;gap:10px;}.timeline-content{padding-left:12px;}.history-timeline>li{gap:10px;}.timeline-content .connected-heading{align-items:flex-start;gap:10px;}.request-progress{gap:5px;}.request-progress li{font-size:10px;}.connected-main .connected-heading h1{font-size:25px;}}
 
 .request-progress strong{display:block;font-weight:600}.request-progress small{display:block;margin-top:8px;line-height:1.5}.request-progress .active{border-color:#315c9c;color:#315c9c;background:#edf3ff}.request-progress .failed{border-color:#b94b35;color:#a53f2c}.request-progress .stopped{border-color:#8994a4;color:#65738a}.progress-note{font-size:12px;color:#718099}
 
@@ -1695,10 +1695,6 @@ select {
 .role-badge-admin {background:#eaf5ef;border-color:#bddbc9;color:#276044;}
 .member-meta {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
 .member-meta small {margin:0;}
-.account-environment {padding-top:4px;}
-.account-environment h3 {margin:0 0 8px;font-size:15px;}
-.account-environment>p {margin:0;color:#65738a;font-size:13px;}
-.account-environment .connection-grid {margin:16px 0 0;}
 @media(max-width:700px){.account-identity{flex-direction:column;gap:18px;padding:16px;}.account-email dd{font-size:15px;}}
 .connected-form {display:grid;gap:24px;min-width:0;}
 .connected-form>button,.form-actions {justify-self:start;}
