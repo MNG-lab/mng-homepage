@@ -1728,3 +1728,12 @@ select {
 .connection-status-tools{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 #codex-connection .device-help{margin-top:0}
 @media(max-width:700px){.connection-actions{display:grid;grid-template-columns:1fr}.connection-actions button{width:100%}.connection-state{padding:16px}.connection-steps{gap:12px}}
+
+/* Copy feedback stays on the button that was pressed. */
+.copy-control{display:grid;gap:8px;justify-items:start;min-width:0}
+.copy-button{min-width:11em;transition:transform .1s ease,background-color .15s ease,border-color .15s ease}
+.copy-button:active:not(:disabled){transform:translateY(1px) scale(.97);background:#e4ecfa;border-color:#9eb4d4}
+.copy-button.is-copied{background:#e7f4ed;border-color:#b8d9c5;color:#246548}
+.copy-button[aria-busy="true"]{opacity:1;cursor:progress}
+.copy-button .spinner{width:14px;height:14px;border-color:currentColor;border-top-color:transparent}
+.copy-error{max-width:30em;color:#a54b35;font-size:12px;line-height:1.6}

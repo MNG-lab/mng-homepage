@@ -1,9 +1,10 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {api,date} from './api.js';
+import CopyButton from './CopyButton.jsx';
 const active=['queued','waiting','saving','testing'];
 const states={queued:'작업을 준비하고 있습니다',waiting:'로그인을 기다리고 있습니다',saving:'새 인증을 저장하고 있습니다',connected:'Codex 재연결 완료',testing:'새 인증으로 다시 실행 중',completed:'다시 실행 완료',auth_required:'Codex 재연결이 필요합니다',expired:'연결 시간이 지났습니다',failed:'작업을 완료하지 못했습니다',uncertain:'처리 결과를 확인해야 합니다'};
 export default function CodexConnection(){
- const [flow,setFlow]=useState(null),[loaded,setLoaded]=useState(false),[error,setError]=useState(''),[readError,setReadError]=useState(''),[pending,setPending]=useState(null),[copied,setCopied]=useState(false),[consent,setConsent]=useState(false);
+ const [flow,setFlow]=useState(null),[loaded,setLoaded]=useState(false),[error,setError]=useState(''),[readError,setReadError]=useState(''),[pending,setPending]=useState(null),[consent,setConsent]=useState(false);
  const inflight=useRef(null),mounted=useRef(true),sequence=useRef(0),submitting=useRef(false);
  function load(force=false){
   if(submitting.current)return Promise.resolve();
@@ -23,7 +24,7 @@ export default function CodexConnection(){
  },[]);
  async function start(kind){
   if(submitting.current||active.includes(flow?.state))return;
-  submitting.current=true;++sequence.current;setPending(kind);setError('');setCopied(false);
+  submitting.current=true;++sequence.current;setPending(kind);setError('');
   try{
    const result=await api('/api/settings/device-login/start',{kind});
    if(mounted.current){setFlow({id:result.id,kind,state:'queued',code:null});setLoaded(true);}
@@ -52,7 +53,7 @@ export default function CodexConnection(){
  {busy&&<p>요청이 접수되면 진행 상태가 자동으로 바뀝니다. 잠시만 기다려 주세요.</p>}
  {view?.state==='auth_required'&&<p>{view.kind==='simulate'?'체험용 작업을 인증 만료 상태로 만들었습니다. 실제 인증은 변경하지 않았습니다.':'Codex가 인증을 사용할 수 없다고 응답했습니다.'} 최고 관리자가 다시 연결하면 작업을 재실행할 수 있습니다.</p>}
  {view?.state==='queued'&&<p>실행 환경을 준비하고 있습니다. 준비가 끝나면 {view.kind==='login'?'로그인 코드':'작업 결과'}가 자동으로 표시됩니다. 새로고침하지 않아도 됩니다.</p>}
- {view?.state==='waiting'&&view.kind==='login'&&(view.code?<><p>아래 버튼으로 OpenAI 페이지를 열고 일회용 코드를 입력해 승인하세요.</p><div className="device-code"><code>{view.code}</code><button className="secondary" onClick={async()=>{try{await navigator.clipboard.writeText(view.code);setCopied(true);}catch{setError('코드를 직접 선택해서 복사해 주세요.');}}}>{copied?'복사 완료':'코드 복사'}</button></div><a className="primary" href="https://auth.openai.com/codex/device" target="_blank" rel="noopener noreferrer">OpenAI에서 로그인하기 ↗</a><p className="progress-note">이 화면은 그대로 두세요. 승인 후 자동으로 테스트 인증을 저장합니다. 연결 대기 기한: {date(view.expiresAt)}</p></>:<p>OpenAI 로그인 코드를 준비하고 있습니다.</p>)}
+ {view?.state==='waiting'&&view.kind==='login'&&(view.code?<><p>아래 버튼으로 OpenAI 페이지를 열고 일회용 코드를 입력해 승인하세요.</p><div className="device-code"><code>{view.code}</code><CopyButton value={view.code}/></div><a className="primary" href="https://auth.openai.com/codex/device" target="_blank" rel="noopener noreferrer">OpenAI에서 로그인하기 ↗</a><p className="progress-note">이 화면은 그대로 두세요. 승인 후 자동으로 테스트 인증을 저장합니다. 연결 대기 기한: {date(view.expiresAt)}</p></>:<p>OpenAI 로그인 코드를 준비하고 있습니다.</p>)}
  {view?.state==='connected'&&<p>새 인증을 테스트 환경에 저장했습니다. 위의 ‘멈춘 테스트 작업 다시 실행’을 눌러 정상적으로 동작하는지 확인하세요.</p>}
  {view?.state==='completed'&&<p>새 인증으로 Codex가 정상 응답했습니다. 홈페이지는 변경하지 않았습니다.</p>}
  {view?.state==='expired'&&<p>연결을 새로 시작해 주세요. 이전 코드는 다시 사용하지 마세요.</p>}
