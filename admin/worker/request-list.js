@@ -1,19 +1,21 @@
 import {allReads} from './github-catalog.js';
-import {requestState,description} from '../shared/requests.js';
+import {requestState,requestGroup,description} from '../shared/requests.js';
 import {recoveryMetadata} from './request-recovery.js';
 import {GitHubError} from './github.js';
 export const pageSize=20;
 const statuses=new Set(['all','done','closed','review','failed','auth_required','working']);
 export function listQuery(params){
- const q=(params.get('q')||'').trim(),status=params.get('status')||'all',raw=params.get('page')||'1';
- if(q.length>200||!statuses.has(status)||!/^[1-9]\d*$/.test(raw)||!Number.isSafeInteger(Number(raw)))throw new GitHubError('검색어·상태·페이지 번호를 확인해 주세요.',400);
- return {q,status,page:Number(raw)};
+ const q=(params.get('q')||'').trim(),status=params.get('status')||'all',raw=params.get('page')||'1',scope=params.get('scope')||'all';
+ if(!['all','active','past'].includes(scope)||q.length>200||!statuses.has(status)||!/^[1-9]\d*$/.test(raw)||!Number.isSafeInteger(Number(raw)))throw new GitHubError('검색어·상태·페이지 번호를 확인해 주세요.',400);
+ return {q,status,scope,page:Number(raw)};
 }
-export function paginateRequests(requests,{q='',status='all',page=1}){
+export function paginateRequests(requests,{q='',status='all',scope='all',page=1}){
  const needle=q.toLocaleLowerCase('ko-KR');
- const found=requests.filter(r=>(status==='all'||requestState(r)===status||(status==='failed'&&requestState(r)==='auth_required'))&&`${r.id} ${r.title} ${description(r.description)}`.toLocaleLowerCase('ko-KR').includes(needle));
+ const matching=requests.filter(r=>`${r.id} ${r.title} ${description(r.description)}`.toLocaleLowerCase('ko-KR').includes(needle));
+ const scopeCounts={active:0,past:0};for(const request of matching)scopeCounts[requestGroup(request)]++;
+ const found=matching.filter(r=>(scope==='all'||requestGroup(r)===scope)&&(status==='all'||requestState(r)===status||(status==='failed'&&requestState(r)==='auth_required')));
  const total=found.length,pages=Math.max(1,Math.ceil(total/pageSize)),current=Math.min(page,pages);
- return {requests:found.slice((current-1)*pageSize,current*pageSize),pagination:{page:current,pageSize,total,pages},query:{q,status},connectionRequired:found.some(r=>requestState(r)==='auth_required'&&!r.auth.renewed)};
+ return {requests:found.slice((current-1)*pageSize,current*pageSize),pagination:{page:current,pageSize,total,pages},query:{q,status,scope},scopeCounts,connectionRequired:found.some(r=>requestState(r)==='auth_required'&&!r.auth.renewed)};
 }
 export function requestSummary(requests){
  const counts={review:0,working:0,failed:0};

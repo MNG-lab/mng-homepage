@@ -34,6 +34,7 @@ async function setup({race=false,ci='success'}={}){
 }
 test('restore preserves current infrastructure and replaces only site snapshot; stale base rejected',async()=>{
  const {gh,calls}=await setup();const plan=await gh.restorePlan(1,current);
+ assert.deepEqual(await gh.versionChanges(1),{pages:['공통 화면·설정'],truncated:false});
  assert.deepEqual(plan.changes,['src']);assert.equal(plan.entries.find(e=>e.path==='.github').sha,'protected');assert.equal(plan.entries.find(e=>e.path==='src').sha,'old-site');
  await assert.rejects(gh.restorePlan(1,target),/새 변경/);
  assert.ok(!calls.some(c=>c.method!=='GET'&&!c.url.includes('access_tokens')));

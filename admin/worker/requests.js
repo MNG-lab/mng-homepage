@@ -1,3 +1,4 @@
+import {allReads} from './github-catalog.js';
 import {listQuery,paginateRequests,requestSummary,requestCatalog} from './request-list.js';
 import {assertRetryCredential} from './request-recovery.js';
 import {createGitHub,GitHubError} from './github.js';
@@ -26,7 +27,7 @@ export function requestsAPI({github=createGitHub}={}) {
    const detail=url.pathname.match(/^\/api\/pulls\/([1-9]\d*)$/);
    if(detail&&request.method==='GET')return reply(await gh.detail(Number(detail[1])));
    const plan=url.pathname.match(/^\/api\/history\/([1-9]\d*)$/);
-   if(plan&&request.method==='GET') {const value=await gh.restorePlan(Number(plan[1]));return reply({source:value.source,current:value.current,target:value.target,changes:value.changes});}
+   if(plan&&request.method==='GET') {const [value,change]=await allReads([gh.restorePlan(Number(plan[1])),gh.versionChanges(Number(plan[1]))]);return reply({source:value.source,current:value.current,target:value.target,changes:value.changes,changedPages:change.pages,changesTruncated:change.truncated});}
    const close=url.pathname.match(/^\/api\/requests\/([1-9]\d*)\/close$/);
    if(close&&request.method==='POST') {
     if(user.role==='editor')return reply({error:'관리자만 요청을 종료할 수 있습니다.'},403);

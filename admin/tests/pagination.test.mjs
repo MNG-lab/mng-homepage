@@ -81,3 +81,16 @@ test('old requests beyond 1,000 runs remain queryable and retryable; direct atte
  deleted=true;const retained=await (await api(new Request(origin+'/api/requests/1'),config,user)).json();assert.equal(retained.request.id,1);assert.equal(retained.request.run.unavailable,true);
  assert.equal((await retry()).status,404);assert.equal(dispatches,1);
 });
+
+
+test('request groups separate actionable work from completed and closed requests before pagination',async()=>{
+ const {paginateRequests,listQuery}=await import('../worker/request-list.js');
+ const rows=[{id:1,title:'Members',state:'open'}, {id:2,title:'Members',state:'open',auth:{renewed:false}}, {id:3,title:'Members',state:'open',pull:{state:'open'}}, {id:4,title:'Members',state:'open',pull:{merged:true,state:'closed'}}, {id:5,title:'Members',state:'closed'}, {id:6,title:'Members',state:'open',pull:{state:'closed'}}, {id:7,title:'Members',state:'open',run:{status:'completed',conclusion:'failure'}}];
+ const active=paginateRequests(rows,{scope:'active'}),past=paginateRequests(rows,{scope:'past'});
+ assert.deepEqual(active.requests.map(r=>r.id),[1,2,3,7]);assert.deepEqual(past.requests.map(r=>r.id),[4,5,6]);
+ assert.deepEqual(active.scopeCounts,{active:4,past:3});assert.equal(paginateRequests(rows,{scope:'active',status:'failed'}).pagination.total,2);
+ assert.deepEqual(paginateRequests(rows,{scope:'past',status:'done'}).requests.map(r=>r.id),[4]);
+ assert.deepEqual(paginateRequests(rows,{scope:'past',q:'absent'}).scopeCounts,{active:0,past:0});
+ const many=Array.from({length:47},(_,i)=>({...rows[4],id:i+1}));const page=paginateRequests([...rows.slice(0,3),...many],{scope:'past',page:2});assert.equal(page.requests.length,20);assert.equal(page.pagination.total,47);
+ assert.throws(()=>listQuery(new URLSearchParams('scope=invalid')));assert.equal(listQuery(new URLSearchParams()).scope,'all');
+});

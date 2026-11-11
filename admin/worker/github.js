@@ -1,3 +1,4 @@
+import {changedAreas,relatedRequest} from '../shared/version.js';
 import {readCatalog,saveCatalog,invalidateCatalog,allReads} from './github-catalog.js';
 import {previewStatus} from './preview.js';
 import nacl from 'tweetnacl';
@@ -113,7 +114,13 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     async current() {return (await call(`/git/ref/heads/${TEST_BASE}`)).object.sha;},
     async history() {
       const [pulls,current]=await allReads([this.pulls(),this.current()]);
-      return {current,revisions:pulls.filter(p=>p.merged).sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt))};
+      return {current,revisions:pulls.filter(p=>p.merged).sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt)||b.number-a.number).map(p=>({...p,requestId:relatedRequest(p)}))};
+    },
+    async versionChanges(id){
+      const pr=await this.pull(id);
+      if(!pr.merged_at)throw new GitHubError('반영된 버전만 확인할 수 있습니다.',400);
+      const files=await call(`/pulls/${number(id)}/files?per_page=100`);
+      return {pages:changedAreas(files),truncated:files.length===100};
     },
     async preview(head) {
       try {

@@ -31,31 +31,37 @@ try {
   if(/^\/api\/requests\/\d+$/.test(path)){const record=records.find(r=>r.id===Number(path.split('/').at(-1)));return route.fulfill({status:record?200:404,json:record?{request:record}:{error:'요청이 없습니다.'}});}
   if(path==='/api/pulls/124')return route.fulfill({json:{head:sha,preview:{head:sha,state:previewState,url:previewState==='ready'?'https://fc3ef735.mng-homepage.pages.dev':null},files:[{path:'src/App.jsx',additions:1,deletions:1,patch:'-old\n+new'}],ci:{status:'completed',conclusion:'success',url:'https://github.com/MNG-lab/mng-homepage/actions'}}});
   if(path==='/api/pulls/124/approve'){approvals++;assert.equal(body.head,sha);records[0].pull.merged=true;records[0].pull.state='closed';records[0].state='closed';return route.fulfill({json:{merged:true}});}
-  if(path==='/api/history')return route.fulfill({json:{current:historyCurrent,revisions:records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}))}});
-  if(path==='/api/history/124')return route.fulfill({json:{source:124,current:sha,target:'b'.repeat(40),changes:sameSnapshot?[]:['src']}});
+  if(path==='/api/history')return route.fulfill({json:{current:historyCurrent,revisions:records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,requestId:r.id,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}))}});
+  if(path==='/api/history/124')return route.fulfill({json:{source:124,current:sha,target:'b'.repeat(40),changes:sameSnapshot?[]:['src'],changedPages:['Members'],changesTruncated:false}});
   if(path==='/api/history/124/restore'){restores++;assert.equal(body.base,sha);assert.ok(body.requestId);return route.fulfill({json:{issue:123}});}
   if(path==='/api/settings')return route.fulfill({json:{role,members:[{email:'owner@example.test',role:'owner',joined:1,active:1}],audit:[],transfer:null}});
   return route.fulfill({status:404,json:{error:'Unexpected test route '+path}});
  });
  await page.goto('http://127.0.0.1:4193/dashboard');await page.getByRole('heading',{name:'대시보드',exact:true}).waitFor();await page.getByRole('region',{name:'작업 요약'}).waitFor();await page.getByText('확인을 기다리는 작업이 없습니다.',{exact:true}).waitFor();assert.equal(await page.getByRole('alert').count(),0);
  assert.equal(await page.locator('.auth-session').count(),0);assert.equal(await page.locator('.brand').evaluate(el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true);
- await page.getByRole('button',{name:'수정 요청',exact:true}).click();await page.getByRole('heading',{name:'수정 요청',exact:true}).waitFor();assert.equal(await page.getByRole('region',{name:'작업 요약'}).count(),0);
- await page.goBack();await page.getByRole('heading',{name:'대시보드',exact:true}).waitFor();await page.goForward();await page.getByRole('heading',{name:'수정 요청',exact:true}).waitFor();
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('heading',{name:'요청 관리',exact:true}).waitFor();assert.equal(await page.getByRole('region',{name:'작업 요약'}).count(),0);
+ await page.goBack();await page.getByRole('heading',{name:'대시보드',exact:true}).waitFor();await page.goForward();await page.getByRole('heading',{name:'요청 관리',exact:true}).waitFor();
  await page.getByRole('button',{name:'새 수정 요청',exact:true}).click();await page.getByLabel('요청 제목',{exact:true}).fill('Connected test');await page.getByLabel('어떻게 바꾸면 될까요?',{exact:true}).fill('Update Members test content');await page.getByRole('button',{name:'수정 요청 보내기',exact:true}).click();
  await page.waitForURL('**/requests/123');await page.getByRole('heading',{name:'Connected test',exact:true}).waitFor();assert.equal(submissions,1);
  await page.reload();await page.getByRole('heading',{name:'Connected test',exact:true}).waitFor();
- await page.getByRole('button',{name:'변경 이력',exact:true}).click();await page.getByText('아직 반영된 변경이 없습니다.',{exact:true}).waitFor();assert.equal(await page.getByLabel('요청 검색').count(),0);
+ await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await page.getByText('아직 반영된 버전이 없습니다.',{exact:true}).waitFor();assert.equal(await page.getByLabel('요청 검색').count(),0);
  records[0].pull={number:124,head:{sha},state:'open',merged:false,url:'https://github.com/MNG-lab/mng-homepage/pull/124'};
  await page.goto('http://127.0.0.1:4193/requests/123');await page.getByText('배포 중',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'변경된 홈페이지 미리보기',exact:true}).isDisabled(),true);assert.equal(await page.getByRole('link',{name:'변경된 홈페이지 미리보기 ↗',exact:true}).count(),0);
  previewState='failed';await page.getByRole('button',{name:'배포 상태 새로고침',exact:true}).click();await page.getByText('미리보기 배포 실패',{exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'변경된 홈페이지 미리보기 ↗',exact:true}).count(),0);
  previewState='ready';await page.getByRole('button',{name:'배포 상태 새로고침',exact:true}).click();await page.getByText('미리보기 준비 완료',{exact:true}).waitFor();const previewLink=page.getByRole('link',{name:'변경된 홈페이지 미리보기 ↗',exact:true});assert.equal(await previewLink.getAttribute('href'),'https://fc3ef735.mng-homepage.pages.dev');assert.equal(await previewLink.getAttribute('target'),'_blank');
  await page.getByRole('button',{name:'이 변경을 테스트 브랜치에 반영',exact:true}).click();assert.equal(approvals,0);await page.getByRole('button',{name:'확인하고 진행',exact:true}).click();await page.getByText('수정 반영 완료',{exact:true}).first().waitFor();assert.equal(approvals,1);
- await page.getByRole('button',{name:'변경 이력',exact:true}).click();await page.getByText('현재 버전',{exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'이 버전으로 되돌리기',exact:true}).count(),0);historyCurrent='c'.repeat(40);await page.getByRole('button',{name:'새로고침',exact:true}).click();await page.getByRole('link',{name:'이 버전으로 되돌리기',exact:true}).click();await page.waitForURL('**/history/124');await page.getByRole('heading',{name:'이름으로 알아보는 복원 지점',exact:true}).waitFor();await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).click();assert.equal(restores,0);await page.getByRole('button',{name:'되돌리기 요청 만들기'}).click();await page.waitForURL('**/requests/123');assert.equal(restores,1);
+ await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await page.getByText('현재 버전',{exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'이 버전으로 되돌리기',exact:true}).count(),0);await page.getByRole('link',{name:'현재 버전 보기',exact:true}).click();await page.getByRole('heading',{name:'이 버전에서 반영한 변경',exact:true}).waitFor();assert.equal(restores,0);
+ await page.getByRole('link',{name:'관련 요청 보기 →',exact:true}).click();await page.waitForURL('**/requests/123?tab=past');await page.getByRole('link',{name:'반영된 버전 보기',exact:true}).waitFor();
+ await page.getByRole('link',{name:'목록으로 돌아가기',exact:true}).click();await page.waitForURL('**/requests?tab=past');await page.getByRole('link',{name:'반영된 버전 보기 →',exact:true}).waitFor();
+ await page.getByRole('button',{name:/^처리 중/}).click();await page.getByText('지금 처리할 요청이 없습니다. 완료된 작업은 지난 요청에서 확인하세요.').waitFor();
+ await page.goBack();await page.getByRole('link',{name:'반영된 버전 보기 →',exact:true}).waitFor();
+ await page.getByRole('link',{name:'반영된 버전 보기 →',exact:true}).click();await page.getByRole('link',{name:'← 홈페이지 버전 목록',exact:true}).click();
+ historyCurrent='c'.repeat(40);await page.getByRole('button',{name:'새로고침',exact:true}).click();await page.getByRole('link',{name:'이 버전으로 되돌리기',exact:true}).click();await page.waitForURL('**/history/124#restore');await page.getByText('이름으로 알아보는 복원 지점',{exact:true}).waitFor();await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).click();assert.equal(restores,0);await page.getByRole('button',{name:'되돌리기 요청 만들기'}).click();await page.waitForURL('**/requests/123');assert.equal(restores,1);
  records[0].restoration={number:120,name:'Members 소개 수정',mergedAt:'2026-11-09T01:00:00Z'};records[0].pull.restoration=records[0].restoration;
  await page.goto('http://127.0.0.1:4193/dashboard');await page.getByText('되돌리기 완료',{exact:true}).waitFor();await page.getByText('이전 버전으로 되돌리기',{exact:true}).waitFor();
- await page.getByRole('button',{name:'변경 이력',exact:true}).click();await page.getByText('이전 버전으로 되돌림',{exact:true}).waitFor();await page.getByText('‘Members 소개 수정’ 버전으로 되돌렸습니다',{exact:true}).waitFor();await page.getByRole('link',{name:'해당 버전 보기 →',exact:true}).waitFor();
+ await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await page.getByText('이전 버전으로 되돌림',{exact:true}).waitFor();await page.getByText('‘Members 소개 수정’ 버전으로 되돌렸습니다',{exact:true}).waitFor();await page.getByRole('link',{name:'해당 버전 보기 →',exact:true}).waitFor();
 
- await page.getByRole('button',{name:'수정 요청',exact:true}).click();await page.getByLabel('요청 검색').fill('missing');await page.getByText('조건에 맞는 요청이 없습니다.').waitFor();
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByLabel('요청 검색').fill('missing');await page.getByText('조건에 맞는 요청이 없습니다.').waitFor();
  // 47 records: status/search are applied by the server before slicing.
  records=Array.from({length:47},(_,i)=>({id:1000-i,title:`Members 수정 ${i+1}`,description:'검색 본문',state:'open',createdAt:new Date(Date.UTC(2026,10,10,0,0,47-i)).toISOString(),run:i<42?{id:1000-i,attempt:1,status:'completed',conclusion:'failure'}:null}));
  await page.goto('http://127.0.0.1:4193/requests?status=failed&q=Members&page=2');
@@ -76,6 +82,14 @@ try {
  await page.getByLabel('상태',{exact:true}).selectOption('working');await pager.getByText('1 / 1 페이지').waitFor();assert.equal(await page.locator('.connected-list>li').count(),5);
  assert.equal(new URL(page.url()).searchParams.get('q'),'검색 본문');
  await page.goto('http://127.0.0.1:4193/requests?page=999');await page.waitForURL('**page=3');await pager.getByText('3 / 3 페이지').waitFor();
+ const activeRecords=records;
+ records=[...activeRecords,...Array.from({length:25},(_,i)=>({id:2000+i,title:`Members 지난 요청 ${i+1}`,description:'검색 본문',state:'closed',pull:{number:3000+i,merged:true,state:'closed'}}))];
+ await page.goto('http://127.0.0.1:4193/requests?q=Members');await page.getByText('1 / 3 페이지',{exact:true}).waitFor();
+ await page.getByRole('button',{name:/^지난 요청/}).click();await page.getByText('1 / 2 페이지',{exact:true}).waitFor();assert.equal(new URL(page.url()).searchParams.get('q'),'Members');
+ await pager.getByRole('button',{name:'다음',exact:true}).click();await page.getByText('2 / 2 페이지',{exact:true}).waitFor();assert.equal(await page.locator('.managed-requests>li').count(),5);
+ await page.reload();await page.getByText('2 / 2 페이지',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:/^지난 요청/}).getAttribute('aria-pressed'),'true');
+ await page.getByRole('button',{name:/^처리 중/}).click();await page.getByText('1 / 3 페이지',{exact:true}).waitFor();await page.goBack();await page.getByText('2 / 2 페이지',{exact:true}).waitFor();
+ records=activeRecords;
  await page.goto('http://127.0.0.1:4193/dashboard');await page.locator('.stat-card').filter({hasText:'확인이 필요한 실패'}).getByText('42',{exact:false}).waitFor();assert.equal(await page.locator('.connected-list').first().locator('li').count(),5);
  records=records.map((r,i)=>({...r,auth:i<25?{renewed:false}:null,run:{id:r.id,attempt:1,status:'completed',conclusion:'failure'}}));
  await page.goto('http://127.0.0.1:4193/settings?recovery_page=2#codex-connection');
@@ -117,6 +131,6 @@ try {
  for(const route of ['dashboard','requests','history','settings']){await page.goto('http://127.0.0.1:4193/'+route);await page.locator('.connected-main').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'mobile overflow: '+route);}
  await page.screenshot({path:'/private/tmp/mng-settings-mobile.png',fullPage:true});
  sameSnapshot=true;await page.goto('http://127.0.0.1:4193/history/124');await page.getByRole('button',{name:'현재와 같은 상태입니다'}).waitFor();assert.equal(await page.getByRole('button',{name:'현재와 같은 상태입니다'}).isDisabled(),true);
- role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
+ role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('되돌리면 달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
  assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, owner/editor UI, mobile layout, no runtime errors');
 } finally {await browser?.close();server.kill('SIGTERM');}

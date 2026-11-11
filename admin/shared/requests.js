@@ -8,3 +8,5 @@ export function requestState(r) {
  return 'working';
 }
 export function description(body) {return (body||'').replace(/<!--[\s\S]*?-->\s*/g,'').split('## 수정 요청\n')[1]?.split('\n\n운영 홈페이지')[0]||(body||'').replace(/<!--[\s\S]*?-->\s*/g,'');}
+
+export const requestGroup=r=>['done','closed'].includes(requestState(r))?'past':'active';
