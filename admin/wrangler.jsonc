@@ -14,6 +14,11 @@
   "observability": {
     "enabled": false
   },
+  "ratelimits": [
+    {"name":"REQUEST_LIMITER","namespace_id":"11644955871","simple":{"limit":240,"period":60}},
+    {"name":"LOGIN_LIMITER","namespace_id":"11644955872","simple":{"limit":20,"period":60}},
+    {"name":"WRITE_LIMITER","namespace_id":"11644955873","simple":{"limit":30,"period":60}}
+  ],
   "vars": {
     "APP_ORIGIN": "https://mng-admin-preview.chominho96-aaa.workers.dev",
     "GITHUB_REPOSITORY": "MNG-lab/mng-homepage",

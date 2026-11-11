@@ -43,3 +43,26 @@ test('invalid signatures, expired sessions and revoked owners cannot save creden
  env.DB.sqlite.prepare("UPDATE members SET role='admin'").run();assert.equal((await handle(callback(id,'hello'),env)).status,403);
  env.DB.sqlite.prepare("UPDATE members SET role='owner'").run();env.DB.sqlite.prepare('UPDATE device_flows SET expires_at=0').run();assert.equal((await handle(callback(id,'hello'),env)).status,403);
 });
+
+test('unauthenticated, wrong-workflow and non-owner requests do not query the database',async()=>{
+ const {env}=setup();const noDB={...env,DB:{prepare(){assert.fail('rejected request reached DB');}}};
+ const unsigned=deviceAPI({verifyRunner:async()=>{throw Error('invalid');}});
+ const wrong=deviceAPI({verifyRunner:async()=>({...claims,repository_id:'wrong'})});
+ const id=crypto.randomUUID();
+ assert.equal((await unsigned(new Request(origin+'/api/internal/device-login'),noDB,null)).status,403);
+ assert.equal((await unsigned(callback(id,'hello'),noDB,null)).status,403);
+ assert.equal((await wrong(callback(id,'hello'),noDB,null)).status,403);
+ assert.equal((await unsigned(start('login'),noDB,{...owner,role:'editor'})).status,403);
+ assert.equal((await unsigned(start('login','https://evil.test'),noDB,owner)).status,403);
+});
+
+test('polling reports expiry without writing; a valid owner start frees the expired flow',async()=>{
+ const {env,handle}=setup();const {id}=await(await handle(start('login'),env,owner)).json();
+ env.DB.sqlite.prepare("UPDATE device_flows SET state='waiting',code='ABCD-12345',expires_at=0 WHERE id=?").run(id);
+ const readonly={...env,DB:{...env.DB,prepare(sql){assert.match(sql,/^SELECT/);return env.DB.prepare(sql);}}};
+ const response=await handle(new Request(origin+'/api/settings/device-login'),readonly,owner);
+ const {flow}=await response.json();assert.equal(flow.state,'expired');assert.equal(flow.code,null);
+ assert.equal((await handle(start('login'),env,owner)).status,202);
+ assert.equal(env.DB.sqlite.prepare('SELECT state,code FROM device_flows WHERE id=?').get(id).state,'expired');
+ assert.equal(env.DB.sqlite.prepare('SELECT code FROM device_flows WHERE id=?').get(id).code,null);
+});

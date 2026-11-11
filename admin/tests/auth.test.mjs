@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SignJWT, decodeJwt} from 'jose';
 import {createHandler} from '../worker/index.js';
-const env = {APP_ORIGIN:'https://admin.example.test',GOOGLE_CLIENT_ID:'client',GOOGLE_CLIENT_SECRET:'test-secret',SESSION_SECRET:'a'.repeat(64),MEMBERS_JSON:JSON.stringify({'owner@gmail.com':{role:'owner'}}),ASSETS:{fetch:async()=>new Response('private app')}};
+import {createSession} from '../worker/sessions.js';
+import {database} from './d1.mjs';
+const allow={limit:async()=>({success:true})};
+const env = {APP_ORIGIN:'https://admin.example.test',GOOGLE_CLIENT_ID:'client',GOOGLE_CLIENT_SECRET:'test-secret',SESSION_SECRET:'a'.repeat(64),MEMBERS_JSON:JSON.stringify({'owner@gmail.com':{role:'owner'}}),DB:database(),REQUEST_LIMITER:allow,LOGIN_LIMITER:allow,WRITE_LIMITER:allow,ASSETS:{fetch:async()=>new Response('private app')}};
 const req=(path,opts={})=>new Request(env.APP_ORIGIN+path,opts);
 const cookiePair=s=>s.split(';')[0];
 async function begin(handler) {
@@ -11,8 +14,9 @@ async function begin(handler) {
  const p=decodeJwt(cookie.split('=')[1]);
  return {cookie,p,url:new URL(r.headers.get('location'))};
 }
-async function token(payload, expiry='1h') {
- return new SignJWT(payload).setProtectedHeader({alg:'HS256'}).setIssuer(env.APP_ORIGIN).setAudience('mng-session').setExpirationTime(expiry).sign(new TextEncoder().encode(env.SESSION_SECRET));
+async function token(payload, expiry='1h',saved=true) {
+ const sid=saved?await createSession(env,payload.email,payload.sub):undefined;
+ return new SignJWT({...payload,...(sid?{sid}:{})}).setProtectedHeader({alg:'HS256'}).setIssuer(env.APP_ORIGIN).setAudience('mng-session').setExpirationTime(expiry).sign(new TextEncoder().encode(env.SESSION_SECRET));
 }
 test('all private assets and APIs require authentication; host and missing config fail closed',async()=>{
  const h=createHandler();
@@ -120,4 +124,75 @@ test('login errors have a visible alert and clear retry instructions',async()=>{
  assert.doesNotMatch(normal,/role="alert"/);
  assert.match(error,/class="login-error" role="alert"/);assert.match(error,/로그인하지 못했습니다/);assert.match(error,/관리자로 등록된 계정인지 확인한 뒤 다시 시도/);assert.match(error,/color:#b42318/);
  assert.match(error,/href="\/auth\/google\/start"/);assert.doesNotMatch(error,/테스트 브랜치|실제 인증/);
+});
+
+test('logout revokes all renewed cookies for the session but not a separate login',async()=>{
+ const h=createHandler(),jwt=await token({email:'owner@gmail.com',sub:'google-sub'});
+ const another=await token({email:'owner@gmail.com',sub:'google-sub'});
+ const renewed=await h(refreshRequest(jwt),env);
+ const newCookie=cookiePair(renewed.headers.get('set-cookie'));
+ assert.equal('sessionId' in (await renewed.json()).user,false);
+ const logout=await h(req('/auth/logout',{method:'POST',headers:{Origin:env.APP_ORIGIN,Cookie:newCookie}}),env);
+ assert.equal(logout.status,303);
+ for(const value of [jwt,newCookie.split('=')[1]]){
+  assert.equal((await h(req('/api/session',{headers:{Cookie:`__Host-mng_session=${value}`}}),env)).status,401);
+  assert.equal((await h(refreshRequest(value),env)).status,401);
+ }
+ assert.equal((await h(req('/api/session',{headers:{Cookie:`__Host-mng_session=${another}`}}),env)).status,200);
+ const rows=JSON.stringify(env.DB.sqlite.prepare('SELECT * FROM sessions').all());
+ assert.ok(!rows.includes(another));assert.ok(!rows.includes(decodeJwt(another).sid));
+});
+
+test('concurrent renewals cannot resurrect logout, even if their response arrives last',async()=>{
+ for(const updated of [false,true]){
+  const h=createHandler(),jwt=await token({email:'owner@gmail.com',sub:'google-sub'});
+  let ready,release;const started=new Promise(r=>{ready=r;}),gate=new Promise(r=>{release=r;});
+  const held={...env,DB:{...env.DB,prepare(sql){
+   const statement=env.DB.prepare(sql);
+   if(sql.startsWith('UPDATE sessions')){const run=statement.run;statement.run=async()=>{const result=updated?await run():null;ready();await gate;return result||run();};}
+   return statement;
+  }}};
+  const pending=h(refreshRequest(jwt),held);await started;
+  const logout=await h(req('/auth/logout',{method:'POST',headers:{Origin:env.APP_ORIGIN,Cookie:`__Host-mng_session=${jwt}`}}),env);
+  assert.equal(logout.status,303);release();const response=await pending;
+  assert.equal(response.status,updated?200:401);
+  const value=response.headers.get('set-cookie')?.split(';')[0].split('=')[1]||jwt;
+  assert.equal((await h(refreshRequest(value),env)).status,401);
+  assert.equal((await h(req('/api/session',{headers:{Cookie:`__Host-mng_session=${value}`}}),env)).status,401);
+ }
+});
+
+test('stateless legacy cookies and missing or expired server sessions fail closed',async()=>{
+ const h=createHandler(),payload={email:'owner@gmail.com',sub:'google-sub'};
+ assert.equal((await h(refreshRequest(await token(payload,'6h',false)),env)).status,401);
+ const jwt=await token(payload,'6h');
+ env.DB.sqlite.prepare('UPDATE sessions SET expires_at=0').run();
+ assert.equal((await h(refreshRequest(jwt),env)).status,401);
+ env.DB.sqlite.prepare('DELETE FROM sessions').run();
+ assert.equal((await h(refreshRequest(jwt),env)).status,401);
+});
+
+test('logout storage failure does not claim success or clear the only usable cookie',async()=>{
+ const h=createHandler(),jwt=await token({email:'owner@gmail.com',sub:'google-sub'});
+ const broken={...env,DB:{prepare(){throw Error('unavailable');}}};
+ const r=await h(req('/auth/logout',{method:'POST',headers:{Origin:env.APP_ORIGIN,Cookie:`__Host-mng_session=${jwt}`}}),broken);
+ assert.equal(r.status,503);assert.equal(r.headers.get('set-cookie'),null);
+});
+
+test('rate limits reject before DB work, use the Cloudflare IP and preserve logout',async()=>{
+ const h=createHandler(),keys=[];
+ const denied={...env,REQUEST_LIMITER:{limit:async({key})=>{keys.push(key);return{success:false};}},DB:{prepare(){assert.fail('limited request must not touch DB');}}};
+ for(const path of ['/login','/api/requests','/api/internal/device-login']){
+  const r=await h(req(path,{headers:{'CF-Connecting-IP':'192.0.2.1','X-Forwarded-For':crypto.randomUUID()}}),denied);
+  assert.equal(r.status,429);assert.equal(r.headers.get('retry-after'),'60');assert.equal(r.headers.get('cache-control'),'no-store');
+ }
+ assert.deepEqual([...new Set(keys)],['mng-admin-preview:192.0.2.1']);
+ assert.equal((await h(req('/auth/google/start'),{...env,LOGIN_LIMITER:{limit:async()=>({success:false})}})).status,429);
+ const jwt=await token({email:'owner@gmail.com',sub:'google-sub'});
+ const writeLimited={...env,WRITE_LIMITER:{limit:async()=>({success:false})}};
+ assert.equal((await h(req('/api/requests',{method:'POST'}),writeLimited)).status,429);
+ assert.equal((await h(refreshRequest(jwt),writeLimited)).status,200,'normal refresh uses the general limit');
+ const logout=await h(req('/auth/logout',{method:'POST',headers:{Origin:env.APP_ORIGIN,Cookie:`__Host-mng_session=${jwt}`}}),{...env,REQUEST_LIMITER:denied.REQUEST_LIMITER});
+ assert.equal(logout.status,303);
+ assert.equal((await h(req('/login'),{...env,REQUEST_LIMITER:undefined})).status,503,'missing limiter must fail closed');
 });
