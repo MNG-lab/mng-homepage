@@ -186,7 +186,7 @@ test('rate limits reject before DB work, use the Cloudflare IP and preserve logo
   const r=await h(req(path,{headers:{'CF-Connecting-IP':'192.0.2.1','X-Forwarded-For':crypto.randomUUID()}}),denied);
   assert.equal(r.status,429);assert.equal(r.headers.get('retry-after'),'60');assert.equal(r.headers.get('cache-control'),'no-store');
  }
- assert.deepEqual([...new Set(keys)],['mng-admin-preview:192.0.2.1']);
+ assert.deepEqual([...new Set(keys)],['mng-admin:192.0.2.1']);
  assert.equal((await h(req('/auth/google/start'),{...env,LOGIN_LIMITER:{limit:async()=>({success:false})}})).status,429);
  const jwt=await token({email:'owner@gmail.com',sub:'google-sub'});
  const writeLimited={...env,WRITE_LIMITER:{limit:async()=>({success:false})}};
@@ -195,4 +195,13 @@ test('rate limits reject before DB work, use the Cloudflare IP and preserve logo
  const logout=await h(req('/auth/logout',{method:'POST',headers:{Origin:env.APP_ORIGIN,Cookie:`__Host-mng_session=${jwt}`}}),{...env,REQUEST_LIMITER:denied.REQUEST_LIMITER});
  assert.equal(logout.status,303);
  assert.equal((await h(req('/login'),{...env,REQUEST_LIMITER:undefined})).status,503,'missing limiter must fail closed');
+});
+
+test('migration maintenance blocks reads, writes and callbacks before touching data',async()=>{
+ const fail=()=>assert.fail('database or asset access during migration');
+ const blocked={...env,ADMIN_MAINTENANCE:'true',DB:{prepare:fail},ASSETS:{fetch:fail}};
+ for(const [path,method] of [['/login','GET'],['/api/session','GET'],['/api/requests','POST'],['/api/internal/device-login','POST'],['/api/internal/request-result','POST']]){
+  const response=await createHandler()(req(path,{method}),blocked);assert.equal(response.status,503);assert.equal(response.headers.get('Retry-After'),'120');assert.equal(response.headers.get('Cache-Control'),'no-store');
+ }
+ assert.equal((await createHandler()(req('/login'),{...env,ADMIN_MAINTENANCE:'false'})).status,200);
 });

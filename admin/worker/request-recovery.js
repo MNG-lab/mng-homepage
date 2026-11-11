@@ -1,13 +1,13 @@
 import {runIdentity} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
 import {createRemoteJWKSet,jwtVerify} from 'jose';
-import {createGitHub,GitHubError,REPOSITORY,WORKFLOW_REF,assertPreviewConfig} from './github.js';
+import {createGitHub,GitHubError,REPOSITORY,WORKFLOW_REF,assertDeploymentConfig} from './github.js';
 const endpoint='/api/internal/request-result';
 const keys=createRemoteJWKSet(new URL('https://token.actions.githubusercontent.com/.well-known/jwks'));
 export function validRequestClaims(p,env={}){
  const WORKFLOW_REF=deployment(env).ref;
  const base=p.sub===`repo:${REPOSITORY}:ref:refs/heads/${WORKFLOW_REF}`&&p.repository===REPOSITORY&&p.repository_id==='1164495587'&&p.repository_owner_id==='263300045'&&p.ref===`refs/heads/${WORKFLOW_REF}`&&/^[1-9]\d*$/.test(p.run_attempt||'')&&/^[1-9]\d*$/.test(p.run_id||'')&&/^[a-f0-9]{40}$/.test(p.sha||'')&&p.workflow_ref===`${REPOSITORY}/.github/workflows/codex-comment.yml@refs/heads/${WORKFLOW_REF}`;
- const reusable=p.event_name==='workflow_dispatch'&&p.job_workflow_sha===p.sha&&p.job_workflow_ref===`${REPOSITORY}/.github/workflows/admin-preview.yml@refs/heads/${WORKFLOW_REF}`;
+ const reusable=p.event_name==='workflow_dispatch'&&p.job_workflow_sha===p.sha&&p.job_workflow_ref===`${REPOSITORY}/.github/workflows/admin-request.yml@refs/heads/${WORKFLOW_REF}`;
  const direct=deployment(env).mode==='production'&&['issues','issue_comment','workflow_dispatch'].includes(p.event_name)&&!p.job_workflow_ref&&!p.job_workflow_sha;
  return base&&(reusable||direct);
 }
@@ -33,7 +33,7 @@ export async function assertRetryCredential(env,issue,run){
 }
 export function requestResultAPI({github=createGitHub,verifyRunner=verify}={}){return async(request,env)=>{
  try{
-  const config=assertPreviewConfig(env),WORKFLOW_REF=config.ref;
+  const config=assertDeploymentConfig(env),WORKFLOW_REF=config.ref;
   if(env.GITHUB_ENABLED!=='true'||!env.DB)return Response.json({error:'Unavailable'}, {status:503});
   if(request.method!=='POST'||!request.headers.get('Content-Type')?.startsWith('application/json'))return Response.json({error:'Forbidden'}, {status:403});
   let p;try{p=await verifyRunner(request.headers.get('Authorization')?.replace(/^Bearer /,''),env);}catch{return Response.json({error:'Invalid runner'}, {status:403});}

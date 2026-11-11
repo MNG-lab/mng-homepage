@@ -1,6 +1,7 @@
+import {ADMIN_ORIGIN} from '../shared/hosting.js';
 import {readFile} from 'node:fs/promises';
 import {isAuthFailure} from './codex-errors.mjs';
-const endpoint='https://mng-admin-preview.chominho96-aaa.workers.dev/api/internal/request-result';
+const endpoint=ADMIN_ORIGIN+'/api/internal/request-result';
 // Reports only issue runs. PR-comment updates are already visible through PR SHA/CI.
 if(process.env.GITHUB_REPOSITORY!=='MNG-lab/mng-homepage'||process.env.GITHUB_REF!=='refs/heads/main')throw Error('Invalid runner');
 const event=JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH,'utf8'));
