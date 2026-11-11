@@ -1,4 +1,5 @@
 import {requestState} from '../shared/requests.js';
+import {versionReference} from '../shared/version.js';
 export {requestState,description} from '../shared/requests.js';
 const pendingReads=new Map();
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -27,7 +28,7 @@ export function api(path,body) {
 }
 export const isRestoration=r=>!!(r.restoration||r.pull?.restoration)||/<!-- restore:/.test(r.pull?.body||'');
 export const requestLabel=r=>requestState(r)==='done'?(isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':labels[requestState(r)];
-export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`‘${target.name}’ 버전으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin Preview\] /,'');};
+export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`${versionReference(target)}으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin Preview\] /,'');};
 export const labels={done:'반영 완료',closed:'종료',review:'확인 필요',failed:'작업 실패',auth_required:'Codex 연결 필요',working:'진행 중'};
 export const date=value=>value?new Date(value).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 

@@ -56,9 +56,9 @@ test('read retries temporary HTTP failures but not permission failures; handles 
 test('request labels distinguish restored content without calling historical edits cancelled',async()=>{
  const {requestLabel,requestTitle}=await import('../src/api.js');
  assert.equal(requestLabel({pull:{merged:true}}),'수정 반영 완료');
- const restore={pull:{merged:true},restoration:{name:'Members 소개 수정'}};
+ const restore={pull:{merged:true},restoration:{number:53,name:'Members 소개 수정'}};
  assert.equal(requestLabel(restore),'되돌리기 완료');
- assert.equal(requestTitle(restore),'‘Members 소개 수정’ 버전으로 되돌리기');
+ assert.equal(requestTitle(restore),'V53 ‘Members 소개 수정’ 버전으로 되돌리기');
  assert.equal(requestLabel({...restore,pull:{merged:false,state:'open'}}),'확인 필요');
 });
 
@@ -69,4 +69,21 @@ test('version changes use actual file areas, account for renames, and link only 
  assert.deepEqual(changedAreas([{filename:'src/content/gallery-data.js',previous_filename:'src/content/home-content.js'}]),['Gallery','Home']);
  assert.equal(relatedRequest({head:{ref:'admin-preview/issue-52-123456'}}),52);
  for(const ref of ['main','admin-preview/issue-52-other','codex/issue-52-123','admin-preview/issue-0-123'])assert.equal(relatedRequest({head:{ref}}),null);
+});
+
+
+test('version identifiers stay tied to each PR, including nested restorations with the same content name',async()=>{
+ const {versionLabel,versionReference,appliedVersion}=await import('../shared/version.js');
+ const {requestTitle}=await import('../src/api.js');
+ const pulls=[{number:53,title:'[Admin Preview] Members 소개 수정'}, {number:63,title:'restore',body:`<!-- restore:53:${sha} -->`}, {number:67,title:'restore again',body:`<!-- restore:63:${sha} -->`}];
+ for(const rows of [pulls,[...pulls].reverse(),[pulls[2],pulls[0],pulls[1]]]){
+  const result=describePulls(rows),latest=result.find(p=>p.number===67);
+  assert.equal(versionLabel(latest.number),'V67');
+  assert.equal(versionReference(latest.restoration),'V63 ‘Members 소개 수정’ 버전');
+  assert.equal(requestTitle({pull:latest}),'V63 ‘Members 소개 수정’ 버전으로 되돌리기');
+  assert.equal(appliedVersion({id:66,pull:{...latest,merged:true}}),'V67');
+ }
+ // An unavailable old title must retain the exact target ID, never a list position.
+ assert.equal(versionReference(describePulls([pulls[2]])[0].restoration),'V63 ‘이전 홈페이지’ 버전');
+ for(const pull of [null,{number:67,state:'open',merged:false},{number:67,state:'closed',merged:false}])assert.equal(appliedVersion({id:66,pull}),'');
 });

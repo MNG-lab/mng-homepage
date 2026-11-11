@@ -1,5 +1,6 @@
 import {allReads} from './github-catalog.js';
 import {requestState,requestGroup,description} from '../shared/requests.js';
+import {appliedVersion,versionLabel,versionReference} from '../shared/version.js';
 import {recoveryMetadata} from './request-recovery.js';
 import {GitHubError} from './github.js';
 export const pageSize=20;
@@ -11,7 +12,12 @@ export function listQuery(params){
 }
 export function paginateRequests(requests,{q='',status='all',scope='all',page=1,pageSize:limit=pageSize}){
  const needle=q.toLocaleLowerCase('ko-KR');
- const matching=requests.filter(r=>`${r.id} ${r.title} ${description(r.description)}`.toLocaleLowerCase('ko-KR').includes(needle));
+ const versionQuery=/^v[1-9]\d*$/.test(needle);
+ const matching=requests.filter(r=>{
+  const target=r.restoration||r.pull?.restoration,versions=[appliedVersion(r),versionLabel(target?.number)].filter(Boolean);
+  if(versionQuery)return versions.some(label=>label.toLowerCase()===needle);
+  return `요청 #${r.id} ${r.title} ${description(r.description)} ${versions.join(' ')} ${target?versionReference(target):''}`.toLocaleLowerCase('ko-KR').includes(needle);
+ });
  const scopeCounts={active:0,past:0};for(const request of matching)scopeCounts[requestGroup(request)]++;
  const found=matching.filter(r=>(scope==='all'||requestGroup(r)===scope)&&(status==='all'||requestState(r)===status||(status==='failed'&&requestState(r)==='auth_required')));
  const total=found.length,pages=Math.max(1,Math.ceil(total/limit)),current=Math.min(page,pages);

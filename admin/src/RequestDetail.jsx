@@ -1,5 +1,6 @@
 import React,{useEffect,useState,useRef} from 'react';
 import {Link} from 'react-router-dom';
+import {appliedVersion,versionReference} from '../shared/version.js';
 import {api,requestState,requestLabel,requestTitle,isRestoration,labels,date,description,ciLabel,progress} from './api.js';
 export default function RequestDetail({request:r,user,refresh,listSearch=''}) {
  const [detail,setDetail]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[confirm,setConfirm]=useState(null),[notice,setNotice]=useState('');
@@ -24,8 +25,8 @@ export default function RequestDetail({request:r,user,refresh,listSearch=''}) {
   setNotice(result.warning||(confirm==='retry'?'재실행을 접수했습니다. 같은 요청으로 자동 수정을 시작합니다.':'처리했습니다. 최신 상태를 확인해 주세요.'));setConfirm(null);await refresh();
  }catch(e){setError(e.message);}finally{setBusy(false);}}
  return <>
- <section className="panel connected-panel"><div className="connected-heading"><span className={`state-pill ${state}`}>{requestLabel(r)}</span><small>#{r.id} · {date(r.createdAt)}</small></div><h2>{requestTitle(r)}</h2>{isRestoration(r)?<p>홈페이지 전체를 ‘{(r.restoration||r.pull?.restoration)?.name||'선택한 이전 버전'}’ 반영 직후의 내용으로 되돌리는 요청입니다. 그 이후 수정한 내용은 홈페이지에서 빠지며, 작업 기록은 남습니다.</p>:<pre className="connected-description">{description(r.description)}</pre>}
- {r.pull?.merged&&<div className="request-version-note"><div><strong>이 요청이 홈페이지에 반영되었습니다.</strong><p>반영된 버전의 정보와 이전 버전으로 되돌리기는 홈페이지 버전에서 확인하세요.</p></div><Link className="secondary" to={`/history/${r.pull.number}`}>반영된 버전 보기</Link></div>}
+ <section className="panel connected-panel"><div className="connected-heading"><span className={`state-pill ${state}`}>{requestLabel(r)}</span><small>요청 #{r.id} · {date(r.createdAt)}</small></div><h2>{requestTitle(r)}</h2>{isRestoration(r)?<p>홈페이지 전체를 {versionReference(r.restoration||r.pull?.restoration)}의 내용으로 되돌리는 요청입니다. 그 이후 수정한 내용은 홈페이지에서 빠지며, 작업 기록은 남습니다.</p>:<pre className="connected-description">{description(r.description)}</pre>}
+ {r.pull?.merged&&<div className="request-version-note"><div><strong>이 요청은 {appliedVersion(r)}로 반영되었습니다.</strong><p>반영된 버전의 정보와 이전 버전으로 되돌리기는 홈페이지 버전에서 확인하세요.</p></div><Link className="secondary" to={`/history/${r.pull.number}`}>{appliedVersion(r)} 보기</Link></div>}
  <ol className="request-progress" aria-label="작업 단계">{progress(r,detail,{approving:busy&&confirm==='approve'}).map(step=><li key={step.label} className={step.state} aria-current={step.state==='active'?'step':undefined}><strong>{step.label}</strong><small>{step.text}</small></li>)}</ol><p className="progress-note">GitHub 상태를 기준으로 표시합니다. 요청은 30초, 검사는 15초마다 갱신하며 작업의 퍼센트 진행률은 아닙니다.</p>
  {state==='auth_required'&&<div className="inline-note auth-recovery-note" role="status"><strong>{r.auth.renewed?'새 인증을 저장했습니다':'Codex 로그인이 만료되었거나 연결을 사용할 수 없습니다'}</strong><p>{r.auth.renewed?'아래에서 이 요청을 다시 실행하세요. 원래 요청으로 PR을 만들고, 검토 후 반영합니다.':user.role==='owner'?'설정에서 Codex를 다시 연결한 뒤 이 요청을 실행해 주세요.':'최고 관리자에게 Codex 재연결을 요청해 주세요. 연결이 끝나면 관리자가 이 요청을 다시 실행할 수 있습니다.'}</p>{!r.auth.renewed&&user.role==='owner'&&<Link className="primary" to="/settings#codex-connection">Codex 연결하러 가기</Link>}</div>}
  {r.retry?.state==='uncertain'&&<p className="error-note">재실행 접수 여부를 확인하지 못했습니다. 중복 실행을 막기 위해 실행 기록을 먼저 확인해 주세요.</p>}

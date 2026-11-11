@@ -2,13 +2,14 @@ import organizationAvatar from "./assets/mng-lab-avatar.png";
 import React,{useEffect,useState,useRef} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router-dom';
 import {api,requestState,requestLabel,requestTitle,isRestoration,labels,date} from './api.js';
+import {appliedVersion} from '../shared/version.js';
 import Pagination from './Pagination.jsx';
 import LoadingIndicator from './LoadingIndicator.jsx';
 import History from './History.jsx';
 import Settings from './Settings.jsx';
 import RequestDetail from './RequestDetail.jsx';
 const pages=['Home','Research','Professor','Members','Publications','Gallery','Contact'];
-function RequestRows({requests,search='',manage=false}) {return <ul className={`connected-list ${manage?'managed-requests':''}`}>{requests.map(r=>{const state=requestState(r);return <li key={r.id}><Link to={`/requests/${r.id}${search}`}><div><span className={`request-kind ${isRestoration(r)?'restore':''}`}>{isRestoration(r)?'이전 버전으로 되돌리기':'홈페이지 수정'}</span><strong>{requestTitle(r)}</strong><small>#{r.id} · {date(r.createdAt)} 접수</small></div><div className="request-row-state"><span className={`state-pill ${state}`}>{requestLabel(r)}</span>{manage&&<span className="request-row-action">{state==='review'?'변경 확인 →':state==='failed'?'재실행 확인 →':state==='auth_required'?'연결 상태 확인 →':'요청 보기 →'}</span>}</div></Link>{manage&&r.pull?.merged&&<Link className="request-version-link" to={`/history/${r.pull.number}`}>반영된 버전 보기 →</Link>}</li>;})}</ul>;}
+function RequestRows({requests,search='',manage=false}) {return <ul className={`connected-list ${manage?'managed-requests':''}`}>{requests.map(r=>{const state=requestState(r);return <li key={r.id}><Link to={`/requests/${r.id}${search}`}><div><span className={`request-kind ${isRestoration(r)?'restore':''}`}>{isRestoration(r)?'이전 버전으로 되돌리기':'홈페이지 수정'}</span><strong>{requestTitle(r)}</strong><small>요청 #{r.id} · {date(r.createdAt)} 접수</small>{appliedVersion(r)&&<span className="request-result-version">반영 버전 <b>{appliedVersion(r)}</b></span>}</div><div className="request-row-state"><span className={`state-pill ${state}`}>{requestLabel(r)}</span>{manage&&<span className="request-row-action">{state==='review'?'변경 확인 →':state==='failed'?'재실행 확인 →':state==='auth_required'?'연결 상태 확인 →':'요청 보기 →'}</span>}</div></Link>{manage&&r.pull?.merged&&<Link className="request-version-link" to={`/history/${r.pull.number}`}>{appliedVersion(r)} 보기 →</Link>}</li>;})}</ul>;}
 export default function ConnectedApp({user}) {
  const location=useLocation(),navigate=useNavigate();
  const [data,setData]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
@@ -83,7 +84,7 @@ export default function ConnectedApp({user}) {
      <div className="connected-heading"><h2>{tab==='active'?'처리할 요청':'지난 요청'}</h2><button className="secondary" onClick={refresh}>새로고침</button></div>
      <div className="request-tabs" role="group" aria-label="요청 구분">{[['active','처리 중'],['past','지난 요청']].map(([value,label])=><button key={value} type="button" aria-pressed={tab===value} onClick={()=>switchTab(value)}>{label} {current?.scopeCounts&&<span>{current.scopeCounts[value]}</span>}</button>)}</div>
      <p className="request-tab-description">{tab==='active'?'자동 수정 중이거나 검토·재실행이 필요한 요청입니다.':'반영을 마쳤거나 종료한 요청입니다. 반영된 홈페이지는 버전 화면에서 확인할 수 있습니다.'}</p>
-     <div className="request-tools"><label>요청 검색<input type="search" value={draftQuery} maxLength={200} onChange={e=>setDraftQuery(e.target.value)} placeholder="제목, 내용, 요청 번호"/></label><label>상태<select aria-label="상태" value={filter} onChange={e=>changeList({status:e.target.value,q:draftQuery,page:1})}><option value="all">전체</option>{tabStatuses.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label></div>
+     <div className="request-tools"><label>요청 검색<input type="search" value={draftQuery} maxLength={200} onChange={e=>setDraftQuery(e.target.value)} placeholder="제목, 내용, 요청 번호, 버전 번호"/></label><label>상태<select aria-label="상태" value={filter} onChange={e=>changeList({status:e.target.value,q:draftQuery,page:1})}><option value="all">전체</option>{tabStatuses.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label></div>
      <div aria-busy={loading||(!current&&!error)}>{!current?(error?<p>목록을 불러오지 못했습니다. 다시 불러오기를 눌러 주세요.</p>:<LoadingIndicator label="요청 목록 불러오는 중"/>):requests.length?<RequestRows requests={requests} search={location.search} manage/>:<p className="connected-empty">{query||filter!=='all'?'조건에 맞는 요청이 없습니다.':tab==='active'?'지금 처리할 요청이 없습니다. 완료된 작업은 지난 요청에서 확인하세요.':'아직 지난 요청이 없습니다.'}</p>}</div>
      <Pagination value={current?.pagination} loading={loading} onChange={value=>changeList({page:value})}/>
     </section>}

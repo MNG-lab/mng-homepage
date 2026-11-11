@@ -12,3 +12,11 @@ export function changedAreas(files){
  return [...result];
 }
 export const relatedRequest=revision=>Number(revision.head?.ref?.match(/^admin-preview\/issue-([1-9]\d*)-\d+$/)?.[1])||null;
+
+// GitHub PR numbers are immutable identifiers, not deployment sequence numbers.
+export const versionLabel=number=>Number.isSafeInteger(number)&&number>0?`V${number}`:'';
+export const appliedVersion=request=>versionLabel(request.pull?.merged?request.pull.number:null);
+export function versionReference(target){
+ const label=versionLabel(target?.number),name=target?.name;
+ return label?(name?`${label} ‘${name}’ 버전`:`${label} 버전`):name?`‘${name}’ 버전`:'이전 버전';
+}

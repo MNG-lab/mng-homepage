@@ -102,3 +102,20 @@ test('request groups separate actionable work from completed and closed requests
  const many=Array.from({length:47},(_,i)=>({...rows[4],id:i+1}));const page=paginateRequests([...rows.slice(0,3),...many],{scope:'past',page:2});assert.equal(page.requests.length,20);assert.equal(page.pagination.total,47);
  assert.throws(()=>listQuery(new URLSearchParams('scope=invalid')));assert.equal(listQuery(new URLSearchParams()).scope,'all');
 });
+
+
+test('version search matches applied and restore-target identifiers exactly before pagination and status filtering',async()=>{
+ const {paginateRequests}=await import('../worker/request-list.js');
+ const rows=Array.from({length:22},(_,i)=>({id:300+i,title:'이전 내용으로 되돌리기',state:'closed',pull:{number:400+i,merged:true,restoration:{number:53,name:'Members 소개 수정'}}}));
+ rows.push({id:10,title:'Members',state:'closed',pull:{number:53,merged:true}});
+ rows.push({id:11,title:'Members',state:'closed',pull:{number:530,merged:true}});
+ rows.push({id:12,title:'Draft',state:'open',pull:{number:531,merged:false,state:'open'}});
+ rows.push({id:13,title:'Closed',state:'closed',pull:{number:532,merged:false,state:'closed'}});
+ let result=paginateRequests(rows,{q:'v53',scope:'past',status:'done',page:2});
+ assert.deepEqual(result.requests.map(r=>r.id),[320,321,10]);assert.equal(result.pagination.total,23);
+ assert.deepEqual(result.scopeCounts,{active:0,past:23});
+ result=paginateRequests(rows,{q:'V53',scope:'active'});assert.equal(result.requests.length,0);
+ for(const q of ['V531','V532'])assert.equal(paginateRequests(rows,{q}).pagination.total,0);
+ assert.deepEqual(paginateRequests(rows,{q:'V530'}).requests.map(r=>r.id),[11]);
+ assert.deepEqual(paginateRequests(rows,{q:'요청 #10'}).requests.map(r=>r.id),[10]);
+});
