@@ -2,12 +2,16 @@ import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {paginateRequests,requestSummary,listQuery} from '../worker/request-list.js';
+import {paginateHistory,historyPage} from '../worker/history-list.js';
 const server=spawn('npm',['run','admin:preview','--','--port','4193'],{stdio:'ignore'});
 let browser;
 try {
  for(let i=0;i<80;i++){try{if((await fetch('http://127.0.0.1:4193')).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  let records=[],submissions=0,approvals=0,restores=0,readFailures=1,delayedNewList=0;const sha='a'.repeat(40);let role='owner';let sameSnapshot=false;let previewState='building';let historyCurrent=sha;let deviceFlow=null;let deviceStarts=0,holdDeviceRead=false,heldDeviceRead,releaseDeviceRead,holdLogin=false,releaseLogin,retries=0;
+ let historyRows=null,historyFailures=0,holdHistoryPage=null,releaseHistory,heldHistory=false;
+ const knownRevisions=new Map();
+ function historyRevisions(){const rows=historyRows||records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,requestId:r.id,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}));for(const r of rows)knownRevisions.set(r.number,r);return rows;}
  let members=[{email:'owner@example.test',role:'owner',joined:1,active:1}],transfer=null,failMemberSave=false;const settingsWrites=[];
  let auditRecords=[],auditFailures=0,holdAuditPage=null,releaseAudit,heldAudit=false;
  await page.route('**/api/**',async route=>{
@@ -33,9 +37,17 @@ try {
   if(/^\/api\/requests\/\d+$/.test(path)){const record=records.find(r=>r.id===Number(path.split('/').at(-1)));return route.fulfill({status:record?200:404,json:record?{request:record}:{error:'요청이 없습니다.'}});}
   if(path==='/api/pulls/124')return route.fulfill({json:{head:sha,preview:{head:sha,state:previewState,url:previewState==='ready'?'https://fc3ef735.mng-homepage.pages.dev':null},files:[{path:'src/App.jsx',additions:1,deletions:1,patch:'-old\n+new'}],ci:{status:'completed',conclusion:'success',url:'https://github.com/MNG-lab/mng-homepage/actions'}}});
   if(path==='/api/pulls/124/approve'){approvals++;assert.equal(body.head,sha);records[0].pull.merged=true;records[0].pull.state='closed';records[0].state='closed';return route.fulfill({json:{merged:true}});}
-  if(path==='/api/history')return route.fulfill({json:{current:historyCurrent,revisions:records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,requestId:r.id,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}))}});
-  if(path==='/api/history/124')return route.fulfill({json:{source:124,current:sha,target:'b'.repeat(40),changes:sameSnapshot?[]:['src'],changedPages:['Members'],changesTruncated:false}});
-  if(path==='/api/history/124/restore'){restores++;assert.equal(body.base,sha);assert.ok(body.requestId);return route.fulfill({json:{issue:123}});}
+  if(path==='/api/history'){
+   if(historyFailures-->0)return route.fulfill({status:503,json:{error:'버전 조회 오류'}});
+   const value=paginateHistory({current:historyCurrent,revisions:historyRevisions()},historyPage(url.searchParams));
+   if(value.pagination.page===holdHistoryPage){holdHistoryPage=null;heldHistory=true;await new Promise(resolve=>{releaseHistory=resolve;});}
+   return route.fulfill({json:value});
+  }
+  if(/^\/api\/history\/\d+$/.test(path)){
+   historyRevisions();const id=Number(path.split('/').at(-1)),revision=knownRevisions.get(id);
+   return route.fulfill({status:revision?200:404,json:revision?{revision,source:id,current:sha,target:'b'.repeat(40),changes:sameSnapshot?[]:['src'],changedPages:['Members'],changesTruncated:false}:{error:'버전이 없습니다.'}});
+  }
+  if(/^\/api\/history\/\d+\/restore$/.test(path)){restores++;assert.equal(body.base,sha);assert.ok(body.requestId);return route.fulfill({json:{issue:123}});}
   if(path==='/api/settings')return route.fulfill({json:{role,members,transfer}});
   if(path==='/api/settings/audit'){
    if(auditFailures-->0)return route.fulfill({status:503,json:{error:'관리 기록 조회 오류'}});
@@ -81,6 +93,27 @@ try {
  await page.getByLabel('요청 검색').fill('V120');await page.waitForURL('**q=V120');await page.getByRole('link',{name:'V124 보기 →',exact:true}).waitFor();
 
  await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.waitForURL('http://127.0.0.1:4193/requests');await page.getByText('지금 처리할 요청이 없습니다. 완료된 작업은 지난 요청에서 확인하세요.').waitFor();await page.getByLabel('요청 검색').fill('missing');await page.getByText('조건에 맞는 요청이 없습니다.').waitFor();
+ // History has its own six-card server pager; detail lookup does not depend on the visible page.
+ historyCurrent=sha;historyRows=Array.from({length:20},(_,i)=>({number:300-i,merged:true,mergeSha:i?String(300-i).padStart(40,'0'):sha,mergedAt:new Date(Date.UTC(2026,10,10,0,0,20-i)).toISOString(),title:`버전 테스트 ${300-i}`,requestId:500-i}));
+ await page.goto('http://127.0.0.1:4193/history');
+ const historyPager=page.getByRole('navigation',{name:'홈페이지 버전 페이지'});
+ await historyPager.getByRole('button',{name:'1페이지',exact:true}).waitFor();assert.equal(await page.locator('.version-card').count(),6);
+ await historyPager.getByRole('button',{name:'4페이지',exact:true}).click();await page.waitForURL('**/history?page=4');await page.locator('.version-card .version-number').getByText('V281',{exact:true}).waitFor();
+ assert.equal(await page.locator('.version-card').count(),1);await page.getByRole('region',{name:'현재 홈페이지 버전'}).getByText('V300',{exact:true}).waitFor();
+ await page.getByRole('link',{name:'버전 보기',exact:true}).click();await page.waitForURL('**/history/281?page=4');await page.locator('.version-detail').getByText('V281',{exact:true}).waitFor();
+ await page.reload();await page.locator('.version-detail').getByText('V281',{exact:true}).waitFor();await page.getByRole('link',{name:'← 홈페이지 버전 목록'}).click();await page.waitForURL('**/history?page=4');await page.locator('.version-card').getByText('V281',{exact:true}).waitFor();
+ await historyPager.getByRole('button',{name:'2페이지',exact:true}).click();await page.waitForURL('**/history?page=2');await page.locator('.version-card').getByText('V293',{exact:true}).waitFor();
+ await page.goBack();await page.waitForURL('**/history?page=4');await page.locator('.version-card').getByText('V281',{exact:true}).waitFor();await page.reload();await page.locator('.version-card').getByText('V281',{exact:true}).waitFor();
+ await page.getByRole('link',{name:'이 버전으로 되돌리기',exact:true}).click();await page.waitForURL('**/history/281?page=4#restore');await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).click();assert.match(await page.locator('.confirmation').innerText(),/선택한 버전: V281 ·/);await page.getByRole('button',{name:'되돌리기 요청 만들기'}).click();await page.waitForURL('**/requests/123');assert.equal(restores,2);
+ await page.goto('http://127.0.0.1:4193/history?page=999');await page.waitForURL('**/history?page=4');await page.locator('.version-card').getByText('V281',{exact:true}).waitFor();
+ await historyPager.getByRole('button',{name:'1페이지',exact:true}).click();await page.waitForURL('**/history');await page.locator('.version-card').getByText('V299',{exact:true}).waitFor();
+ holdHistoryPage=2;heldHistory=false;await historyPager.getByRole('button',{name:'2페이지',exact:true}).click();
+ for(let i=0;i<100&&!heldHistory;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldHistory,true);await page.getByText('이전 버전 불러오는 중',{exact:true}).waitFor();
+ await page.goBack();await page.locator('.version-card').getByText('V299',{exact:true}).waitFor();releaseHistory();await new Promise(r=>setTimeout(r,100));assert.equal(new URL(page.url()).search,'');assert.equal(await page.locator('.version-card').getByText('V293',{exact:true}).count(),0);
+ historyFailures=2;await historyPager.getByRole('button',{name:'2페이지',exact:true}).click();await page.getByRole('alert').filter({hasText:'버전 조회 오류'}).waitFor();await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();await page.locator('.version-card').getByText('V293',{exact:true}).waitFor();
+ historyRows=historyRows.slice(0,8);await page.reload();await historyPager.getByRole('button',{name:'2페이지',exact:true}).waitFor();assert.equal(await page.locator('.version-card').count(),1);
+ historyRows=historyRows.slice(0,7);await page.reload();await page.waitForURL('**/history');await page.locator('.version-card').getByText('V294',{exact:true}).waitFor();assert.equal(await page.locator('.version-card').count(),6);assert.equal(await historyPager.count(),0);
+ historyRows=[];await page.reload();await page.getByText('아직 반영된 버전이 없습니다.',{exact:true}).waitFor();assert.equal(await historyPager.count(),0);historyRows=null;
  // 47 records: status/search are applied by the server before slicing.
  records=Array.from({length:47},(_,i)=>({id:1000-i,title:`Members 수정 ${i+1}`,description:'검색 본문',state:'open',createdAt:new Date(Date.UTC(2026,10,10,0,0,47-i)).toISOString(),run:i<42?{id:1000-i,attempt:1,status:'completed',conclusion:'failure'}:null}));
  await page.goto('http://127.0.0.1:4193/requests?status=failed&q=Members&page=2');
@@ -215,5 +248,5 @@ try {
  const incoming=page.getByRole('region',{name:'최고 관리자 변경 요청',exact:true});await incoming.getByRole('button',{name:'최고 관리자 역할 수락',exact:true}).click();assert.equal(settingsWrites.length,6);assert.equal(await page.getByRole('heading',{name:'구성원 관리',exact:true}).count(),0);
  await incoming.getByRole('dialog').getByRole('button',{name:'확인하고 수락',exact:true}).click();await page.getByRole('heading',{name:'구성원 관리',exact:true}).waitFor();assert.equal(settingsWrites.at(-1).path,'/api/settings/transfer/accept');
  role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('되돌리면 달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
- assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, five-record audit server pagination, independent pagers/back/reload, stale audit reads and retry, connection completion only for the current visit, in-progress login reload, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
+ assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, six-card history server pagination/current pinning/old detail/stale reads/retry, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, five-record audit server pagination, independent pagers/back/reload, stale audit reads and retry, connection completion only for the current visit, in-progress login reload, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
 } finally {await browser?.close();server.kill('SIGTERM');}

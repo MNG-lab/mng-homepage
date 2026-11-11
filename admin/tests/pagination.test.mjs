@@ -119,3 +119,33 @@ test('version search matches applied and restore-target identifiers exactly befo
  assert.deepEqual(paginateRequests(rows,{q:'V530'}).requests.map(r=>r.id),[11]);
  assert.deepEqual(paginateRequests(rows,{q:'요청 #10'}).requests.map(r=>r.id),[10]);
 });
+
+
+test('history API pages previous versions six at a time and keeps the current revision on every page',async()=>{
+ const current='a'.repeat(40),revision=(number,mergeSha=String(number))=>({number,mergeSha,merged:true,mergedAt:'2026-11-10T01:00:00Z'});
+ const selected=revision(53,current),previous=Array.from({length:19},(_,i)=>revision(100-i));
+ let revisions=[...previous.slice(0,4),selected,...previous.slice(4)],reads=0;
+ const handle=requestsAPI({github:async()=>({history:async()=>{reads++;return {current,revisions};}})}),config=env(database());
+ const get=async page=>{const response=await handle(new Request(origin+'/api/history'+(page===undefined?'':'?page='+page)),config,user);return {status:response.status,...await response.json()};};
+ const ids=[];
+ for(let page=1;page<=4;page++){
+  const data=await get(page);assert.equal(data.currentRevision.number,53);assert.equal(data.totalVersions,20);assert.deepEqual(data.pagination,{page,pageSize:6,total:19,pages:4});
+  assert.ok(data.revisions.length<=6);assert.ok(!data.revisions.some(r=>r.number===53));ids.push(...data.revisions.map(r=>r.number));
+ }
+ assert.deepEqual(ids,previous.map(r=>r.number));assert.equal((await get(999)).pagination.page,4);
+ for(const count of [0,1,6,7]){revisions=[selected,...previous.slice(0,count)];const data=await get();assert.equal(data.pagination.pages,count>6?2:1);assert.equal(data.pagination.total,count);assert.equal(data.revisions.length,Math.min(count,6));}
+ revisions=[];const empty=await get();assert.equal(empty.currentRevision,null);assert.equal(empty.totalVersions,0);assert.deepEqual(empty.pagination,{page:1,pageSize:6,total:0,pages:1});
+ revisions=previous;const unknown=await get(4);assert.equal(unknown.currentRevision,null);assert.equal(unknown.pagination.total,19);assert.equal(unknown.revisions[0].number,82);
+ const before=reads;for(const page of ['0','-1','1.5','nope','9007199254740992'])assert.equal((await get(page)).status,400);assert.equal(reads,before);
+});
+
+test('version detail resolves old revisions independently of the list page and keeps restoration metadata',async()=>{
+ const current='a'.repeat(40),target='b'.repeat(40),revision={number:53,merged:true,mergeSha:target,head:{ref:'admin-preview/issue-52-1'},restoration:{number:41,name:'Earlier content'}};
+ let rows=[revision];
+ const gh={history:async()=>{throw Error('must not read a list page');},pulls:async()=>rows,restorePlan:async id=>{assert.equal(id,53);return {source:id,current,target,changes:['src']};},versionChanges:async()=>({pages:['Members'],truncated:false})};
+ const handle=requestsAPI({github:async()=>gh}),config=env(database());
+ const get=()=>handle(new Request(origin+'/api/history/53?page=999'),config,user);
+ let response=await get();assert.equal(response.status,200);const data=await response.json();assert.equal(data.revision.number,53);assert.equal(data.revision.requestId,52);assert.equal(data.revision.restoration.number,41);assert.equal(data.current,current);assert.deepEqual(data.changedPages,['Members']);
+ rows=[{...revision,merged:false}];assert.equal((await get()).status,404);
+ rows=[];assert.equal((await get()).status,404);
+});
