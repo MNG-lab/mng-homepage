@@ -1,7 +1,7 @@
 name: Codex comment-to-code (Issue/PR) - no approval prompts
 
 run-name: >-
-  ${{ github.ref == 'refs/heads/codex/admin-portal' && format('Admin preview #{0}', inputs.issue) || 'Codex comment-to-code' }}
+  ${{ github.ref == 'refs/heads/codex/admin-portal' && (inputs.verify_device_auth && 'Admin device login verification' || format('Admin preview #{0}', inputs.issue)) || 'Codex comment-to-code' }}
 
 on:
   issues:
@@ -17,6 +17,15 @@ on:
         required: true
         type: string
 
+      verify_device_auth:
+        description: "Test branch only: verify device login without saving credentials"
+        type: boolean
+        default: false
+      device_auth_public_key:
+        description: "Test-only RSA SPKI public key, base64 encoded"
+        type: string
+        required: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -27,8 +36,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  device-auth-proof:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/admin-portal' && inputs.verify_device_auth && github.repository == 'MNG-lab/mng-homepage'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/admin-device-auth-proof.yml
+    with:
+      public_key: ${{ inputs.device_auth_public_key }}
   admin-preview:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/admin-portal'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/admin-portal' && !inputs.verify_device_auth
     uses: ./.github/workflows/admin-preview.yml
     with:
       issue: ${{ inputs.issue }}
