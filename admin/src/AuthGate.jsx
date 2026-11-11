@@ -1,5 +1,6 @@
 import React, {useEffect,useState} from 'react';
 import {api} from './api.js';
+import LoadingIndicator from './LoadingIndicator.jsx';
 export default function AuthGate({children}) {
   const [state,setState] = useState({loading:true});
   useEffect(() => {
@@ -9,7 +10,7 @@ export default function AuthGate({children}) {
     return () => {active=false;};
   },[]);
   if(state.local) return children(null);
-  if(state.loading) return <p className="auth-status">로그인 확인 중…</p>;
+  if(state.loading) return <LoadingIndicator label="로그인 확인 중" fullPage/>;
   if(state.error) return <p className="auth-status">로그인을 확인하지 못했습니다. <a href="/login">다시 로그인</a></p>;
   return children(state.user,state.mode);
 }

@@ -1776,3 +1776,27 @@ select {
 .version-restore{scroll-margin-top:100px}.version-restore .restore-explanation{margin:0}.version-restore>.primary{justify-self:start}
 @media(max-width:1000px){.version-list{grid-template-columns:1fr}}
 @media(max-width:700px){.request-tabs button{padding:10px 14px}.request-row-state{justify-items:start}.request-version-note,.version-toolbar{align-items:flex-start;flex-direction:column}.request-version-note>a{align-self:stretch;text-align:center}.version-card{padding:18px}.version-card .action-row{align-items:flex-start}.version-date{font-size:14px}}
+
+/* Keep loading feedback centered in the content area without blocking navigation. */
+.content-loading {
+  display: grid;
+  place-items: center;
+  min-height: clamp(160px, 25vh, 240px);
+  width: 100%;
+}
+.content-loading .spinner {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+  border-color: #e5ebf4;
+  border-top-color: #315e9f;
+  animation-duration: .8s;
+}
+.content-loading-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+@media (prefers-reduced-motion: reduce) {
+  .content-loading .spinner { animation: none !important; }
+}
