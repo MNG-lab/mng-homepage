@@ -110,34 +110,46 @@ try {
  records=recoveryRecords.slice(0,3);await page.reload();await page.waitForURL('**/settings#codex-connection');await page.locator('.recovery-requests li').nth(2).waitFor();assert.equal(await recoveryPager.count(),0);
  records=[];await page.reload();await page.getByText('현재 인증 문제로 멈춘 요청이 없습니다.',{exact:true}).waitFor();assert.equal(await recoveryPager.count(),0);
  assert.equal(await page.getByText('연결 상태는 5초, 요청 목록은 30초마다 확인합니다.',{exact:false}).count(),0);
- deviceFlow={id:'previous-login',kind:'login',state:'connected',code:null};
+ // Opening a completed flow must not replay a success notice or imply the credential is still valid.
+ deviceFlow={id:'previous-login',kind:'login',state:'connected',code:null,runUrl:'https://github.com/MNG-lab/mng-homepage/actions/runs/101'};
+ await page.reload();await page.getByRole('link',{name:'연결 작업 기록 ↗',exact:true}).waitFor();
+ assert.equal(await page.locator('#codex-connection .connection-state').count(),0);
+ await page.getByRole('button',{name:'상태 새로고침',exact:true}).click();await page.locator('#codex-connection .connection-state').waitFor({state:'hidden'});
+ assert.equal(await page.getByText('Codex 연결 완료',{exact:true}).count(),0);
  records=[{id:123,title:'중단된 Members 수정',state:'open',description:'기존 요청',run:{id:100,attempt:1,status:'completed',conclusion:'failure'},auth:{renewed:false}}];
- await page.goto('http://127.0.0.1:4193/requests/123');await page.getByRole('link',{name:'Codex 다시 연결하러 가기'}).click();
+ await page.goto('http://127.0.0.1:4193/requests/123');await page.getByRole('link',{name:'Codex 연결하러 가기'}).click();
  await page.getByRole('heading',{name:'구성원 관리'}).waitFor();await page.getByRole('heading',{name:'Codex 연결',exact:true}).waitFor();
  await page.getByText('Codex를 다시 연결해 주세요',{exact:true}).waitFor();
- assert.equal(await page.getByText('Codex 재연결 완료',{exact:true}).count(),0);
+ assert.equal(await page.getByText('Codex 연결 완료',{exact:true}).count(),0);
  assert.equal(await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).isDisabled(),true);
  assert.equal(await page.getByRole('button',{name:'인증 만료 상황 체험하기'}).count(),0);
- assert.equal(await page.getByRole('button',{name:'Codex 다시 연결',exact:true}).isDisabled(),true);
+ assert.equal(await page.getByRole('button',{name:'Codex 연결',exact:true}).isDisabled(),true);
  await page.getByRole('checkbox').check();
  holdDeviceRead=true;heldDeviceRead=false;await page.getByRole('button',{name:'상태 새로고침',exact:true}).click();
  for(let i=0;i<100&&!heldDeviceRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldDeviceRead,true);
- holdLogin=true;await page.getByRole('button',{name:'Codex 다시 연결',exact:true}).click();
+ holdLogin=true;await page.getByRole('button',{name:'Codex 연결',exact:true}).click();
  const busyLogin=page.getByRole('button',{name:'연결 요청 중…',exact:true});await busyLogin.waitFor();assert.equal(await busyLogin.getAttribute('aria-busy'),'true');assert.equal(await busyLogin.locator('.spinner').count(),1);assert.equal(await busyLogin.isDisabled(),true);
  for(let i=0;i<100&&!releaseLogin;i++)await new Promise(r=>setTimeout(r,20));assert.ok(releaseLogin);releaseLogin();
  await page.getByText('작업을 준비하고 있습니다',{exact:true}).waitFor();
  releaseDeviceRead();await new Promise(r=>setTimeout(r,150));assert.equal(await page.getByText('작업을 준비하고 있습니다',{exact:true}).count(),1,'stale read must not replace post-submit state');
  deviceFlow={...deviceFlow,state:'waiting',code:'ABCD-12345'};await page.getByText('ABCD-12345',{exact:true}).waitFor({timeout:10000});
+ // A reload while login is still in progress continues that flow and can show its eventual completion.
+ await page.reload();await page.getByText('ABCD-12345',{exact:true}).waitFor();
 
  assert.equal(await page.getByRole('link',{name:'OpenAI에서 로그인하기 ↗',exact:true}).getAttribute('href'),'https://auth.openai.com/codex/device');
  records[0].auth.renewed=true;
- deviceFlow={...deviceFlow,state:'connected',code:null};await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.getByText('Codex 재연결 완료',{exact:true}).waitFor();
+ deviceFlow={...deviceFlow,state:'connected',code:null};await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.getByText('Codex 연결 완료',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'상태 새로고침',exact:true}).click();await page.getByText('Codex 연결 완료',{exact:true}).waitFor();
  await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).click();
  await page.getByText('현재 인증 문제로 멈춘 요청이 없습니다.',{exact:true}).waitFor();assert.equal(retries,1);assert.equal(deviceStarts,1);
  assert.equal(await page.locator('#codex-connection .connection-state').evaluate(el=>{const actions=document.querySelector('.connection-actions').getBoundingClientRect();return el.getBoundingClientRect().top>=actions.bottom&&el.classList.contains('is-success');}),true);
  await page.goto('http://127.0.0.1:4193/requests/123');await page.getByText('재실행 접수됨',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).count(),0);
  await page.getByRole('button',{name:'설정',exact:true}).click();
  await page.getByRole('heading',{name:'Codex 연결',exact:true}).waitFor();
+ await page.locator('#codex-connection .connection-state').waitFor({state:'hidden'});
+ assert.equal(await page.getByText('Codex 연결 완료',{exact:true}).count(),0);
+ await page.reload();await page.getByRole('heading',{name:'Codex 연결',exact:true}).waitFor();await page.locator('#codex-connection .connection-state').waitFor({state:'hidden'});
+ assert.equal(await page.getByText('Codex 연결 완료',{exact:true}).count(),0);
  assert.equal(await page.getByRole('heading',{name:'Codex 인증 갱신',exact:true}).count(),0);assert.equal(await page.locator('input[type="file"]').count(),0);
  assert.equal(await page.getByRole('button',{name:'구성원 저장',exact:true}).evaluate(el=>{const button=el.getBoundingClientRect(),select=el.closest('form').querySelector('select').getBoundingClientRect();return button.top-select.bottom>=20;}),true);
 
@@ -169,5 +181,5 @@ try {
  const incoming=page.getByRole('region',{name:'최고 관리자 변경 요청',exact:true});await incoming.getByRole('button',{name:'최고 관리자 역할 수락',exact:true}).click();assert.equal(settingsWrites.length,6);assert.equal(await page.getByRole('heading',{name:'구성원 관리',exact:true}).count(),0);
  await incoming.getByRole('dialog').getByRole('button',{name:'확인하고 수락',exact:true}).click();await page.getByRole('heading',{name:'구성원 관리',exact:true}).waitFor();assert.equal(settingsWrites.at(-1).path,'/api/settings/transfer/accept');
  role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('되돌리면 달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
- assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
+ assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, connection completion only for the current visit, in-progress login reload, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
 } finally {await browser?.close();server.kill('SIGTERM');}
