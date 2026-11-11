@@ -34,7 +34,7 @@ export default function ConnectedApp({user}) {
  useEffect(()=>{document.title=`${pageTitle} · MNG 홈페이지 관리 어드민`;setNotice('');},[location.pathname,pageTitle]);
  async function submit(event){
   event.preventDefault();if(busy)return;setBusy(true);setError('');sessionStorage.setItem('mng-request-id',requestId);
-  try{const data=await api('/api/requests',{requestId,title,page,description});sessionStorage.removeItem('mng-request-id');setRequestId(crypto.randomUUID());setTitle('');setDescription('');await refresh();navigate(`/requests/${data.issue}`);setNotice(data.warning||'요청을 접수했습니다. 작업 상태는 자동으로 갱신됩니다.');}catch(e){setError(e.message);}finally{setBusy(false);}
+  try{const data=await api('/api/requests',{requestId,title,page,description});sessionStorage.removeItem('mng-request-id');setRequestId(crypto.randomUUID());setTitle('');setDescription('');await refresh();setRequests(current=>current.some(r=>r.id===data.issue)?current:[{id:data.issue,title:title.trim(),description,state:'open',createdAt:new Date().toISOString(),url:`https://github.com/MNG-lab/mng-homepage/issues/${data.issue}`,pull:null,run:null},...current]);navigate(`/requests/${data.issue}`);setNotice(data.warning||'요청을 접수했습니다. 작업 상태는 자동으로 갱신됩니다.');}catch(e){setError(e.message);}finally{setBusy(false);}
  }
  return <div className="app-shell">
   <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리 어드민</small></span></Link><div className="workspace-label">WORKSPACE <span>연동 테스트</span></div>
