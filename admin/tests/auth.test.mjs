@@ -44,6 +44,8 @@ test('verified identity gets session; wrong nonce, unknown email and unverified 
   if(variant==='ok') {
    const c=r.headers.getSetCookie().find(x=>x.startsWith('__Host-mng_session='));
    assert.match(c,/HttpOnly; Secure; SameSite=Lax/);
+   assert.match(c,/Max-Age=21600/);
+   const claims=decodeJwt(cookiePair(c).split('=')[1]);assert.equal(claims.exp-claims.iat,21600);
    const session=await h(req('/api/session',{headers:{Cookie:cookiePair(c)}}),env);
    assert.equal((await session.json()).user.role,'owner');
   }
@@ -65,4 +67,57 @@ test('logout requires same-origin POST and preview denies all mutation APIs',asy
  assert.match(r.headers.get('set-cookie'),/Max-Age=0/);
  const jwt=await token({email:'owner@gmail.com',sub:'google-sub'});
  assert.equal((await h(req('/api/requests',{method:'POST',headers:{Cookie:`__Host-mng_session=${jwt}`}}),env)).status,404);
+});
+
+const refreshRequest=jwt=>req('/api/session/refresh',{method:'POST',headers:{Cookie:`__Host-mng_session=${jwt}`,Origin:env.APP_ORIGIN,'Content-Type':'application/json'},body:'{}'});
+
+test('active sessions renew for six hours, preserve login time, and expire after inactivity',async t=>{
+ const start=Date.UTC(2026,10,11);t.mock.timers.enable({apis:['Date'],now:start});
+ const authTime=Math.floor(start/1000);
+ const jwt=await token({email:'owner@gmail.com',sub:'google-sub',iat:authTime});
+ const h=createHandler();
+ t.mock.timers.tick(30*60000);
+ const refreshed=await h(refreshRequest(jwt),env);assert.equal(refreshed.status,200);
+ const cookie=refreshed.headers.get('set-cookie');assert.match(cookie,/Max-Age=21600/);
+ const renewed=cookiePair(cookie).split('=')[1],claims=decodeJwt(renewed);
+ assert.equal(claims.exp-claims.iat,21600);assert.equal(claims.auth_time,authTime);
+ t.mock.timers.tick(61*60000);
+ assert.equal((await h(refreshRequest(jwt),env)).status,401,'expired old token cannot renew');
+ const current=await h(req('/api/session',{headers:{Cookie:cookiePair(cookie)}}),env);
+ assert.equal(current.status,200);assert.equal((await current.json()).user.authTime,authTime);
+ assert.equal(current.headers.get('set-cookie'),null,'background reads must not extend expiry');
+ t.mock.timers.tick(5*60*60000);
+ const expired=await h(refreshRequest(renewed),env);
+ assert.equal(expired.status,401);assert.equal(expired.headers.get('set-cookie'),null);
+});
+
+test('refresh requires same-origin JSON POST and current membership',async()=>{
+ const jwt=await token({email:'owner@gmail.com',sub:'google-sub'}),h=createHandler();
+ const headers={Cookie:`__Host-mng_session=${jwt}`};
+ assert.equal((await h(req('/api/session/refresh',{headers}),env)).status,405);
+ for(const origin of [undefined,'https://other.test']){
+  const r=await h(req('/api/session/refresh',{method:'POST',headers:{...headers,...(origin?{Origin:origin}:{}),'Content-Type':'application/json'}}),env);
+  assert.equal(r.status,403);assert.equal(r.headers.get('set-cookie'),null);
+ }
+ assert.equal((await h(req('/api/session/refresh',{method:'POST',headers:{...headers,Origin:env.APP_ORIGIN,'Content-Type':'text/plain'}}),env)).status,403);
+ const revoked=await h(refreshRequest(jwt),{...env,MEMBERS_JSON:'{}'});assert.equal(revoked.status,401);assert.equal(revoked.headers.get('set-cookie'),null);
+ assert.equal((await h(refreshRequest(jwt+'tampered'),env)).status,401);
+ const changed=await h(refreshRequest(jwt),{...env,MEMBERS_JSON:JSON.stringify({'owner@gmail.com':{role:'editor'}})});
+ assert.equal((await changed.json()).user.role,'editor');
+});
+
+test('temporary membership failure is 503 without clearing the session or redirecting',async()=>{
+ const jwt=await token({email:'owner@gmail.com',sub:'google-sub'}),h=createHandler();
+ const failing={...env,MEMBERS_DB:'true',DB:{prepare(){throw Error('temporary database outage');}}};
+ for(const request of [req('/api/session',{headers:{Cookie:`__Host-mng_session=${jwt}`}}),refreshRequest(jwt),req('/dashboard',{headers:{Cookie:`__Host-mng_session=${jwt}`}})]){
+  const r=await h(request,failing);assert.equal(r.status,503);assert.equal(r.headers.get('location'),null);assert.equal(r.headers.get('set-cookie'),null);
+ }
+ assert.equal((await h(refreshRequest(jwt),env)).status,200,'same session works after recovery');
+});
+
+test('login errors have a visible alert and clear retry instructions',async()=>{
+ const h=createHandler(),normal=await(await h(req('/login'),env)).text(),error=await(await h(req('/login?error=1'),env)).text();
+ assert.doesNotMatch(normal,/role="alert"/);
+ assert.match(error,/class="login-error" role="alert"/);assert.match(error,/로그인하지 못했습니다/);assert.match(error,/관리자로 등록된 계정인지 확인한 뒤 다시 시도/);assert.match(error,/color:#b42318/);
+ assert.match(error,/href="\/auth\/google\/start"/);assert.doesNotMatch(error,/테스트 브랜치|실제 인증/);
 });

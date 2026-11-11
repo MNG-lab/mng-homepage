@@ -1,9 +1,10 @@
+import {loginPage} from './login-page.js';
 import {requestResultAPI} from './request-recovery.js';
 import {deviceAPI} from './device-login.js';
 const handleDevice=deviceAPI();
 import {readMember, managementAPI} from './management.js';
 import { requestsAPI } from './requests.js';
-import { SignJWT, jwtVerify, createRemoteJWKSet } from 'jose';
+import { SignJWT, jwtVerify, createRemoteJWKSet, errors } from 'jose';
 
 const handleRequests = requestsAPI();
 const handleManagement = managementAPI();
@@ -12,7 +13,7 @@ const encoder = new TextEncoder();
 const ROLES = new Set(['owner', 'admin', 'editor']);
 const sessionName = '__Host-mng_session';
 const flowName = '__Host-mng_flow';
-const ttl = 60 * 60;
+const ttl = 6 * 60 * 60;
 const random = () => crypto.randomUUID() + crypto.randomUUID();
 function key(env) {
   if (!env.SESSION_SECRET || env.SESSION_SECRET.length < 43) throw new Error('Not configured');
@@ -40,12 +41,18 @@ async function verify(token, env, audience) {
   return (await jwtVerify(token, key(env), {algorithms:['HS256'], issuer:origin(env), audience})).payload;
 }
 export async function session(request, env) {
-  try {
-    const p = await verify(cookies(request)[sessionName], env, 'mng-session');
-    if (typeof p.email !== 'string' || typeof p.sub !== 'string') return null;
-    const member=await readMember(env,p.email,p.sub,true);
-    return member?{...member,authTime:p.iat}:null;
-  } catch { return null; }
+  const token = cookies(request)[sessionName];
+  if (!token) return null;
+  let p;
+  try { p = await verify(token, env, 'mng-session'); }
+  catch (error) {
+    if (error instanceof errors.JOSEError) return null;
+    throw error;
+  }
+  if (typeof p.email !== 'string' || typeof p.sub !== 'string') return null;
+  // A membership lookup outage is a service error, not an expired login.
+  const member = await readMember(env,p.email,p.sub,true);
+  return member ? {...member,authTime:p.auth_time ?? p.iat} : null;
 }
 function json(data, status=200) {
   return new Response(JSON.stringify(data), {status, headers:{'Content-Type':'application/json; charset=utf-8'}});
@@ -62,9 +69,7 @@ function secure(response) {
   result.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   return result;
 }
-function loginPage(error=false) {
-  return new Response(`<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>MNG 관리자 로그인</title><style>body{font-family:system-ui;background:#f5f7fb;color:#17253e;display:grid;place-items:center;min-height:95vh;margin:0}main{padding:36px;background:white;border:1px solid #dbe2ee;border-radius:18px;max-width:420px;margin:24px}p{line-height:1.7;color:#526079}a{display:block;background:#275edc;color:white;text-align:center;padding:14px;border-radius:10px;text-decoration:none;margin-top:24px}small{display:block;margin-top:22px;color:#526079}</style><main><h1>MNG 홈페이지 관리 어드민</h1><p>허용된 Google 계정으로 로그인해 주세요.</p>${error?'<p role="alert">로그인을 완료하지 못했어요. 허용된 계정인지 확인한 뒤 다시 시도해 주세요.</p>':''}<a href="/auth/google/start">Google 계정으로 로그인</a><small>테스트 환경 · 로그인은 실제 인증이며, 작업은 운영 홈페이지와 분리된 테스트 브랜치에만 반영됩니다.</small></main></html>`, {headers:{'Content-Type':'text/html; charset=utf-8'}});
-}
+
 async function verifyGoogle(token, env) {
   return (await jwtVerify(token, googleKeys, {algorithms:['RS256'], issuer:['https://accounts.google.com','accounts.google.com'], audience:env.GOOGLE_CLIENT_ID})).payload;
 }
@@ -118,6 +123,14 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
       if (path === '/login' && request.method === 'GET') return secure(user ? redirect('/dashboard') : loginPage(url.searchParams.has('error')));
       if (!user) return secure(path.startsWith('/api/') ? json({error:'Unauthenticated'},401) : redirect('/login'));
       if (path === '/api/session' && request.method === 'GET') return secure(json({user,mode:env.GITHUB_ENABLED==='true'?'github':'demo'}));
+      if (path === '/api/session/refresh') {
+        if (request.method !== 'POST') return secure(json({error:'Method not allowed'},405));
+        if (request.headers.get('Origin') !== origin(env) || !request.headers.get('Content-Type')?.startsWith('application/json')) return secure(json({error:'Forbidden'},403));
+        const token = await sign({email:user.email,sub:user.sub,auth_time:user.authTime ?? Math.floor(Date.now()/1000)},env,'mng-session',ttl);
+        const result = json({user,mode:env.GITHUB_ENABLED==='true'?'github':'demo'});
+        result.headers.set('Set-Cookie',cookie(sessionName,token,ttl));
+        return secure(result);
+      }
       if (path.startsWith('/api/')) {
         if(env.GITHUB_ENABLED !== 'true') return secure(json({error:'Not implemented in preview'},404));
         return secure(await (path.startsWith('/api/settings/device-login')?handleDevice:path.startsWith('/api/settings')?handleManagement:handleRequests)(request,env,user));

@@ -21,7 +21,7 @@ try {
    deviceFlow={id:'mock-'+deviceStarts,kind:body.kind,state:body.kind==='simulate'?'auth_required':body.kind==='login'?'queued':'completed',code:null};return route.fulfill({json:{ok:true,id:deviceFlow.id}});
   }
   if(path==='/api/requests/123/retry'){retries++;assert.ok(body.requestId);records[0].retry={state:'pending'};return route.fulfill({json:{issue:123}});}
-  if(path==='/api/session')return route.fulfill({json:{user:{email:'owner@example.test',role},mode:'github'}});
+  if(path==='/api/session'||path==='/api/session/refresh')return route.fulfill({json:{user:{email:'owner@example.test',role},mode:'github'}});
   if(path==='/api/requests'){
    if(body){submissions++;delayedNewList=0;assert.match(body.requestId,/^[0-9a-f-]{36}$/);records=[{id:123,title:body.title,description:body.description,url:'https://github.com/MNG-lab/mng-homepage/issues/123',state:'open',createdAt:'2026-11-10T01:00:00Z',pull:null}];return route.fulfill({json:{issue:123}});}
    if(readFailures-->0)return route.abort('failed');
