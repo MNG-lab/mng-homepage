@@ -39,9 +39,17 @@ test('cancelled and expired ownership requests cannot be accepted',async()=>{
  await handle(post('/transfer',{email:next.email}),env,owner);env.DB.sqlite.exec('UPDATE ownership SET expires_at=0');
  assert.equal((await handle(post('/transfer/accept'),env,next)).status,409);
 });
-test('credential update excludes plaintext from audit and is owner-only',async()=>{
- const env=setup();let value;const handle=managementAPI({github:async()=>({updateCodex:async(auth)=>{value=auth;}})});
- const auth='sensitive-test-value';assert.equal((await handle(post('/codex',{auth}),env,{...owner,role:'admin'})).status,403);
- assert.equal((await handle(post('/codex',{auth}),env,owner)).status,200);assert.equal(value,auth);
- assert.ok(!JSON.stringify(env.DB.sqlite.prepare('SELECT * FROM audit').all()).includes(auth));
+test('retired manual credential upload cannot change credentials or mark them renewed',async()=>{
+ const env=setup(),handle=managementAPI();
+ const response=await handle(post('/codex',{auth:'sensitive-test-value'}),env,owner);
+ assert.equal(response.status,404);
+ assert.equal(env.DB.sqlite.prepare('SELECT COUNT(*) AS n FROM codex_credential_state').get().n,0);
+ assert.equal(env.DB.sqlite.prepare('SELECT COUNT(*) AS n FROM audit').get().n,0);
+});
+test('settings load membership and audit without GitHub configuration or Secrets access',async()=>{
+ const env=setup(),handle=managementAPI();
+ const response=await handle(new Request(origin+'/api/settings'),env,owner);
+ assert.equal(response.status,200);const data=await response.json();
+ assert.ok(data.members.some(m=>m.email===owner.email));assert.deepEqual(data.audit,[]);
+ assert.equal(Object.hasOwn(data,'credential'),false);
 });

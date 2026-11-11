@@ -221,10 +221,6 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       const pr=await call('/pulls','POST',{title:`[Admin Preview] ${title}`,head:branch,base:TEST_BASE,body:`<!-- mng-admin-preview:v1 -->\n<!-- issue:${issue.number} -->\n<!-- restore:${id}:${plan.current} -->\n\n‘${name}’ 반영 직후 홈페이지 전체 상태로 복원합니다. src/, public/, index.html만 복원하며 요청과 이력은 보존합니다.`});
       return {issue:issue.number,pull:pr.number};
     },
-    async credentialStatus() {
-      try {const secret=await call('/actions/secrets/CODEX_AUTH_JSON_PREVIEW');return {configured:true,updatedAt:secret.updated_at};}
-      catch(e){if(e.status===404)return {configured:false};throw e;}
-    },
     async updateCodex(auth) {
       if(typeof auth!=='string'||auth.length>32000)throw new GitHubError('auth.json 파일을 확인해 주세요.',400);
       let parsed;try{parsed=JSON.parse(auth);}catch{throw new GitHubError('올바른 JSON 파일이 아닙니다.',400);}

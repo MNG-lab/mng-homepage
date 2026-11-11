@@ -1,5 +1,4 @@
-import {createGitHub, GitHubError} from './github.js';
-import {recordCredentialUpdate} from './request-recovery.js';
+import {GitHubError} from './github.js';
 const json=(data,status=200)=>Response.json(data,{status});
 export async function readMember(env,email,sub,bind=false) {
  if(env.MEMBERS_DB!=='true') {
@@ -15,7 +14,7 @@ export async function readMember(env,email,sub,bind=false) {
  return row&&(!row.sub||row.sub===sub)?{email,sub,role:row.role}:null;
 }
 export const audit=(env,user,action,target)=>env.DB.prepare('INSERT INTO audit(actor,action,target) VALUES (?,?,?)').bind(user.email||user.sub,action,String(target)).run();
-export function managementAPI({github=createGitHub}={}) {return async(request,env,user)=>{
+export function managementAPI() {return async(request,env,user)=>{
  try {
   if(env.MEMBERS_DB!=='true') return json({error:'사용자 관리를 준비 중입니다.'},503);
   const path=new URL(request.url).pathname;
@@ -24,7 +23,6 @@ export function managementAPI({github=createGitHub}={}) {return async(request,en
    const data={role:user.role,transfer:transfer&&(user.role==='owner'||transfer.to_email===user.email)?transfer:null};
    if(user.role==='owner') {
     data.members=(await env.DB.prepare('SELECT email,role,active,sub IS NOT NULL AS joined FROM members ORDER BY email').all()).results;
-    try {data.credential=await(await github(env,fetch,{secrets:true})).credentialStatus();}catch{data.credential={unavailable:true};}
     data.audit=(await env.DB.prepare('SELECT actor,action,target,created_at FROM audit ORDER BY id DESC LIMIT 30').all()).results;
    }
    return json(data);
@@ -57,10 +55,6 @@ export function managementAPI({github=createGitHub}={}) {return async(request,en
    await audit(env,user,'ownership.offer',member.email);return json({ok:true});
   }
   if(path==='/api/settings/transfer/cancel') {await env.DB.prepare('DELETE FROM ownership WHERE id=1 AND from_email=?').bind(user.email).run();await audit(env,user,'ownership.cancel','');return json({ok:true});}
-  if(path==='/api/settings/codex') {
-   const gh=await github(env,fetch,{secrets:true});await gh.updateCodex(body.auth);await recordCredentialUpdate(env);
-   await audit(env,user,'codex.updated','CODEX_AUTH_JSON_PREVIEW');return json({ok:true});
-  }
   return json({error:'지원하지 않는 작업입니다.'},404);
  } catch(e){return json({error:e instanceof GitHubError?e.message:'설정을 변경하지 못했습니다. 상태를 다시 확인해 주세요.'},e instanceof GitHubError?e.status:502);}
 };}

@@ -129,9 +129,8 @@ try {
  assert.equal(await page.locator('#codex-connection .connection-state').evaluate(el=>{const actions=document.querySelector('.connection-actions').getBoundingClientRect();return el.getBoundingClientRect().top>=actions.bottom&&el.classList.contains('is-success');}),true);
  await page.goto('http://127.0.0.1:4193/requests/123');await page.getByText('재실행 접수됨',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).count(),0);
  await page.getByRole('button',{name:'설정',exact:true}).click();
- await page.getByRole('button',{name:'Windows',exact:true}).click();await page.getByText('%USERPROFILE%\\.codex\\auth.json',{exact:true}).waitFor();
- await page.getByRole('button',{name:'Mac',exact:true}).click();await page.getByText('~/.codex/auth.json',{exact:true}).waitFor();
- await page.getByText('파일이 없거나 다시 로그인해야 하나요?',{exact:true}).click();await page.getByRole('button',{name:'로그인 명령 복사',exact:true}).waitFor();
+ await page.getByRole('heading',{name:'Codex 연결',exact:true}).waitFor();
+ assert.equal(await page.getByRole('heading',{name:'Codex 인증 갱신',exact:true}).count(),0);assert.equal(await page.locator('input[type="file"]').count(),0);
  assert.equal(await page.getByRole('button',{name:'구성원 저장',exact:true}).evaluate(el=>{const button=el.getBoundingClientRect(),select=el.closest('form').querySelector('select').getBoundingClientRect();return button.top-select.bottom>=20;}),true);
 
  await page.goto('http://127.0.0.1:4193/requests/99999');await page.getByRole('heading',{name:'요청을 찾을 수 없어요'}).waitFor();

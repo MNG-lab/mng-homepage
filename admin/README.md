@@ -11,7 +11,7 @@
 - `/requests/:id`: 요청 내용, 실행 기록, 파일 diff, CI 결과, 승인·종료·실패 재시도
 - `/history`: 반영된 PR의 시간순 타임라인과 현재 반영 지점
 - `/history/:pr`: 선택한 시점의 홈페이지 전체 복원 범위 확인 및 복원 요청
-- `/settings`: 계정, 구성원 권한, 최고 관리자 이전, 테스트 Codex 인증 갱신, 관리 기록
+- `/settings`: 계정, 구성원 권한, 최고 관리자 이전, 브라우저 Codex 연결, 관리 기록
 
 복원은 해당 PR이 반영된 직후의 `src/`, `public/`, `index.html` 전체 상태를 재현합니다.
 1 → 2 → 3 반영 후 1로 복원하면 2·3의 홈페이지 변경이 제외됩니다. 요청과 Git 이력은 삭제하지 않습니다.
@@ -40,7 +40,7 @@ Worker는 HTML·정적 자산·API 모두 로그인으로 보호합니다. OAuth
 
 GitHub App 키는 Worker Secret에만 저장합니다. 일반 작업 토큰에는 Secrets 권한을 요청하지 않습니다.
 최고 관리자의 인증 갱신에만 Secrets 권한으로 발급한 별도 설치 토큰을 사용합니다.
-선택한 Codex auth.json은 서버 메모리에서 sealed box 방식으로 암호화해 **CODEX_AUTH_JSON_PREVIEW**에만 저장합니다.
+브라우저 기기 로그인으로 발급한 Codex 인증은 서버 메모리에서 sealed box 방식으로 암호화해 **CODEX_AUTH_JSON_PREVIEW**에만 저장합니다.
 인증 원문은 D1, 로그, localStorage, 빌드 결과에 저장하지 않습니다. 기존 값을 조회하는 기능도 없습니다.
 테스트 인증이 없으면 재연결 안내를 표시합니다. 운영 인증으로 대체하거나 운영 Secret을 수정하지 않습니다.
 
@@ -137,7 +137,7 @@ GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 - `수정 반영`과 `이전 버전으로 되돌림`은 작업 종류입니다. 과거 기록 자체가 취소되었다는 의미가 아닙니다. 되돌린 기록은 대상 버전 이름·날짜·링크를 표시하고, 과거의 되돌린 결과도 다시 선택할 수 있습니다.
 - 대시보드/목록/상세는 수정과 되돌리기의 종류·완료 문구를 구분합니다. 저장된 GitHub 제목이나 이력은 변경하지 않습니다.
 - 최고 관리자 변경은 후임자의 로그인·수락이 필요하며 기존 최고 관리자는 관리자가 됩니다. 외부 서비스 계정 소유권은 별도입니다. 실제 권한 변경은 이번 화면 개선에 포함하지 않습니다.
-- Codex 안내는 Mac/Windows 파일 경로와 공식 CLI 로그인 명령을 복사합니다. 인증 내용은 화면·클립보드에 출력하지 않습니다. 경로는 기본 CODEX_HOME 기준이며, 별도 경로/조직 보안 정책은 개발 담당자가 확인해야 합니다. 파일 저장 옵션은 로그인 명령에만 적용합니다. Node.js가 필요하며 실제 Windows 로그인은 별도로 확인해야 합니다.
+- Codex 인증은 `Codex 연결`에서 브라우저 로그인으로 등록합니다. 수동 파일 등록 화면·Mac/Windows 파일 안내·`POST /api/settings/codex`는 제거했습니다. 설정 조회도 GitHub Secret의 등록 여부를 별도로 조회하지 않습니다. 기존 Secret과 브라우저 재연결·중단 요청 복구는 유지합니다.
 - 용어 참고: [Google 문서 버전 기록](https://support.google.com/docs/answer/190843?hl=ko), [Microsoft 이전 버전 복원](https://support.microsoft.com/ko-kr/onedrive/restore-a-previous-version-of-a-file-stored-in-onedrive), [Notion 버전 기록](https://www.notion.com/ko/help/duplicate-delete-and-restore-content). 로그인 안내: [OpenAI 인증 문서](https://developers.openai.com/codex/auth/).
 
 ### 브라우저 로그인과 중단 요청 복구
