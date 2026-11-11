@@ -1856,33 +1856,35 @@ select {
 .request-version-note{padding:20px;background:#f0f6ff;border:1px solid #d7e4f5;border-radius:12px;display:flex;align-items:center;gap:20px;justify-content:space-between}
 .request-version-note p{font-size:13px;line-height:1.7;color:#62768f;margin:8px 0 0}.request-version-note>a{flex-shrink:0}
 .version-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px}.version-toolbar p{margin:0;color:#617185;font-size:13px;line-height:1.8}.version-toolbar p a{color:#315c9c;text-decoration:underline}.version-toolbar button{flex-shrink:0}
-.current-version-card{background:#fff;border-color:#cfd9e7;gap:22px}
+.current-version-card{background:#fff;border-color:#cfd9e7;gap:20px}
 .version-environment,.version-count{font-size:12px;color:#63728a}
-.version-header{display:grid;gap:12px;min-width:0}
-.version-heading-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 24px}
-.version-identity{display:flex;align-items:center;flex-wrap:wrap;gap:14px}
-.version-title{margin:0;font-size:32px;font-weight:700;line-height:1.2;letter-spacing:-.03em;color:#1e2d43}
-.version-number{font:inherit;font-variant-numeric:tabular-nums;color:inherit}
+.version-header{display:grid;gap:10px;min-width:0}
+.version-heading-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 24px;margin-bottom:4px}
+.version-title{margin:0;font-size:20px;font-weight:650;line-height:1.5;letter-spacing:-.02em;color:#24334a;overflow-wrap:anywhere}
 .version-current{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#326b52;white-space:nowrap}
 .version-current>span{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
-.version-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;color:#6b788a;font-size:12px;line-height:1.7}
-.version-kind{padding-left:12px;border-left:1px solid #dce2ea;color:#596a80;white-space:nowrap}
-.version-summary{font-size:16px;font-weight:600;line-height:1.8;overflow-wrap:anywhere;margin:0;color:#29384e}
-.version-actions{border-top:1px solid #e9edf2;padding-top:20px}
+.version-meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 0;color:#66758a;font-size:12px;line-height:1.8}
+.version-meta>*{display:inline-flex;align-items:baseline;white-space:nowrap}
+.version-meta>*:not(:last-child)::after{content:'·';margin:0 9px;color:#9aa6b5;font-weight:400}
+.version-number{font-weight:650;font-variant-numeric:tabular-nums;color:#44556e}
+.version-kind{color:#596a80}
+.version-target a{margin-left:4px}
+.version-meta a{color:#526b8c;text-decoration:none}.version-meta a:hover{text-decoration:underline;text-underline-offset:3px}
+.version-actions{margin-top:0;padding-top:18px;border-top:1px solid #e9edf2}
 .request-result-version{display:inline-flex;align-items:center;gap:7px;margin-top:10px;color:#63728a;font-size:12px}.request-result-version b{color:#33465f;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
-.version-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-.version-card{display:flex;flex-direction:column;gap:18px;padding:22px;border:1px solid #dfe6ef;border-radius:12px;min-width:0;background:#fff}
-.version-card .version-title{font-size:22px}.version-card .version-summary{font-size:14px}.version-card>.action-row{margin-top:auto;gap:14px}.version-card>.text-button{align-self:flex-start;padding:0;font-size:12px}
+.version-list{display:grid;border:1px solid #dfe6ef;border-radius:10px;overflow:hidden}
+.version-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;padding:22px;min-width:0;background:#fff}
+.version-card+.version-card{border-top:1px solid #e5eaf1}
+.version-card .version-title{font-size:16px}
+.version-row-actions{display:grid;justify-items:center;gap:10px;align-self:center}
+.version-row-actions .secondary{padding:8px 14px;font-size:12px;white-space:nowrap}
+.version-row-actions .text-button{padding:0;font-size:12px;white-space:nowrap}
 .version-help{font-size:13px;color:#617185;line-height:1.8;margin:0}
-.restoration-note{display:flex;align-items:flex-start;flex-wrap:wrap;gap:8px 20px;padding:0 0 0 14px;border-left:2px solid #e0e6ed;font-size:12px;line-height:1.7;margin:0;color:#6b788a}
-.restoration-caption{color:#66758a;flex-shrink:0}
-.restoration-reference{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;min-width:0}
-.restoration-reference a{color:#315c9c;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
 .version-scope{font-size:13px;line-height:1.7;color:#63728a;margin:0}
 .version-changes{display:grid;gap:14px;padding-top:20px;border-top:1px solid #e0e7f1}.version-changes h3{margin:0;font-size:15px}.version-page-tags{display:flex;flex-wrap:wrap;gap:8px}.version-page-tags span{font-size:13px;padding:6px 12px;background:#f1f5fa;border-radius:6px}
 .version-restore{scroll-margin-top:100px}.version-restore .restore-explanation{margin:0}.version-restore>.primary{justify-self:start}
-@media(max-width:1000px){.version-list{grid-template-columns:1fr}}
-@media(max-width:700px){.request-tabs button{padding:10px 14px}.request-row-state{justify-items:start}.request-version-note,.version-toolbar{align-items:flex-start;flex-direction:column}.request-version-note>a{align-self:stretch;text-align:center}.version-card{padding:18px}.version-card .action-row{align-items:flex-start}.version-title{font-size:28px}.version-meta{align-items:flex-start;flex-direction:column;gap:4px}.version-kind{padding-left:0;border-left:0}.restoration-reference{align-items:flex-start;flex-direction:column}}
+@media(max-width:700px){.request-tabs button{padding:10px 14px}.request-row-state{justify-items:start}.request-version-note,.version-toolbar{align-items:flex-start;flex-direction:column}.request-version-note>a{align-self:stretch;text-align:center}.version-card{grid-template-columns:1fr;padding:18px;gap:16px}.version-title{font-size:18px}.version-row-actions{display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-start}}
+
 
 /* Keep loading feedback centered in the content area without blocking navigation. */
 .content-loading {
