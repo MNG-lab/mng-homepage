@@ -109,7 +109,7 @@ export const membersData = {
         "ko": "이준서",
         "en": "Junseo Lee"
       },
-      "email": "lin0239@naver.com",
+      "email": "jjasonlee66@gmail.com",
       "photo": "media/edited/members/junseo-lee.jpg",
       "role": {
         "ko": "석박통합과정",
