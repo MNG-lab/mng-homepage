@@ -111,12 +111,15 @@ test('version search matches applied and restore-target identifiers exactly befo
  rows.push({id:11,title:'Members',state:'closed',pull:{number:530,merged:true}});
  rows.push({id:12,title:'Draft',state:'open',pull:{number:531,merged:false,state:'open'}});
  rows.push({id:13,title:'Closed',state:'closed',pull:{number:532,merged:false,state:'closed'}});
- let result=paginateRequests(rows,{q:'v53',scope:'past',status:'done',page:2});
- assert.deepEqual(result.requests.map(r=>r.id),[320,321,10]);assert.equal(result.pagination.total,23);
- assert.deepEqual(result.scopeCounts,{active:0,past:23});
+ for(const q of ['버전 53','버전53','v53','V53','v. 53','v.53']){
+  const result=paginateRequests(rows,{q,scope:'past',status:'done',page:2});
+  assert.deepEqual(result.requests.map(r=>r.id),[320,321,10]);assert.equal(result.pagination.total,23);
+  assert.deepEqual(result.scopeCounts,{active:0,past:23});
+ }
+ let result;
  result=paginateRequests(rows,{q:'V53',scope:'active'});assert.equal(result.requests.length,0);
- for(const q of ['V531','V532'])assert.equal(paginateRequests(rows,{q}).pagination.total,0);
- assert.deepEqual(paginateRequests(rows,{q:'V530'}).requests.map(r=>r.id),[11]);
+ for(const q of ['V531','V532','버전 531','버전 532'])assert.equal(paginateRequests(rows,{q}).pagination.total,0);
+ for(const q of ['V530','버전 530'])assert.deepEqual(paginateRequests(rows,{q}).requests.map(r=>r.id),[11]);
  assert.deepEqual(paginateRequests(rows,{q:'요청 #10'}).requests.map(r=>r.id),[10]);
 });
 
