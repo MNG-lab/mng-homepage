@@ -85,6 +85,7 @@ async function verifyGoogle(token, env) {
 export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}) {
   return async function handle(request, env) {
     try {
+      if(env.ADMIN_MAINTENANCE==='true')return secure(new Response('관리 화면을 이전하고 있습니다. 잠시 후 다시 접속해 주세요.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8','Retry-After':'120'}}));
       const url = new URL(request.url);
       if (url.origin !== origin(env)) return secure(json({error:'Invalid host'},400));
       const limited=await limitRequests(request,env);
@@ -147,7 +148,7 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
         return secure(result);
       }
       if (path.startsWith('/api/')) {
-        if(env.GITHUB_ENABLED !== 'true') return secure(json({error:'Not implemented in preview'},404));
+        if(env.GITHUB_ENABLED !== 'true') return secure(json({error:'GitHub integration is not enabled'},404));
         return secure(await (path.startsWith('/api/settings/device-login')?handleDevice:path.startsWith('/api/settings')?handleManagement:handleRequests)(request,env,user));
       }
       if (request.method !== 'GET' && request.method !== 'HEAD') return secure(json({error:'Method not allowed'},405));

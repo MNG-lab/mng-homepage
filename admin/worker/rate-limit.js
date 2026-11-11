@@ -7,7 +7,7 @@ export async function limitRequests(request,env) {
  if(path==='/auth/logout')return null;
  // Cloudflare supplies this header. Never trust a client-supplied X-Forwarded-For.
  const ip=request.headers.get('CF-Connecting-IP')||'unknown';
- const key=`mng-admin-preview:${ip}`;
+ const key=`mng-admin:${ip}`;
  if(!(await env.REQUEST_LIMITER.limit({key})).success)return rejected();
  if(path==='/auth/google/start'||path==='/auth/google/callback'){
   if(!(await env.LOGIN_LIMITER.limit({key})).success)return rejected();

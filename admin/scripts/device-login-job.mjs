@@ -1,11 +1,12 @@
+import {ADMIN_ORIGIN} from '../shared/hosting.js';
 import {deployment} from '../shared/deployment.js';
 const config=deployment({ADMIN_ENV:process.env.ADMIN_ENV});
 import {spawn} from 'node:child_process';
 import {mkdir,readFile,rm} from 'node:fs/promises';
 import path from 'node:path';
-const origin='https://mng-admin-preview.chominho96-aaa.workers.dev',endpoint=origin+'/api/internal/device-login';
+const endpoint=ADMIN_ORIGIN+'/api/internal/device-login';
 const id=process.env.DEVICE_SESSION;
-if(!/^[0-9a-f-]{36}$/.test(id||'')||process.env.GITHUB_REPOSITORY!=='MNG-lab/mng-homepage'||process.env.GITHUB_REF!==`refs/heads/${config.ref}`)throw Error('Invalid test session');
+if(!/^[0-9a-f-]{36}$/.test(id||'')||process.env.GITHUB_REPOSITORY!=='MNG-lab/mng-homepage'||process.env.GITHUB_REF!==`refs/heads/${config.ref}`)throw Error('Invalid connection session');
 process.umask(0o077);
 const home=path.join(process.env.RUNNER_TEMP,'device-login-home'),cmd=path.join(process.env.RUNNER_TEMP,'device-cli/node_modules/.bin/codex');
 async function callback(phase,body={}){
@@ -21,7 +22,7 @@ const childEnv={...process.env,CODEX_HOME:home};
 for(const k of Object.keys(childEnv))if(/^(ACTIONS_|GITHUB_TOKEN$|GH_TOKEN$|OPENAI_API_KEY$|CODEX_API_KEY$|CODEX_ACCESS_TOKEN$|CODEX_AUTH_JSON(?:_PREVIEW)?$|CODEX_CLI_KEY$|CODEX_MODEL$)/.test(k))delete childEnv[k];
 function run(args,onOutput){return new Promise((resolve,reject)=>{
  const child=spawn(cmd,args,{cwd:home,env:childEnv,stdio:['ignore','pipe','pipe']});let output='';
- const timer=setTimeout(()=>{child.kill('SIGTERM');reject(Error('Login or test timed out'));},10*60000);
+ const timer=setTimeout(()=>{child.kill('SIGTERM');reject(Error('Login timed out'));},10*60000);
  const consume=b=>{output=(output+b.toString()).slice(-65536);onOutput?.(output);};
  child.stdout.on('data',consume);child.stderr.on('data',consume);
  child.once('error',e=>{clearTimeout(timer);reject(e);});child.once('close',code=>{clearTimeout(timer);resolve({code,output});});

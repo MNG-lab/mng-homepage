@@ -1,20 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateKeyPair,exportPKCS8} from 'jose';
-import {createGitHub,assertPreviewConfig,assertTestPull,assertTestIssue,REPOSITORY,TEST_BASE,WORKFLOW_REF} from '../worker/github.js';
+import {createGitHub,assertDeploymentConfig,assertManagedPull,assertManagedIssue,REPOSITORY,TEST_BASE,WORKFLOW_REF} from '../worker/github.js';
 const env={GITHUB_REPOSITORY:REPOSITORY,GITHUB_TEST_BASE:TEST_BASE,GITHUB_WORKFLOW_REF:WORKFLOW_REF,GITHUB_APP_ID:'1',GITHUB_INSTALLATION_ID:'2'};
 const sha='a'.repeat(40);
 const pr={base:{repo:{full_name:REPOSITORY},ref:TEST_BASE},head:{repo:{full_name:REPOSITORY},ref:'admin-preview/issue-123-456',sha},state:'open',draft:false,mergeable:true};
 const issue={number:123,labels:[{name:'admin-preview'}],body:'<!-- mng-admin-preview:v1 -->\nrequest'};
 test('production branches, other repositories, forks and stale heads are rejected',()=>{
- assertPreviewConfig(env);assertTestPull(pr,sha);assertTestIssue(issue);
- for(const key of ['GITHUB_REPOSITORY','GITHUB_TEST_BASE','GITHUB_WORKFLOW_REF']) assert.throws(()=>assertPreviewConfig({...env,[key]:'main'}));
- assert.throws(()=>assertTestPull({...pr,base:{...pr.base,ref:'main'}}));
- assert.throws(()=>assertTestPull({...pr,head:{...pr.head,repo:{full_name:'other/repo'}}}));
- assert.throws(()=>assertTestPull({...pr,head:{...pr.head,ref:'codex/issue-123-456'}}));
- assert.throws(()=>assertTestPull(pr,'b'.repeat(40)));
- assert.throws(()=>assertTestIssue({...issue,labels:[{name:'codex-auto'}]}));
- assert.throws(()=>assertTestIssue({...issue,pull_request:{}}));
+ assertDeploymentConfig(env);assertManagedPull(pr,sha);assertManagedIssue(issue);
+ for(const key of ['GITHUB_REPOSITORY','GITHUB_TEST_BASE','GITHUB_WORKFLOW_REF']) assert.throws(()=>assertDeploymentConfig({...env,[key]:'main'}));
+ assert.throws(()=>assertManagedPull({...pr,base:{...pr.base,ref:'main'}}));
+ assert.throws(()=>assertManagedPull({...pr,head:{...pr.head,repo:{full_name:'other/repo'}}}));
+ assert.throws(()=>assertManagedPull({...pr,head:{...pr.head,ref:'codex/issue-123-456'}}));
+ assert.throws(()=>assertManagedPull(pr,'b'.repeat(40)));
+ assert.throws(()=>assertManagedIssue({...issue,labels:[{name:'codex-auto'}]}));
+ assert.throws(()=>assertManagedIssue({...issue,pull_request:{}}));
 });
 test('installation token is restricted to one repo; requests never add production triggers',async()=>{
  const {privateKey}=await generateKeyPair('RS256',{extractable:true});

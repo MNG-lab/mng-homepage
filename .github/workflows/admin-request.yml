@@ -7,7 +7,7 @@ on:
         type: string
       environment:
         type: string
-        default: preview
+        default: production
     secrets:
       MNG_AI_CODE_BOT_APP_ID:
         required: true
@@ -23,14 +23,14 @@ permissions:
   contents: read
   id-token: write
 jobs:
-  preview:
+  request:
     if: github.event_name == 'workflow_dispatch' && ((inputs.environment == 'preview' && github.ref == 'refs/heads/codex/admin-portal') || (inputs.environment == 'production' && github.ref == 'refs/heads/main')) && github.repository == 'MNG-lab/mng-homepage'
     env:
       ADMIN_ENV: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
-      group: admin-preview-${{ inputs.issue }}
+      group: admin-request-${{ inputs.environment }}-${{ inputs.issue }}
       cancel-in-progress: false
     steps:
       - uses: actions/create-github-app-token@v3.3.0
@@ -61,7 +61,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           REQUEST_ISSUE: ${{ inputs.issue }}
-        run: node automation/admin/scripts/preview-job.mjs prepare
+        run: node automation/admin/scripts/request-job.mjs prepare
       - name: Install dependencies and Codex
         working-directory: site
         run: |
@@ -73,20 +73,20 @@ jobs:
           REQUEST_ISSUE: ${{ inputs.issue }}
           CODEX_AUTH_JSON: ${{ secrets[inputs.environment == 'production' && 'CODEX_CLI_KEY' || 'CODEX_AUTH_JSON_PREVIEW'] }}
           CODEX_MODEL: ${{ secrets.CODEX_MODEL }}
-        run: node ../automation/admin/scripts/run-preview-codex.mjs
+        run: node ../automation/admin/scripts/run-request-codex.mjs
       - name: Validate scope and build
         run: |
-          node automation/admin/scripts/preview-job.mjs validate
+          node automation/admin/scripts/request-job.mjs validate
           cd site
           npm run build
           node scripts/validate-content.mjs
-          node ../automation/admin/scripts/preview-job.mjs validate
+          node ../automation/admin/scripts/request-job.mjs validate
       - name: Publish review branch and PR
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           REQUEST_ISSUE: ${{ inputs.issue }}
           BOT_SLUG: ${{ steps.app.outputs.app-slug }}
-        run: node automation/admin/scripts/preview-job.mjs publish
+        run: node automation/admin/scripts/request-job.mjs publish
       - name: Remove temporary Codex credentials
         if: always()
-        run: rm -f "$RUNNER_TEMP/admin-preview-codex/auth.json"
+        run: rm -f "$RUNNER_TEMP/admin-codex/auth.json"

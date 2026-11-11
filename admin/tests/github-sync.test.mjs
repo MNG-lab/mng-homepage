@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {generateKeyPair,exportPKCS8} from 'jose';
 import {issueType,branchRequest,runIdentity,selectRequestPull} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
-import {createGitHub,assertTestIssue,assertTestPull,REPOSITORY} from '../worker/github.js';
+import {createGitHub,assertManagedIssue,assertManagedPull,REPOSITORY} from '../worker/github.js';
 import {requestCatalog} from '../worker/request-list.js';
 import {requestState} from '../shared/requests.js';
 import {requestLabel,isRevert} from '../src/api.js';
@@ -15,12 +15,12 @@ const issue=(number,label='codex-auto')=>({number,title:'GitHub 수정 요청',s
 const pr=(number,request,kind='issue')=>({number,title:'변경',state:'open',base,head:{repo,ref:`codex/${kind}-${request}-123`,sha},draft:false,mergeable:true});
 const run=(id,issueId=50,workflow='codex')=>({id,run_attempt:1,head_branch:'main',event:'issues',path:`.github/workflows/${workflow==='rollback'?'rollback-from-issue':'codex-comment'}.yml`,display_title:`${workflow==='rollback'?'Rollback':'Codex'} request #${issueId}`,created_at:'2026-11-11T00:00:00Z',status:'completed',conclusion:'failure',html_url:`https://github.com/${REPOSITORY}/actions/runs/${id}`});
 test('only recognized GitHub request labels and generated same-repository main PRs are eligible',()=>{
- for(const label of ['codex-auto','rollback-request','rollback-simple-request'])assertTestIssue(issue(1,label),config);
- for(const label of ['enhancement','admin-preview'])assert.throws(()=>assertTestIssue(issue(1,label),config));
- assert.throws(()=>assertTestIssue({...issue(1),pull_request:{}},config));
- assert.throws(()=>assertTestIssue({...issue(1),labels:[{name:'codex-auto'},{name:'admin-preview'}]},config));
- assertTestPull(pr(51,50),sha,config);assertTestPull(pr(12,11,'rollback-issue'),sha,config);
- for(const value of [{...pr(51,50),base:{...base,ref:'other'}},{...pr(51,50),head:{...pr(51,50).head,repo:{full_name:'attacker/fork'}}},{...pr(51,50),head:{repo,ref:'manual-feature',sha}}])assert.throws(()=>assertTestPull(value,sha,config));
+ for(const label of ['codex-auto','rollback-request','rollback-simple-request'])assertManagedIssue(issue(1,label),config);
+ for(const label of ['enhancement','admin-preview'])assert.throws(()=>assertManagedIssue(issue(1,label),config));
+ assert.throws(()=>assertManagedIssue({...issue(1),pull_request:{}},config));
+ assert.throws(()=>assertManagedIssue({...issue(1),labels:[{name:'codex-auto'},{name:'admin-preview'}]},config));
+ assertManagedPull(pr(51,50),sha,config);assertManagedPull(pr(12,11,'rollback-issue'),sha,config);
+ for(const value of [{...pr(51,50),base:{...base,ref:'other'}},{...pr(51,50),head:{...pr(51,50).head,repo:{full_name:'attacker/fork'}}},{...pr(51,50),head:{repo,ref:'manual-feature',sha}}])assert.throws(()=>assertManagedPull(value,sha,config));
  assert.equal(branchRequest('codex/rollback-issue-11-123').kind,'revert');assert.equal(branchRequest('codex/issue-0-123'),null);
 });
 test('run correlation binds workflow, branch, event and exact issue or PR number',()=>{

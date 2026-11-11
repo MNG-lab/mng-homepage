@@ -6,7 +6,7 @@ import {isAuthFailure} from '../scripts/codex-errors.mjs';
 import {requestState,requestLabel} from '../src/api.js';
 import {database} from './d1.mjs';
 const sha='a'.repeat(40),origin='https://test.example',owner={sub:'owner',role:'owner'};
-const claims={sub:'repo:MNG-lab/mng-homepage:ref:refs/heads/codex/admin-portal',repository:'MNG-lab/mng-homepage',repository_id:'1164495587',repository_owner_id:'263300045',ref:'refs/heads/codex/admin-portal',event_name:'workflow_dispatch',run_attempt:'1',run_id:'123',sha,job_workflow_sha:sha,workflow_ref:'MNG-lab/mng-homepage/.github/workflows/codex-comment.yml@refs/heads/codex/admin-portal',job_workflow_ref:'MNG-lab/mng-homepage/.github/workflows/admin-preview.yml@refs/heads/codex/admin-portal'};
+const claims={sub:'repo:MNG-lab/mng-homepage:ref:refs/heads/codex/admin-portal',repository:'MNG-lab/mng-homepage',repository_id:'1164495587',repository_owner_id:'263300045',ref:'refs/heads/codex/admin-portal',event_name:'workflow_dispatch',run_attempt:'1',run_id:'123',sha,job_workflow_sha:sha,workflow_ref:'MNG-lab/mng-homepage/.github/workflows/codex-comment.yml@refs/heads/codex/admin-portal',job_workflow_ref:'MNG-lab/mng-homepage/.github/workflows/admin-request.yml@refs/heads/codex/admin-portal'};
 const run={id:123,attempt:1,createdAt:new Date(Date.now()-60000).toISOString(),status:'completed',conclusion:'failure'};
 const ghRun={head_sha:sha,run_attempt:1,head_branch:'codex/admin-portal',path:'.github/workflows/codex-comment.yml',event:'workflow_dispatch',display_title:'Admin preview #5'};
 const post=(path,body)=>new Request(origin+path,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,Authorization:'Bearer mock'},body:JSON.stringify(body)});

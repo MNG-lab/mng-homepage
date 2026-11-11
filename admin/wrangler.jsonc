@@ -1,5 +1,5 @@
 {
-  "name": "mng-admin-preview",
+  "name": "admin",
   "account_id": "aaabcbaeabd689d5c50a0f07348d6634",
   "main": "worker/index.js",
   "compatibility_date": "2026-11-10",
@@ -41,7 +41,7 @@
     }
   ],
   "vars": {
-    "APP_ORIGIN": "https://mng-admin-preview.chominho96-aaa.workers.dev",
+    "APP_ORIGIN": "https://admin.mng-lab.workers.dev",
     "GITHUB_REPOSITORY": "MNG-lab/mng-homepage",
     "GITHUB_WORKFLOW_REF": "main",
     "GITHUB_ENABLED": "true",
@@ -52,8 +52,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "mng-admin-preview",
-      "database_id": "d70ab0f8-ffef-4448-9811-2e0ab3947cbe",
+      "database_name": "mng-admin",
+      "database_id": "eb83b146-a930-4155-8c1d-c426ac856aa0",
       "migrations_dir": "migrations"
     }
   ],

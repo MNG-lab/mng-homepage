@@ -1,6 +1,6 @@
 import {deployment} from '../shared/deployment.js';
 import {createRemoteJWKSet,jwtVerify} from 'jose';
-import {createGitHub,GitHubError,REPOSITORY,WORKFLOW_REF,assertPreviewConfig} from './github.js';
+import {createGitHub,GitHubError,REPOSITORY,WORKFLOW_REF,assertDeploymentConfig} from './github.js';
 import {audit} from './management.js';
 import {recordCredentialUpdate} from './request-recovery.js';
 const keys=createRemoteJWKSet(new URL('https://token.actions.githubusercontent.com/.well-known/jwks'));
@@ -19,7 +19,7 @@ export const validClaims=(p,row,env={})=>trustedRunner(p,env)&&p.sha===row.sha&&
 async function verify(token,env){return (await jwtVerify(token,keys,{algorithms:['RS256'],issuer:'https://token.actions.githubusercontent.com',audience:env.APP_ORIGIN+endpoint,maxTokenAge:'10m'})).payload;}
 export function deviceAPI({github=createGitHub,verifyRunner=verify}={}){return async(request,env,user)=>{
  try{
-  const config=assertPreviewConfig(env);
+  const config=assertDeploymentConfig(env);
   if(env.GITHUB_ENABLED!=='true'||env.MEMBERS_DB!=='true')return json({error:'연결 기능을 사용할 수 없습니다.'},503);
   const path=new URL(request.url).pathname;
   if(path===endpoint){
