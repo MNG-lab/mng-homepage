@@ -93,7 +93,15 @@ try {
  await page.goto('http://127.0.0.1:4193/dashboard');await page.locator('.stat-card').filter({hasText:'확인이 필요한 실패'}).getByText('42',{exact:false}).waitFor();assert.equal(await page.locator('.connected-list').first().locator('li').count(),5);
  records=records.map((r,i)=>({...r,auth:i<25?{renewed:false}:null,run:{id:r.id,attempt:1,status:'completed',conclusion:'failure'}}));
  await page.goto('http://127.0.0.1:4193/settings?recovery_page=2#codex-connection');
- await page.getByRole('navigation',{name:'인증 문제로 멈춘 요청 페이지'}).locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await page.locator('.recovery-requests li').count(),5);
+ const recoveryPager=page.getByRole('navigation',{name:'인증 문제로 멈춘 요청 페이지'});
+ await recoveryPager.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await page.locator('.recovery-requests li').count(),3);
+ const recoveryRecords=records.filter(r=>r.auth).slice(0,4);
+ records=recoveryRecords;await page.goto('http://127.0.0.1:4193/settings#codex-connection');
+ await recoveryPager.getByRole('button',{name:'2페이지',exact:true}).click();await recoveryPager.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await page.locator('.recovery-requests li').count(),1);
+ await page.reload();await recoveryPager.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();
+ records=recoveryRecords.slice(0,3);await page.reload();await page.waitForURL('**/settings#codex-connection');await page.locator('.recovery-requests li').nth(2).waitFor();assert.equal(await recoveryPager.count(),0);
+ records=[];await page.reload();await page.getByText('현재 인증 문제로 멈춘 요청이 없습니다.',{exact:true}).waitFor();assert.equal(await recoveryPager.count(),0);
+ assert.equal(await page.getByText('연결 상태는 5초, 요청 목록은 30초마다 확인합니다.',{exact:false}).count(),0);
  deviceFlow={id:'previous-login',kind:'login',state:'connected',code:null};
  records=[{id:123,title:'중단된 Members 수정',state:'open',description:'기존 요청',run:{id:100,attempt:1,status:'completed',conclusion:'failure'},auth:{renewed:false}}];
  await page.goto('http://127.0.0.1:4193/requests/123');await page.getByRole('link',{name:'Codex 다시 연결하러 가기'}).click();

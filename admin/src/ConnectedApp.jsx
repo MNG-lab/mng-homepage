@@ -24,7 +24,7 @@ export default function ConnectedApp({user}) {
  const tab=['active','past'].includes(params.get('tab'))?params.get('tab'):['done','closed'].includes(filter)?'past':'active';
  const tabStatuses=Object.entries(labels).filter(([value])=>['done','closed'].includes(value)===(tab==='past'));
  function switchTab(value){changeList({tab:value,status:'all',q:draftQuery,page:1});}
- const path=isHistory||isNew?null:detailId?`/api/requests/${detailId}`:isDashboard?'/api/requests?view=summary':isSettings?`/api/requests?status=auth_required&page=${recoveryPage}`:`/api/requests?${new URLSearchParams({q:query,status:filter,page:listPage,scope:tab})}`;
+ const path=isHistory||isNew?null:detailId?`/api/requests/${detailId}`:isDashboard?'/api/requests?view=summary':isSettings?`/api/requests?status=auth_required&page_size=3&page=${recoveryPage}`:`/api/requests?${new URLSearchParams({q:query,status:filter,page:listPage,scope:tab})}`;
  const current=data?.path===path?data.value:null,requests=current?.requests||[],selected=current?.request;
  const counts=current?.counts||{},attention=current?.attention||[],recent=current?.recent||[];
  const pageTitle=isDashboard?'대시보드':isNew?'새 수정 요청':isHistory?'홈페이지 버전':isSettings?'설정':detailId?'요청 상세':'요청 관리';

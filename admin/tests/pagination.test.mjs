@@ -24,11 +24,19 @@ test('server returns 20 rows after search and status filtering, with global summ
  page=await get('?page=999');assert.equal(page.pagination.page,3);assert.equal(page.requests.length,7);
  const summary=await get('?view=summary');assert.deepEqual(summary.counts,{review:0,working:5,failed:42});assert.equal(summary.recent.length,5);assert.equal(summary.attention.length,5);
  const detail=await get('/1');assert.equal(detail.request.id,1);assert.equal(detail.request.run.id,1);
- for(const query of ['?page=0','?page=-1','?page=1.5','?page=99999999999999999','?status=unknown','?q='+'a'.repeat(201)])assert.equal((await get(query)).status,400);
+ for(const query of ['?page_size=0','?page_size=4','?page_size=1000','?page=0','?page=-1','?page=1.5','?page=99999999999999999','?status=unknown','?q='+'a'.repeat(201)])assert.equal((await get(query)).status,400);
  // Auth-failed requests count with failures, but also have their own paged filter.
  config.DB.sqlite.prepare('INSERT INTO request_run_results VALUES (?,?,?,?,?,?)').run('1',1,1,'a'.repeat(40),'auth_required',1);
  page=await get('?status=auth_required');assert.equal(page.requests[0].id,1);assert.equal(page.requests[0].auth.renewed,false);assert.equal(page.connectionRequired,true);
  assert.equal((await get('?status=failed')).pagination.total,42);
+ // The settings recovery list uses three rows; the normal request list stays at 20.
+ for(const id of [2,3,4])config.DB.sqlite.prepare('INSERT INTO request_run_results VALUES (?,?,?,?,?,?)').run(String(id),1,id,'a'.repeat(40),'auth_required',1);
+ page=await get('?status=auth_required&page_size=3');assert.deepEqual(page.requests.map(r=>r.id),[4,3,2]);assert.deepEqual(page.pagination,{page:1,pageSize:3,total:4,pages:2});
+ page=await get('?status=auth_required&page_size=3&page=2');assert.deepEqual(page.requests.map(r=>r.id),[1]);assert.equal(page.connectionRequired,true);
+ page=await get('?status=auth_required&page_size=3&page=99');assert.equal(page.pagination.page,2);
+ config.DB.sqlite.prepare('DELETE FROM request_run_results WHERE issue=?').run('4');
+ page=await get('?status=auth_required&page_size=3&page=2');assert.deepEqual(page.pagination,{page:1,pageSize:3,total:3,pages:1});
+ assert.equal((await get('?status=auth_required')).pagination.pageSize,20);
 });
 
 test('read cache resumes a large import, hides partial totals, reuses reads, and removes invalidated records',async()=>{
