@@ -9,6 +9,7 @@ try {
  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  let records=[],submissions=0,approvals=0,restores=0,readFailures=1,delayedNewList=0;const sha='a'.repeat(40);let role='owner';let sameSnapshot=false;let previewState='building';let historyCurrent=sha;let deviceFlow=null;let deviceStarts=0,holdDeviceRead=false,heldDeviceRead,releaseDeviceRead,holdLogin=false,releaseLogin,retries=0;
  let members=[{email:'owner@example.test',role:'owner',joined:1,active:1}],transfer=null,failMemberSave=false;const settingsWrites=[];
+ let auditRecords=[],auditFailures=0,holdAuditPage=null,releaseAudit,heldAudit=false;
  await page.route('**/api/**',async route=>{
   const req=route.request(),url=new URL(req.url()),path=url.pathname;const body=req.method()==='POST'?req.postDataJSON():null;
   if(path==='/api/settings/device-login'){
@@ -35,7 +36,13 @@ try {
   if(path==='/api/history')return route.fulfill({json:{current:historyCurrent,revisions:records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,requestId:r.id,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}))}});
   if(path==='/api/history/124')return route.fulfill({json:{source:124,current:sha,target:'b'.repeat(40),changes:sameSnapshot?[]:['src'],changedPages:['Members'],changesTruncated:false}});
   if(path==='/api/history/124/restore'){restores++;assert.equal(body.base,sha);assert.ok(body.requestId);return route.fulfill({json:{issue:123}});}
-  if(path==='/api/settings')return route.fulfill({json:{role,members,audit:[],transfer}});
+  if(path==='/api/settings')return route.fulfill({json:{role,members,transfer}});
+  if(path==='/api/settings/audit'){
+   if(auditFailures-->0)return route.fulfill({status:503,json:{error:'관리 기록 조회 오류'}});
+   const pages=Math.max(1,Math.ceil(auditRecords.length/5)),page=Math.min(Number(url.searchParams.get('page')||'1'),pages),json={records:auditRecords.slice((page-1)*5,page*5),pagination:{page,pageSize:5,total:auditRecords.length,pages}};
+   if(page===holdAuditPage){holdAuditPage=null;heldAudit=true;await new Promise(resolve=>{releaseAudit=resolve;});}
+   return route.fulfill({json});
+  }
   if(path==='/api/settings/members'){
    settingsWrites.push({path,body});if(failMemberSave){failMemberSave=false;return route.fulfill({status:502,json:{error:'테스트용 저장 오류'}});}
    const member=members.find(m=>m.email===body.email);if(member)Object.assign(member,body);else members.push({...body,joined:1});return route.fulfill({json:{ok:true}});
@@ -154,6 +161,29 @@ try {
  assert.equal(await page.getByRole('button',{name:'구성원 저장',exact:true}).evaluate(el=>{const button=el.getBoundingClientRect(),select=el.closest('form').querySelector('select').getBoundingClientRect();return button.top-select.bottom>=20;}),true);
 
 
+ // Audit pagination is independent of the stopped-request pager and preserves navigation.
+ const auditPanel=page.getByRole('region',{name:'관리 기록',exact:true}),auditPager=page.getByRole('navigation',{name:'관리 기록 페이지',exact:true});
+ await auditPanel.getByText('아직 관리 기록이 없습니다.',{exact:true}).waitFor();assert.equal(await auditPager.count(),0);
+ const makeAudit=count=>Array.from({length:count},(_,i)=>({id:count-i,action:'member.update',target:`member${count-i}@gmail.com`,actor:'owner@example.test',created_at:'2026-11-11 01:00:00'}));
+ auditRecords=makeAudit(5);await page.reload();await auditPanel.locator('li').nth(4).waitFor();assert.equal(await auditPager.count(),0);
+ auditRecords=makeAudit(6);await page.reload();await auditPager.getByRole('button',{name:'1페이지',exact:true}).waitFor();assert.equal(await auditPanel.locator('li').count(),5);
+ await auditPager.getByRole('button',{name:'2페이지',exact:true}).click();await page.waitForURL('**audit_page=2');await auditPager.locator('[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await auditPanel.locator('li').count(),1);await auditPanel.getByText('member1@gmail.com',{exact:true}).waitFor();
+ const beforeAuditRequests=records;
+ records=Array.from({length:7},(_,i)=>({id:500+i,title:`연결 대기 ${i}`,state:'open',run:{id:500+i,attempt:1,status:'completed',conclusion:'failure'},auth:{renewed:true}}));
+ auditRecords=makeAudit(32);await page.goto('http://127.0.0.1:4193/settings?audit_page=7&recovery_page=2#codex-connection');
+ await auditPager.locator('[aria-current="page"]').filter({hasText:/^7$/}).waitFor();await recoveryPager.locator('[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await auditPanel.locator('li').count(),2);await auditPanel.getByText('member1@gmail.com',{exact:true}).waitFor();
+ await page.getByRole('region',{name:'구성원 추가·수정',exact:true}).getByLabel('Google 계정',{exact:true}).fill('draft@gmail.com');
+ await auditPager.getByRole('button',{name:'이전',exact:true}).click();await auditPager.locator('[aria-current="page"]').filter({hasText:/^6$/}).waitFor();assert.equal(new URL(page.url()).searchParams.get('recovery_page'),'2');assert.equal(new URL(page.url()).hash,'#codex-connection');assert.equal(await page.getByLabel('Google 계정',{exact:true}).inputValue(),'draft@gmail.com');
+ await page.goBack();await auditPager.locator('[aria-current="page"]').filter({hasText:/^7$/}).waitFor();await page.reload();await auditPager.locator('[aria-current="page"]').filter({hasText:/^7$/}).waitFor();
+ await recoveryPager.getByRole('button',{name:'3페이지',exact:true}).click();await recoveryPager.locator('[aria-current="page"]').filter({hasText:/^3$/}).waitFor();assert.equal(new URL(page.url()).searchParams.get('audit_page'),'7');
+ auditRecords=makeAudit(6);await page.goto('http://127.0.0.1:4193/settings?audit_page=999');await page.waitForURL('**audit_page=2');await auditPager.locator('[aria-current="page"]').filter({hasText:/^2$/}).waitFor();
+ await auditPager.getByRole('button',{name:'1페이지',exact:true}).click();await auditPager.locator('[aria-current="page"]').filter({hasText:/^1$/}).waitFor();
+ holdAuditPage=2;heldAudit=false;await auditPager.getByRole('button',{name:'2페이지',exact:true}).click();for(let i=0;i<100&&!heldAudit;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldAudit,true);
+ await page.goBack();await auditPager.locator('[aria-current="page"]').filter({hasText:/^1$/}).waitFor();releaseAudit();await new Promise(r=>setTimeout(r,150));await auditPanel.getByText('member6@gmail.com',{exact:true}).waitFor();assert.equal(await auditPanel.locator('li').count(),5);
+ auditFailures=2;await auditPager.getByRole('button',{name:'2페이지',exact:true}).click();await auditPanel.getByRole('alert').filter({hasText:'관리 기록 조회 오류'}).waitFor();assert.equal(await auditPanel.getByText('아직 관리 기록이 없습니다.',{exact:true}).count(),0);
+ await auditPanel.getByRole('button',{name:'관리 기록 다시 불러오기',exact:true}).click();await auditPager.locator('[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await auditPanel.locator('li').count(),1);
+ records=beforeAuditRequests;auditRecords=makeAudit(5);await page.goto('http://127.0.0.1:4193/settings?audit_page=2');await page.waitForURL('**/settings');await auditPanel.locator('li').nth(4).waitFor();assert.equal(await auditPager.count(),0);
+
  // Settings confirmations and results stay beside their controls; writes still require confirmation.
  const memberForm=page.getByRole('region',{name:'구성원 추가·수정',exact:true});
  await memberForm.getByLabel('Google 계정',{exact:true}).fill('next@gmail.com');await memberForm.getByLabel('권한',{exact:true}).selectOption('admin');
@@ -181,5 +211,5 @@ try {
  const incoming=page.getByRole('region',{name:'최고 관리자 변경 요청',exact:true});await incoming.getByRole('button',{name:'최고 관리자 역할 수락',exact:true}).click();assert.equal(settingsWrites.length,6);assert.equal(await page.getByRole('heading',{name:'구성원 관리',exact:true}).count(),0);
  await incoming.getByRole('dialog').getByRole('button',{name:'확인하고 수락',exact:true}).click();await page.getByRole('heading',{name:'구성원 관리',exact:true}).waitFor();assert.equal(settingsWrites.at(-1).path,'/api/settings/transfer/accept');
  role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('되돌리면 달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
- assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, connection completion only for the current visit, in-progress login reload, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
+ assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, five-record audit server pagination, independent pagers/back/reload, stale audit reads and retry, connection completion only for the current visit, in-progress login reload, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
 } finally {await browser?.close();server.kill('SIGTERM');}

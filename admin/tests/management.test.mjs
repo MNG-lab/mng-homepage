@@ -46,10 +46,33 @@ test('retired manual credential upload cannot change credentials or mark them re
  assert.equal(env.DB.sqlite.prepare('SELECT COUNT(*) AS n FROM codex_credential_state').get().n,0);
  assert.equal(env.DB.sqlite.prepare('SELECT COUNT(*) AS n FROM audit').get().n,0);
 });
-test('settings load membership and audit without GitHub configuration or Secrets access',async()=>{
+test('settings load membership without GitHub configuration or Secrets access',async()=>{
  const env=setup(),handle=managementAPI();
  const response=await handle(new Request(origin+'/api/settings'),env,owner);
  assert.equal(response.status,200);const data=await response.json();
- assert.ok(data.members.some(m=>m.email===owner.email));assert.deepEqual(data.audit,[]);
+ assert.ok(data.members.some(m=>m.email===owner.email));assert.equal(Object.hasOwn(data,'audit'),false);
  assert.equal(Object.hasOwn(data,'credential'),false);
+});
+
+const auditRequest=page=>new Request(origin+'/api/settings/audit'+(page===undefined?'':'?page='+encodeURIComponent(page)));
+function addAuditRows(env,count){const insert=env.DB.sqlite.prepare('INSERT INTO audit(actor,action,target) VALUES (?,?,?)');for(let i=0;i<count;i++)insert.run(owner.email,'member.update',`member${i}@gmail.com`);}
+test('audit pages contain five newest records and clamp pages for empty and short lists',async()=>{
+ const env=setup(),handle=managementAPI();
+ let data=await(await handle(auditRequest(),env,owner)).json();
+ assert.deepEqual(data,{records:[],pagination:{page:1,pageSize:5,total:0,pages:1}});
+ addAuditRows(env,5);data=await(await handle(auditRequest(),env,owner)).json();
+ assert.deepEqual(data.records.map(r=>r.id),[5,4,3,2,1]);assert.equal(data.pagination.pages,1);
+ addAuditRows(env,1);data=await(await handle(auditRequest('1'),env,owner)).json();
+ assert.deepEqual(data.records.map(r=>r.id),[6,5,4,3,2]);assert.equal(data.pagination.pages,2);
+ for(const page of ['2','999']){data=await(await handle(auditRequest(page),env,owner)).json();assert.deepEqual(data.records.map(r=>r.id),[1]);assert.deepEqual(data.pagination,{page:2,pageSize:5,total:6,pages:2});}
+});
+test('audit paging can retrieve records older than the former thirty-record limit without duplicates',async()=>{
+ const env=setup(),handle=managementAPI();addAuditRows(env,32);const ids=[];
+ for(let page=1;page<=7;page++){const data=await(await handle(auditRequest(String(page)),env,owner)).json();assert.equal(data.pagination.total,32);assert.equal(data.pagination.pages,7);ids.push(...data.records.map(r=>r.id));}
+ assert.deepEqual(ids,Array.from({length:32},(_,i)=>32-i));
+});
+test('audit rejects invalid pages and is restricted to the owner',async()=>{
+ const env=setup(),handle=managementAPI();addAuditRows(env,6);
+ for(const page of ['0','-1','1.5','bad','1 OR 1=1','9007199254740992'])assert.equal((await handle(auditRequest(page),env,owner)).status,400);
+ for(const role of ['admin','editor']){const response=await handle(auditRequest('2'),env,{...owner,role});assert.equal(response.status,403);assert.equal(Object.hasOwn(await response.json(),'records'),false);}
 });

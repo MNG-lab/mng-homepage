@@ -17,13 +17,21 @@ export const audit=(env,user,action,target)=>env.DB.prepare('INSERT INTO audit(a
 export function managementAPI() {return async(request,env,user)=>{
  try {
   if(env.MEMBERS_DB!=='true') return json({error:'사용자 관리를 준비 중입니다.'},503);
-  const path=new URL(request.url).pathname;
+  const url=new URL(request.url),path=url.pathname;
+  if(request.method==='GET'&&path==='/api/settings/audit') {
+   if(user.role!=='owner')return json({error:'최고 관리자만 관리 기록을 볼 수 있습니다.'},403);
+   const raw=url.searchParams.get('page')||'1',pageSize=5;
+   if(!/^[1-9]\d*$/.test(raw)||!Number.isSafeInteger(Number(raw)))throw new GitHubError('페이지 번호를 확인해 주세요.',400);
+   const {total}=await env.DB.prepare('SELECT COUNT(*) AS total FROM audit').first();
+   const pages=Math.max(1,Math.ceil(total/pageSize)),page=Math.min(Number(raw),pages);
+   const records=(await env.DB.prepare('SELECT id,actor,action,target,created_at FROM audit ORDER BY id DESC LIMIT ? OFFSET ?').bind(pageSize,(page-1)*pageSize).all()).results;
+   return json({records,pagination:{page,pageSize,total,pages}});
+  }
   if(request.method==='GET'&&path==='/api/settings') {
    const transfer=await env.DB.prepare('SELECT * FROM ownership WHERE id=1 AND expires_at>?').bind(Date.now()).first();
    const data={role:user.role,transfer:transfer&&(user.role==='owner'||transfer.to_email===user.email)?transfer:null};
    if(user.role==='owner') {
     data.members=(await env.DB.prepare('SELECT email,role,active,sub IS NOT NULL AS joined FROM members ORDER BY email').all()).results;
-    data.audit=(await env.DB.prepare('SELECT actor,action,target,created_at FROM audit ORDER BY id DESC LIMIT 30').all()).results;
    }
    return json(data);
   }
