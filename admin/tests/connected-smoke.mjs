@@ -8,6 +8,7 @@ try {
  for(let i=0;i<80;i++){try{if((await fetch('http://127.0.0.1:4193')).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  let records=[],submissions=0,approvals=0,restores=0,readFailures=1,delayedNewList=0;const sha='a'.repeat(40);let role='owner';let sameSnapshot=false;let previewState='building';let historyCurrent=sha;let deviceFlow=null;let deviceStarts=0,holdDeviceRead=false,heldDeviceRead,releaseDeviceRead,holdLogin=false,releaseLogin,retries=0;
+ let members=[{email:'owner@example.test',role:'owner',joined:1,active:1}],transfer=null,failMemberSave=false;const settingsWrites=[];
  await page.route('**/api/**',async route=>{
   const req=route.request(),url=new URL(req.url()),path=url.pathname;const body=req.method()==='POST'?req.postDataJSON():null;
   if(path==='/api/settings/device-login'){
@@ -34,7 +35,14 @@ try {
   if(path==='/api/history')return route.fulfill({json:{current:historyCurrent,revisions:records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,requestId:r.id,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}))}});
   if(path==='/api/history/124')return route.fulfill({json:{source:124,current:sha,target:'b'.repeat(40),changes:sameSnapshot?[]:['src'],changedPages:['Members'],changesTruncated:false}});
   if(path==='/api/history/124/restore'){restores++;assert.equal(body.base,sha);assert.ok(body.requestId);return route.fulfill({json:{issue:123}});}
-  if(path==='/api/settings')return route.fulfill({json:{role,members:[{email:'owner@example.test',role:'owner',joined:1,active:1}],audit:[],transfer:null}});
+  if(path==='/api/settings')return route.fulfill({json:{role,members,audit:[],transfer}});
+  if(path==='/api/settings/members'){
+   settingsWrites.push({path,body});if(failMemberSave){failMemberSave=false;return route.fulfill({status:502,json:{error:'테스트용 저장 오류'}});}
+   const member=members.find(m=>m.email===body.email);if(member)Object.assign(member,body);else members.push({...body,joined:1});return route.fulfill({json:{ok:true}});
+  }
+  if(path==='/api/settings/transfer'){settingsWrites.push({path,body});transfer={from_email:'owner@example.test',to_email:body.email,expires_at:Date.now()+86400000};return route.fulfill({json:{ok:true}});}
+  if(path==='/api/settings/transfer/cancel'){settingsWrites.push({path,body});transfer=null;return route.fulfill({json:{ok:true}});}
+  if(path==='/api/settings/transfer/accept'){settingsWrites.push({path,body});transfer=null;role='owner';return route.fulfill({json:{ok:true,reload:true}});}
   return route.fulfill({status:404,json:{error:'Unexpected test route '+path}});
  });
  await page.goto('http://127.0.0.1:4193/dashboard');await page.getByRole('heading',{name:'대시보드',exact:true}).waitFor();await page.getByRole('region',{name:'작업 요약'}).waitFor();await page.getByText('확인을 기다리는 작업이 없습니다.',{exact:true}).waitFor();assert.equal(await page.getByRole('alert').count(),0);
@@ -133,11 +141,33 @@ try {
  assert.equal(await page.getByRole('heading',{name:'Codex 인증 갱신',exact:true}).count(),0);assert.equal(await page.locator('input[type="file"]').count(),0);
  assert.equal(await page.getByRole('button',{name:'구성원 저장',exact:true}).evaluate(el=>{const button=el.getBoundingClientRect(),select=el.closest('form').querySelector('select').getBoundingClientRect();return button.top-select.bottom>=20;}),true);
 
+
+ // Settings confirmations and results stay beside their controls; writes still require confirmation.
+ const memberForm=page.getByRole('region',{name:'구성원 추가·수정',exact:true});
+ await memberForm.getByLabel('Google 계정',{exact:true}).fill('next@gmail.com');await memberForm.getByLabel('권한',{exact:true}).selectOption('admin');
+ await memberForm.getByRole('button',{name:'구성원 저장',exact:true}).click();assert.equal(settingsWrites.length,0);
+ await memberForm.getByRole('dialog').getByRole('button',{name:'취소',exact:true}).click();assert.equal(settingsWrites.length,0);
+ await memberForm.getByRole('button',{name:'구성원 저장',exact:true}).click();failMemberSave=true;
+ await memberForm.getByRole('dialog').getByRole('button',{name:'확인하고 저장',exact:true}).click();await memberForm.getByRole('alert').filter({hasText:'테스트용 저장 오류'}).waitFor();assert.equal(settingsWrites.length,1);
+ await memberForm.getByRole('dialog').getByRole('button',{name:'확인하고 저장',exact:true}).click();await memberForm.getByRole('status').filter({hasText:'구성원 정보를 저장했습니다.'}).waitFor();assert.deepEqual(settingsWrites.at(-1).body,{email:'next@gmail.com',role:'admin',active:true});
+ const memberList=page.getByRole('region',{name:'등록된 구성원',exact:true}),memberRow=memberList.locator('li').filter({hasText:'next@gmail.com'});
+ await memberRow.getByRole('button',{name:'권한 수정',exact:true}).click();assert.equal(await memberForm.getByLabel('Google 계정',{exact:true}).inputValue(),'next@gmail.com');assert.equal(await memberForm.getByLabel('권한',{exact:true}).inputValue(),'admin');
+ await memberRow.getByRole('button',{name:'접근 중지',exact:true}).click();assert.equal(settingsWrites.length,2);
+ await memberList.getByRole('dialog').getByRole('button',{name:'접근 중지',exact:true}).click();await memberList.getByRole('status').filter({hasText:'접근을 중지했습니다.'}).waitFor();assert.equal(settingsWrites.at(-1).body.active,false);
+ await memberRow.getByRole('button',{name:'다시 허용',exact:true}).click();assert.equal(settingsWrites.length,3);await memberList.getByRole('dialog').getByRole('button',{name:'접근 허용',exact:true}).click();await memberList.getByRole('status').filter({hasText:'접근을 다시 허용했습니다.'}).waitFor();assert.equal(settingsWrites.at(-1).body.active,true);
+ const transferPanel=page.getByRole('region',{name:'최고 관리자 변경',exact:true});
+ await transferPanel.getByLabel('후임 담당자',{exact:true}).selectOption('next@gmail.com');await transferPanel.getByRole('button',{name:'최고 관리자 변경 요청',exact:true}).click();assert.equal(settingsWrites.length,4);
+ await transferPanel.getByRole('dialog').getByRole('button',{name:'확인하고 요청',exact:true}).click();await transferPanel.getByRole('heading',{name:'후임자의 수락을 기다리고 있습니다',exact:true}).waitFor();assert.equal(settingsWrites.at(-1).body.email,'next@gmail.com');
+ await transferPanel.getByRole('button',{name:'변경 요청 취소',exact:true}).click();await transferPanel.getByRole('status').filter({hasText:'최고 관리자 변경 요청을 취소했습니다.'}).waitFor();assert.equal(settingsWrites.at(-1).path,'/api/settings/transfer/cancel');
+
  await page.goto('http://127.0.0.1:4193/requests/99999');await page.getByRole('heading',{name:'요청을 찾을 수 없어요'}).waitFor();
  await page.setViewportSize({width:390,height:844});
  for(const route of ['dashboard','requests','history','settings']){await page.goto('http://127.0.0.1:4193/'+route);await page.locator('.connected-main').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'mobile overflow: '+route);}
  await page.screenshot({path:'/private/tmp/mng-settings-mobile.png',fullPage:true});
  sameSnapshot=true;await page.goto('http://127.0.0.1:4193/history/124');await page.getByRole('button',{name:'현재와 같은 상태입니다'}).waitFor();assert.equal(await page.getByRole('button',{name:'현재와 같은 상태입니다'}).isDisabled(),true);
+ role='editor';transfer={from_email:'previous@gmail.com',to_email:'owner@example.test',expires_at:Date.now()+86400000};await page.goto('http://127.0.0.1:4193/settings');
+ const incoming=page.getByRole('region',{name:'최고 관리자 변경 요청',exact:true});await incoming.getByRole('button',{name:'최고 관리자 역할 수락',exact:true}).click();assert.equal(settingsWrites.length,6);assert.equal(await page.getByRole('heading',{name:'구성원 관리',exact:true}).count(),0);
+ await incoming.getByRole('dialog').getByRole('button',{name:'확인하고 수락',exact:true}).click();await page.getByRole('heading',{name:'구성원 관리',exact:true}).waitFor();assert.equal(settingsWrites.at(-1).path,'/api/settings/transfer/accept');
  role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('되돌리면 달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
- assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, owner/editor UI, mobile layout, no runtime errors');
+ assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
 } finally {await browser?.close();server.kill('SIGTERM');}

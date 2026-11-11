@@ -1,5 +1,6 @@
 import React from 'react';
 import {date} from './api.js';
+import LoadingIndicator from './LoadingIndicator.jsx';
 
 const actions={
  'codex.device_connected':{title:'Codex 연결 완료',description:'홈페이지 수정에 사용할 Codex 로그인 정보를 저장했습니다.'},
@@ -12,10 +13,10 @@ const actions={
 };
 const unknownAction={title:'관리 작업 기록',description:'이 기록의 자세한 내용을 표시할 수 없습니다.'};
 
-export default function AuditLog({records=[]}) {
- return <section className="panel connected-panel" aria-labelledby="audit-heading">
-  <h2 id="audit-heading">관리 기록</h2>
-  {records.length?<ul className="audit-list">{records.map((record,index)=>{
+export default function AuditLog({records=[],loading=false}) {
+ return <section className="panel connected-panel settings-panel" aria-labelledby="audit-heading">
+  <header className="settings-intro"><h2 id="audit-heading">관리 기록</h2><p>구성원, 권한, Codex 연결을 변경한 기록입니다.</p></header>
+  <div className="settings-block settings-audit">{loading?<LoadingIndicator label="관리 기록 불러오는 중"/>:records.length?<ul className="audit-list">{records.map((record,index)=>{
    const action=Object.hasOwn(actions,record.action)?actions[record.action]:unknownAction;
    const timestamp=record.created_at+'Z';
    return <li key={index}>
@@ -26,6 +27,6 @@ export default function AuditLog({records=[]}) {
      <div><dt>{action.actorLabel||'처리한 사람'}</dt><dd>{record.actor}</dd></div>
     </dl>
    </li>;
-  })}</ul>:<p>아직 관리 기록이 없습니다.</p>}
+  })}</ul>:<p className="settings-empty">아직 관리 기록이 없습니다.</p>}</div>
  </section>;
 }
