@@ -27,13 +27,15 @@ export function requestState(r) {
  if(r.pull?.merged)return 'done';
  if(r.state==='closed'||r.pull?.state==='closed')return 'closed';
  if(r.pull)return 'review';
+ if(r.retry?.state==='pending')return 'working';
+ if(r.auth)return 'auth_required';
  if(r.run?.status==='completed'&&['failure','cancelled','timed_out'].includes(r.run.conclusion))return 'failed';
  return 'working';
 }
 export const isRestoration=r=>!!(r.restoration||r.pull?.restoration)||/<!-- restore:/.test(r.pull?.body||'');
-export const requestLabel=r=>requestState(r)==='done'?(isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):labels[requestState(r)];
+export const requestLabel=r=>requestState(r)==='done'?(isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':labels[requestState(r)];
 export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`‘${target.name}’ 버전으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin Preview\] /,'');};
-export const labels={done:'반영 완료',closed:'종료',review:'확인 필요',failed:'작업 실패',working:'진행 중'};
+export const labels={done:'반영 완료',closed:'종료',review:'확인 필요',failed:'작업 실패',auth_required:'Codex 연결 필요',working:'진행 중'};
 export const date=value=>value?new Date(value).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 export function description(body) {return (body||'').replace(/<!--[\s\S]*?-->\s*/g,'').split('## 수정 요청\n')[1]?.split('\n\n운영 홈페이지')[0]||(body||'').replace(/<!--[\s\S]*?-->\s*/g,'');}
 
@@ -49,6 +51,8 @@ export function progress(r,detail,{approving=false}={}) {
  const steps=[{label:'요청 접수',state:'complete',text:'접수 완료'},{label:restore?'되돌리기 준비':'자동 수정',state:'waiting',text:'실행 확인 대기'},{label:'변경 검토',state:'waiting',text:'준비 후 검토'},{label:'테스트 반영',state:'waiting',text:'승인 후 반영'}];
  if(state==='done')return steps.map(s=>({...s,state:'complete',text:'완료'}));
  if(r.pull){steps[1]={...steps[1],state:'complete',text:'변경 준비 완료'};steps[2]={...steps[2],state:'active',text:detail?.ci?.conclusion==='success'?'승인 대기':detail?.ci?.status==='completed'?'검사 결과 확인 필요':detail?.ci?'자동 검사 중':'검사 조회 대기'};}
+ else if(r.retry?.state==='pending')steps[1]={...steps[1],state:'active',text:'재실행 접수됨'};
+ else if(state==='auth_required')steps[1]={...steps[1],state:'stopped',text:r.auth?.renewed?'다시 실행 대기':'Codex 연결 필요'};
  else if(state==='failed')steps[1]={...steps[1],state:'failed',text:'작업 실패'};
  else if(r.run?.status==='in_progress')steps[1]={...steps[1],state:'active',text:'작업 실행 중'};
  else if(r.run?.status==='queued'||r.run?.status==='waiting')steps[1].text='실행 대기';

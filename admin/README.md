@@ -42,7 +42,7 @@ GitHub App 키는 Worker Secret에만 저장합니다. 일반 작업 토큰에�
 최고 관리자의 인증 갱신에만 Secrets 권한으로 발급한 별도 설치 토큰을 사용합니다.
 선택한 Codex auth.json은 서버 메모리에서 sealed box 방식으로 암호화해 **CODEX_AUTH_JSON_PREVIEW**에만 저장합니다.
 인증 원문은 D1, 로그, localStorage, 빌드 결과에 저장하지 않습니다. 기존 값을 조회하는 기능도 없습니다.
-테스트 인증이 아직 등록되지 않았다면 워크플로는 기존 `CODEX_CLI_KEY`를 사용합니다. 운영 Secret은 수정하지 않습니다.
+테스트 인증이 없으면 재연결 안내를 표시합니다. 운영 인증으로 대체하거나 운영 Secret을 수정하지 않습니다.
 
 암호화 형식: [libsodium sealed boxes](https://github.com/jedisct1/libsodium-doc/blob/master/public-key_cryptography/sealed_boxes.md).
 GitHub 연동: [Actions Secrets API](https://docs.github.com/en/rest/actions/secrets).
@@ -140,14 +140,20 @@ GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 - Codex 안내는 Mac/Windows 파일 경로와 공식 CLI 로그인 명령을 복사합니다. 인증 내용은 화면·클립보드에 출력하지 않습니다. 경로는 기본 CODEX_HOME 기준이며, 별도 경로/조직 보안 정책은 개발 담당자가 확인해야 합니다. 파일 저장 옵션은 로그인 명령에만 적용합니다. Node.js가 필요하며 실제 Windows 로그인은 별도로 확인해야 합니다.
 - 용어 참고: [Google 문서 버전 기록](https://support.google.com/docs/answer/190843?hl=ko), [Microsoft 이전 버전 복원](https://support.microsoft.com/ko-kr/onedrive/restore-a-previous-version-of-a-file-stored-in-onedrive), [Notion 버전 기록](https://www.notion.com/ko/help/duplicate-delete-and-restore-content). 로그인 안내: [OpenAI 인증 문서](https://developers.openai.com/codex/auth/).
 
-### 브라우저 재연결 체험
+### 브라우저 로그인과 중단 요청 복구
 
-설정의 `Codex 재연결 체험`은 최고 관리자 전용입니다. 만료 재현 → 기기 로그인 → `CODEX_AUTH_JSON_PREVIEW` 실제 갱신 → 읽기 전용 Codex 확인 실행 순서입니다. 만료 재현은 실제 토큰을 훼손하지 않으며 홈페이지·main·운영 인증은 변경하지 않습니다. 확인 실행은 Codex 사용량을 소비합니다. 일반 수정 요청의 실패 감지·복구 연결과는 별도의 체험 작업입니다.
+설정의 `Codex 연결`은 최고 관리자 전용이며 실제 수정 요청에서 사용하는 `CODEX_AUTH_JSON_PREVIEW`를 갱신합니다. 체험/짧은 확인 실행 버튼은 제공하지 않습니다.
 
-- Actions 콜백은 GitHub OIDC 서명·audience·저장소/조직 ID·브랜치·워크플로·커밋·실행 ID로 제한합니다. 브라우저 세션만으로 콜백을 호출할 수 없습니다.
-- 연결 시작에는 최근 10분 내 최고 관리자 로그인이 필요합니다. 완료 시에도 현재 최고 관리자 권한을 확인합니다. 기기 코드 로그인은 ChatGPT 보안 설정 또는 워크스페이스 관리자 허용이 필요합니다.
-- 인증 본문은 D1·로그·artifact에 저장하지 않습니다. Worker에서 GitHub 공개키로 암호화해 테스트 Secret으로 전송하고 러너 임시 파일을 삭제합니다. D1에는 연결 상태와 만료되는 일회용 코드만 저장합니다.
-- 동시에 하나의 연결만 허용하며 15분 후 만료됩니다. 모호한 저장 응답은 성공으로 표시하거나 자동 재시도하지 않습니다. 새 인증으로 재실행은 별도 사용자 클릭입니다.
-- D1 추가 migration: `0003_device_login.sql`. 일반 수정/복원 흐름은 기존대로 유지합니다.
+1. 수정 요청의 Codex 실행이 인증 오류로 실패하면 요청과 대시보드에 `Codex 연결 필요`가 표시됩니다. 일반 실패·모델 오류·할당량 초과는 인증 문제로 분류하지 않습니다.
+2. 최고 관리자가 설정에서 동의 후 `Codex 다시 연결`을 누르고 OpenAI 기기 코드 로그인을 승인합니다. 첫 사용 시 ChatGPT 설정 → 보안 → 기기 코드 로그인을 켜야 합니다.
+3. 새 인증 저장 후 해당 요청에 `이 요청 다시 실행`이 활성화됩니다. 새 이슈를 만들지 않고 같은 이슈로 새로운 Actions 실행을 시작합니다. 편집자는 재실행할 수 없습니다.
+4. 홈페이지 변경은 기존대로 PR 생성 → 미리보기·검사 확인 → 관리자 승인 순서로 반영합니다. 되돌리기는 Codex를 사용하지 않으므로 재연결이 필요하지 않습니다.
 
-재연결 화면은 요청 중인 버튼에 즉시 로딩을 표시합니다. 접수 후 새 조회를 시작해 이전 조회 결과가 새 상태를 덮어쓰지 않도록 하고, 5초 주기 및 창 복귀/온라인 전환 시 상태를 갱신합니다. 안내·동의·버튼 다음에 진행/결과 메시지를 배치합니다. 참고: [Carbon inline loading](https://www.carbondesignsystem.com/building-blocks/core/components/inline-loading/guidelines), [Atlassian section message](https://atlassian.design/components/section-message/usage). 화면 테스트는 느린 POST, 이전 GET과의 경합, 자동 갱신, 창 복귀, 결과 위치를 포함합니다.
+- 테스트 브랜치와 테스트 Secret만 사용하며 main/운영 인증을 변경하지 않습니다. 테스트 인증이 없으면 운영 인증으로 대체하지 않고 연결을 요청합니다.
+- 기기 로그인은 공식 Codex CLI를 임시 Actions 러너에서 실행합니다. 인증 파일은 서버 메모리에서 GitHub public key로 암호화하여 Secret에 저장하고, 로그·아티팩트·D1에는 남기지 않습니다.
+- 로그인 코드는 본인 최고 관리자 세션에서만 조회합니다. 연결은 하나씩, 15분 만료이며 모호한 저장 응답은 자동 재시도하지 않습니다.
+- 요청 실행 결과는 별도 audience의 GitHub OIDC로 검증합니다. 저장소 ID, 조직 ID, 브랜치, 호출·재사용 워크플로, 커밋 SHA, run ID/attempt, 실제 이슈를 대조합니다. D1에는 실행 식별자와 안전한 결과 분류만 남깁니다.
+- 실패한 실행 이후 인증이 갱신되어야 재실행할 수 있습니다. 최신 run/attempt만 판단하고 동일 실행에 대한 중복 제출은 D1 예약으로 차단합니다. 새 실행이 목록에 나타나기 전에는 `재실행 접수됨`으로 표시합니다.
+- 추가 migration: `0004_request_recovery.sql`. 원격 테스트 DB에 적용 후 Worker를 배포합니다.
+- 버튼 클릭 즉시 로딩을 표시하며 연결 상태는 5초, 요청은 30초마다 갱신합니다. 로그인 탭에서 돌아오면 연결을 즉시 확인합니다. 결과는 관련 버튼 아래 표시합니다.
+- UI 참고: [Carbon inline loading](https://www.carbondesignsystem.com/building-blocks/core/components/inline-loading/guidelines), [Atlassian section message](https://atlassian.design/components/section-message/usage).

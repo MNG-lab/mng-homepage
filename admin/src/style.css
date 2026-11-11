@@ -1737,3 +1737,10 @@ select {
 .copy-button[aria-busy="true"]{opacity:1;cursor:progress}
 .copy-button .spinner{width:14px;height:14px;border-color:currentColor;border-top-color:transparent}
 .copy-error{max-width:30em;color:#a54b35;font-size:12px;line-height:1.6}
+
+.state-pill.auth_required{background:#fff1db;color:#805a1d}
+.auth-recovery-note{display:grid;gap:12px}.auth-recovery-note .primary{justify-self:start}
+.recovery-requests{display:grid;gap:14px;border-top:1px solid #e0e7f1;padding-top:24px}
+.recovery-requests ul{list-style:none;padding:0;margin:0}.recovery-requests li{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid #e0e7f1}
+.recovery-requests li>div{min-width:0}.recovery-requests a{font-weight:600;overflow-wrap:anywhere}.recovery-requests small{display:block;color:#62768f;margin-top:6px}.recovery-requests button{flex-shrink:0}
+@media(max-width:700px){.recovery-requests li{align-items:stretch;flex-direction:column}}

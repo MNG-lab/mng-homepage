@@ -1,3 +1,4 @@
+import {requestResultAPI} from './request-recovery.js';
 import {deviceAPI} from './device-login.js';
 const handleDevice=deviceAPI();
 import {readMember, managementAPI} from './management.js';
@@ -111,6 +112,7 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
         if (request.method !== 'POST' || request.headers.get('Origin') !== origin(env)) return secure(json({error:'Forbidden'},403));
         return secure(redirect('/login',{'Set-Cookie':cookie(sessionName,'',0)}));
       }
+      if(path==='/api/internal/request-result')return secure(await requestResultAPI()(request,env));
       if(path==='/api/internal/device-login')return secure(await handleDevice(request,env,null));
       const user = await session(request,env);
       if (path === '/login' && request.method === 'GET') return secure(user ? redirect('/dashboard') : loginPage(url.searchParams.has('error')));

@@ -1,5 +1,5 @@
 import {spawn} from 'node:child_process';
-import {mkdir,readFile,writeFile,rm} from 'node:fs/promises';
+import {mkdir,readFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 const origin='https://mng-admin-preview.chominho96-aaa.workers.dev',endpoint=origin+'/api/internal/device-login';
 const id=process.env.DEVICE_SESSION;
@@ -27,9 +27,7 @@ function run(args,onOutput){return new Promise((resolve,reject)=>{
 try{
  await mkdir(home,{recursive:true,mode:0o700});
  const {kind}=await callback('hello');
- if(kind==='simulate'){
-  await callback('simulated_expiry');console.log('Expiry simulation complete. Existing credentials were not changed.');
- }else if(kind==='login'){
+ if(kind!=='login')throw Error('Unknown session kind');
   let challengePromise=null;
   const result=await run(['-c','cli_auth_credentials_store="file"','login','--device-auth'],text=>{
    if(challengePromise)return;
@@ -40,12 +38,5 @@ try{
   if(result.code!==0||!challengePromise)throw Error('Device login failed');
   const auth=await readFile(path.join(home,'auth.json'),'utf8');
   await callback('save',{auth});console.log('Test credential saved.');
- }else if(kind==='verify'){
-  if(!process.env.CODEX_AUTH_JSON_PREVIEW||!process.env.CODEX_MODEL)throw Error('Preview credential or model missing');
-  await writeFile(path.join(home,'auth.json'),process.env.CODEX_AUTH_JSON_PREVIEW,{mode:0o600});
-  const result=await run(['-c','cli_auth_credentials_store="file"','--ask-for-approval','never','exec','--sandbox','read-only','--skip-git-repo-check','--model',process.env.CODEX_MODEL,'Respond with exactly OK. Do not use tools or access files.']);
-  if(result.code===0){await callback('verified');console.log('Codex test completed using renewed preview credential.');}
-  else {await callback(/refresh_token_reused|refresh_token_expired|token_expired|invalid_grant|401 Unauthorized|authentication token.*expired/i.test(result.output)?'auth_error':'failed');process.exitCode=1;}
- }else throw Error('Unknown session kind');
-}catch(e){console.error('Connection or verification did not complete. Check the admin status.',/^Connection callback failed \(\d{3}\)$/.test(e.message)?e.message:'');try{await callback('failed');}catch{}process.exitCode=1;}
+}catch(e){console.error('Connection did not complete. Check the admin status.',/^Connection callback failed \(\d{3}\)$/.test(e.message)?e.message:'');try{await callback('failed');}catch{}process.exitCode=1;}
 finally{await rm(home,{recursive:true,force:true});}

@@ -133,16 +133,18 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       const ci=selectQualityRun(runs.workflow_runs||[],pr,id,true);
       return {head:pr.head.sha,preview,files:files.map(f=>({path:f.filename,additions:f.additions,deletions:f.deletions,patch:f.patch||null})),truncated:files.length===100,ci:ci?{status:ci.status,conclusion:ci.conclusion,url:ci.html_url}:null};
     },
+    async run(id) {return call(`/actions/runs/${number(id)}`);},
     async runs() {
       const runs=await call('/actions/workflows/codex-comment.yml/runs?branch=codex%2Fadmin-portal&event=workflow_dispatch&per_page=100');
-      return (runs.workflow_runs||[]).map(r=>({id:r.id,title:r.display_title,status:r.status,conclusion:r.conclusion,url:r.html_url}));
+      return (runs.workflow_runs||[]).map(r=>({id:r.id,attempt:r.run_attempt,createdAt:r.created_at,title:r.display_title,status:r.status,conclusion:r.conclusion,url:r.html_url}));
     },
-    async retry(id,claim) {
+    async retry(id,claim,beforeRetry=async()=>{}) {
       const issue=await this.issue(id);
       const [pulls,runs]=await Promise.all([this.pulls(),this.runs()]);
       const run=runs.find(r=>r.title===`Admin preview #${id}`);
       if(issue.state!=='open'||pulls.some(p=>p.head.ref.startsWith(`admin-preview/issue-${id}-`)&&(p.state==='open'||p.merged))||!run||run.status!=='completed'||!['failure','cancelled','timed_out'].includes(run.conclusion))throw new GitHubError('실패가 확인된 열린 요청만 다시 실행할 수 있습니다.',409);
-      await claim(`retry:${id}:${run.id}`);
+      await beforeRetry(run);
+      await claim(`retry:${id}:${run.id}:${run.attempt||1}`);
       return this.dispatch(id);
     },
     async close(id) {

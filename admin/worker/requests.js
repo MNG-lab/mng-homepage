@@ -1,3 +1,4 @@
+import {recoveryMetadata,assertRetryCredential} from './request-recovery.js';
 import {createGitHub,GitHubError} from './github.js';
 const reply=(data,status=200)=>Response.json(data,{status});
 export function requestsAPI({github=createGitHub}={}) {
@@ -9,11 +10,12 @@ export function requestsAPI({github=createGitHub}={}) {
   try {
    const gh=await github(env);
    if(url.pathname==='/api/requests' && request.method==='GET') {
-    const [issues,pulls,runs]=await Promise.all([gh.list(),gh.pulls(),gh.runs()]);
+    const [issues,pulls,runs,recovery]=await Promise.all([gh.list(),gh.pulls(),gh.runs(),recoveryMetadata(env)]);
     return reply({requests:issues.map(issue=>{
       const pull=pulls.filter(p=>p.head.ref.startsWith(`admin-preview/issue-${issue.number}-`)).sort((a,b)=>b.number-a.number)[0]||null;
       const restoration=pull?.restoration||null;
-      return {id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin Preview\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run:runs.find(r=>r.title===`Admin preview #${issue.number}`)||null,pull};
+      const run=runs.find(r=>r.title===`Admin preview #${issue.number}`)||null;
+      return {id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin Preview\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run,pull,...(!pull&&issue.state==='open'?recovery(issue.number,run):{})};
     })});
    }
    if(url.pathname==='/api/history'&&request.method==='GET') return reply(await gh.history());
@@ -47,8 +49,11 @@ export function requestsAPI({github=createGitHub}={}) {
     let result;
     try {
      if(restore){await claim(`restore:${restore[1]}:${body.base}`);result=await gh.restore(Number(restore[1]),body.base,body.requestId,async issue=>{await env.DB.prepare('UPDATE operations SET issue=? WHERE id=?').bind(issue,body.requestId).run();});}
-     else {await gh.retry(Number(retry[1]),claim);result={issue:Number(retry[1])};}
-    } catch(e) {await env.DB.prepare("UPDATE operations SET state='uncertain' WHERE id=?").bind(body.requestId).run();throw e;}
+     else {await gh.retry(Number(retry[1]),claim,run=>assertRetryCredential(env,Number(retry[1]),run));result={issue:Number(retry[1])};}
+    } catch(e) {
+     if(e instanceof GitHubError&&[400,403,404,409].includes(e.status))await env.DB.prepare('DELETE FROM operations WHERE id=? AND NOT EXISTS(SELECT 1 FROM operation_claims WHERE operation=?)').bind(body.requestId,body.requestId).run();
+     await env.DB.prepare("UPDATE operations SET state='uncertain' WHERE id=?").bind(body.requestId).run();throw e;
+    }
     await env.DB.prepare("UPDATE operations SET state='complete',result=? WHERE id=?").bind(JSON.stringify(result),body.requestId).run();
     return reply(result,201);
    }

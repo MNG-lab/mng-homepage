@@ -5,11 +5,6 @@ on:
       session:
         required: true
         type: string
-    secrets:
-      CODEX_AUTH_JSON_PREVIEW:
-        required: false
-      CODEX_MODEL:
-        required: false
 permissions:
   contents: read
   id-token: write
@@ -27,11 +22,9 @@ jobs:
           node-version-file: .nvmrc
       - name: Install official Codex
         run: npm install --prefix "$RUNNER_TEMP/device-cli" @openai/codex@0.167.1
-      - name: Connect or verify without printing credentials
+      - name: Connect without printing credentials
         env:
           DEVICE_SESSION: ${{ inputs.session }}
-          CODEX_AUTH_JSON_PREVIEW: ${{ secrets.CODEX_AUTH_JSON_PREVIEW }}
-          CODEX_MODEL: ${{ secrets.CODEX_MODEL }}
         run: node admin/scripts/device-login-job.mjs
       - name: Delete temporary credentials
         if: always()

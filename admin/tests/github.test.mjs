@@ -42,3 +42,22 @@ test('installation token is restricted to one repo; requests never add productio
  await gh.merge(123,sha);assert.deepEqual(calls.find(c=>c.url.endsWith('/merge')).body,{sha,merge_method:'merge'});
  await assert.rejects(gh.issue('../main'));
 });
+
+test('retry uses original issue and fresh workflow, rejecting closed requests, existing PRs and active runs',async()=>{
+ const {privateKey}=await generateKeyPair('RS256',{extractable:true});
+ let issueState='open',pulls=[],status='completed',dispatches=0,checks=0,claimed;
+ const gh=await createGitHub({...env,GITHUB_APP_PRIVATE_KEY:await exportPKCS8(privateKey)},async(url,options)=>{
+  if(url.includes('/access_tokens'))return Response.json({token:'mock'});
+  if(url.endsWith('/issues/123'))return Response.json({...issue,state:issueState});
+  if(url.includes('/pulls?'))return Response.json(pulls);
+  if(url.includes('/workflows/codex-comment.yml/runs?'))return Response.json({workflow_runs:[{id:456,run_attempt:2,display_title:'Admin preview #123',status,conclusion:status==='completed'?'failure':null}]});
+  if(url.endsWith('/dispatches')){dispatches++;assert.deepEqual(JSON.parse(options.body),{ref:WORKFLOW_REF,inputs:{issue:'123'}});return new Response(null,{status:204});}
+  throw Error('Unexpected URL '+url);
+ });
+ const retry=()=>gh.retry(123,async key=>{claimed=key;},async run=>{assert.equal(run.attempt,2);checks++;});
+ issueState='closed';await assert.rejects(retry());issueState='open';
+ pulls=[pr];await assert.rejects(retry());pulls=[];
+ status='in_progress';await assert.rejects(retry());status='completed';
+ assert.equal(dispatches,0);assert.equal(checks,0);
+ await retry();assert.equal(dispatches,1);assert.equal(checks,1);assert.equal(claimed,'retry:123:456:2');
+});

@@ -17,12 +17,12 @@ test('owner and recent same-origin login required; concurrent sessions are refus
  const {env,handle}=setup();
  for(const user of [null,{...owner,role:'admin'},{...owner,authTime:1}])assert.equal((await handle(start('login'),env,user)).status,403);
  assert.equal((await handle(start('login','https://evil.test'),env,owner)).status,403);
- assert.equal((await handle(start('verify'),env,owner)).status,409);
+ assert.equal((await handle(start('verify'),env,owner)).status,400);
  assert.equal((await handle(start('login'),env,owner)).status,202);
  assert.equal((await handle(start('login'),env,owner)).status,409);
  assert.equal((await handle(new Request(origin+'/api/settings/device-login'),env,{...owner,role:'editor'})).status,403);
 });
-test('real login saves only once and never persists tokens in DB; expiry simulation is isolated',async()=>{
+test('real login saves once, records renewal and never persists tokens; rehearsal is rejected',async()=>{
  const {env,handle,saved}=setup();
  const {id}=await (await handle(start('login'),env,owner)).json();
  assert.equal((await handle(callback(id,'challenge',{code:'ABCD-12345'}),env)).status,403);
@@ -34,9 +34,8 @@ test('real login saves only once and never persists tokens in DB; expiry simulat
  const state=await (await handle(new Request(origin+'/api/settings/device-login'),env,owner)).json();assert.equal(state.flow.state,'connected');assert.equal(state.flow.code,null);
  assert.ok(!JSON.stringify(env.DB.sqlite.prepare('SELECT * FROM device_flows').all()).includes('sensitive'));
  assert.ok(!JSON.stringify(env.DB.sqlite.prepare('SELECT * FROM audit').all()).includes('sensitive'));
- const next=await (await handle(start('verify'),env,owner)).json();await handle(callback(next.id,'hello'),env);await handle(callback(next.id,'verified'),env);assert.equal(saved(),1);
- const demo=await (await handle(start('simulate'),env,owner)).json();await handle(callback(demo.id,'hello'),env);await handle(callback(demo.id,'simulated_expiry'),env);assert.equal(saved(),1);
- assert.equal(env.DB.sqlite.prepare('SELECT state FROM device_flows WHERE id=?').get(demo.id).state,'auth_required');
+ assert.ok(env.DB.sqlite.prepare('SELECT updated_at FROM codex_credential_state').get().updated_at>0);
+ for(const kind of ['simulate','verify'])assert.equal((await handle(start(kind),env,owner)).status,400);
 });
 test('invalid signatures, expired sessions and revoked owners cannot save credentials',async()=>{
  const {env,handle}=setup();const {id}=await (await handle(start('login'),env,owner)).json();

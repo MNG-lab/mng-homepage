@@ -1,4 +1,5 @@
 import {createGitHub, GitHubError} from './github.js';
+import {recordCredentialUpdate} from './request-recovery.js';
 const json=(data,status=200)=>Response.json(data,{status});
 export async function readMember(env,email,sub,bind=false) {
  if(env.MEMBERS_DB!=='true') {
@@ -62,7 +63,7 @@ export function managementAPI({github=createGitHub}={}) {return async(request,en
   }
   if(path==='/api/settings/transfer/cancel') {await env.DB.prepare('DELETE FROM ownership WHERE id=1 AND from_email=?').bind(user.email).run();await audit(env,user,'ownership.cancel','');return json({ok:true});}
   if(path==='/api/settings/codex') {
-   const gh=await github(env,fetch,{secrets:true});await gh.updateCodex(body.auth);
+   const gh=await github(env,fetch,{secrets:true});await gh.updateCodex(body.auth);await recordCredentialUpdate(env);
    await audit(env,user,'codex.updated','CODEX_AUTH_JSON_PREVIEW');return json({ok:true});
   }
   return json({error:'지원하지 않는 작업입니다.'},404);

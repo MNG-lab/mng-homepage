@@ -1,6 +1,7 @@
 import {createRemoteJWKSet,jwtVerify} from 'jose';
 import {createGitHub,GitHubError,REPOSITORY,WORKFLOW_REF,assertPreviewConfig} from './github.js';
 import {fresh,audit} from './management.js';
+import {recordCredentialUpdate} from './request-recovery.js';
 const keys=createRemoteJWKSet(new URL('https://token.actions.githubusercontent.com/.well-known/jwks'));
 const endpoint='/api/internal/device-login';
 const active="('queued','waiting','saving','testing')";
@@ -24,11 +25,11 @@ export function deviceAPI({github=createGitHub,verifyRunner=verify}={}){return a
    let claims;try{claims=await verifyRunner(request.headers.get('Authorization')?.replace(/^Bearer /,''),env);}catch{return json({error:'실행 인증에 실패했습니다.'},403);}
    const raw=await request.text();if(raw.length>40000)return json({error:'입력이 너무 큽니다.'},413);
    const body=JSON.parse(raw),row=await env.DB.prepare('SELECT * FROM device_flows WHERE id=?').bind(body.id).first();
-   if(!row||row.expires_at<Date.now()||!validClaims(claims,row))return json({error:'허용되지 않은 실행입니다.'},403);
+   if(!row||row.kind!=='login'||row.expires_at<Date.now()||!validClaims(claims,row))return json({error:'허용되지 않은 실행입니다.'},403);
    const member=await env.DB.prepare("SELECT * FROM members WHERE email=? AND sub=? AND role='owner' AND active=1").bind(row.owner,row.subject).first();
    if(!member)return json({error:'최고 관리자 권한이 변경되었습니다.'},403);
    if(body.phase==='hello'){
-    const changed=await env.DB.prepare("UPDATE device_flows SET run_id=?,state=? WHERE id=? AND state='queued' AND run_id IS NULL").bind(claims.run_id,row.kind==='verify'?'testing':'waiting',row.id).run();
+    const changed=await env.DB.prepare("UPDATE device_flows SET run_id=?,state=? WHERE id=? AND state='queued' AND run_id IS NULL").bind(claims.run_id,'waiting',row.id).run();
     if(!changed.meta.changes&&row.run_id!==claims.run_id)return json({error:'이미 실행 중입니다.'},409);
     return json({ok:true,kind:row.kind});
    }
@@ -44,15 +45,16 @@ export function deviceAPI({github=createGitHub,verifyRunner=verify}={}){return a
     if(!claimed.meta.changes)return json({error:'이미 처리 중입니다.'},409);
     try{await (await github(env,fetch,{secrets:true})).updateCodex(body.auth);}
     catch{await env.DB.prepare("UPDATE device_flows SET state='uncertain' WHERE id=? AND state='saving'").bind(row.id).run();return json({error:'저장 결과를 확인하지 못했습니다.'},502);}
+    await recordCredentialUpdate(env);
     await env.DB.prepare("UPDATE device_flows SET state='connected' WHERE id=? AND state='saving'").bind(row.id).run();
     await audit(env,{email:row.owner},'codex.device_connected','CODEX_AUTH_JSON_PREVIEW');return json({ok:true});
    }
-   const next=body.phase==='simulated_expiry'&&row.kind==='simulate'?'auth_required':body.phase==='verified'&&row.kind==='verify'?'completed':body.phase==='auth_error'&&row.kind==='verify'?'auth_required':body.phase==='failed'?'failed':null;
+   const next=body.phase==='failed'?'failed':null;
    if(!next||!['waiting','testing'].includes(row.state))return json({error:'지원하지 않는 상태 변경입니다.'},409);
    await env.DB.prepare("UPDATE device_flows SET state=?,code=NULL WHERE id=? AND state IN ('waiting','testing')").bind(next,row.id).run();return json({ok:true});
   }
   if(!user||user.role!=='owner')return json({error:'최고 관리자만 연결할 수 있습니다.'},403);
-  const latest=()=>env.DB.prepare('SELECT * FROM device_flows WHERE owner=? AND subject=? ORDER BY created_at DESC,rowid DESC LIMIT 1').bind(user.email,user.sub).first();
+  const latest=()=>env.DB.prepare("SELECT * FROM device_flows WHERE owner=? AND subject=? AND kind='login' ORDER BY created_at DESC,rowid DESC LIMIT 1").bind(user.email,user.sub).first();
   if(request.method==='GET'){
    const row=await latest();return json({flow:row?{id:row.id,kind:row.kind,state:row.state,code:row.state==='waiting'?row.code:null,expiresAt:row.expires_at,runUrl:row.run_id?`https://github.com/${REPOSITORY}/actions/runs/${row.run_id}`:null}:null});
   }
@@ -60,9 +62,7 @@ export function deviceAPI({github=createGitHub,verifyRunner=verify}={}){return a
   fresh(user);
   const raw=await request.text();if(raw.length>1000)return json({error:'입력이 너무 큽니다.'},413);
   const body=JSON.parse(raw);
-  if(path!=='/api/settings/device-login/start'||!['simulate','login','verify'].includes(body.kind))return json({error:'잘못된 요청입니다.'},400);
-  const previous=await latest();
-  if(body.kind==='verify'&&!['connected','completed','failed','uncertain'].includes(previous?.state))return json({error:'먼저 Codex를 연결해 주세요.'},409);
+  if(path!=='/api/settings/device-login/start'||body.kind!=='login')return json({error:'잘못된 요청입니다.'},400);
   const gh=await github(env),sha=await gh.automationHead(),id=crypto.randomUUID();
   try{await env.DB.prepare("INSERT INTO device_flows(id,owner,subject,kind,sha,state,created_at,expires_at) VALUES (?,?,?,?,?,'queued',?,?)").bind(id,user.email,user.sub,body.kind,sha,Date.now(),Date.now()+15*60000).run();}
   catch{return json({error:'다른 연결 작업이 진행 중입니다. 현재 상태를 확인해 주세요.'},409);}
