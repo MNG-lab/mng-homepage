@@ -28,7 +28,7 @@ export function api(path,body) {
 }
 export const isRestoration=r=>!!(r.restoration||r.pull?.restoration)||/<!-- restore:/.test(r.pull?.body||'');
 export const requestLabel=r=>requestState(r)==='done'?(isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':labels[requestState(r)];
-export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`${versionReference(target)}으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin Preview\] /,'');};
+export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`${versionReference(target)}으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin(?: Preview)?\] /,'');};
 export const labels={done:'반영 완료',closed:'종료',review:'확인 필요',failed:'작업 실패',auth_required:'Codex 연결 필요',working:'진행 중'};
 export const date=value=>value?new Date(value).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 
@@ -42,7 +42,7 @@ export function ciLabel(detail,error) {
 }
 export function progress(r,detail,{approving=false}={}) {
  const state=requestState(r),restore=!!r.restoration||/<!-- restore:/.test(r.pull?.body||'');
- const steps=[{label:'요청 접수',state:'complete',text:'접수 완료'},{label:restore?'되돌리기 준비':'자동 수정',state:'waiting',text:'실행 확인 대기'},{label:'변경 검토',state:'waiting',text:'준비 후 검토'},{label:'테스트 반영',state:'waiting',text:'승인 후 반영'}];
+ const steps=[{label:'요청 접수',state:'complete',text:'접수 완료'},{label:restore?'되돌리기 준비':'자동 수정',state:'waiting',text:'실행 확인 대기'},{label:'변경 검토',state:'waiting',text:'준비 후 검토'},{label:'홈페이지 반영',state:'waiting',text:'승인 후 반영'}];
  if(state==='done')return steps.map(s=>({...s,state:'complete',text:'완료'}));
  if(r.pull){steps[1]={...steps[1],state:'complete',text:'변경 준비 완료'};steps[2]={...steps[2],state:'active',text:detail?.ci?.conclusion==='success'?'승인 대기':detail?.ci?.status==='completed'?'검사 결과 확인 필요':detail?.ci?'자동 검사 중':'검사 조회 대기'};}
  else if(r.retry?.state==='pending')steps[1]={...steps[1],state:'active',text:'재실행 접수됨'};
