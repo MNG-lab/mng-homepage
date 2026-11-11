@@ -50,7 +50,9 @@ test('retry uses original issue and fresh workflow, rejecting closed requests, e
   if(url.includes('/access_tokens'))return Response.json({token:'mock'});
   if(url.endsWith('/issues/123'))return Response.json({...issue,state:issueState});
   if(url.includes('/pulls?'))return Response.json(pulls);
-  if(url.includes('/workflows/codex-comment.yml/runs?'))return Response.json({workflow_runs:[{id:456,run_attempt:2,display_title:'Admin preview #123',status,conclusion:status==='completed'?'failure':null}]});
+  const run={id:456,run_attempt:2,head_branch:WORKFLOW_REF,event:'workflow_dispatch',path:'.github/workflows/codex-comment.yml',created_at:'2026-11-10T00:00:00Z',display_title:'Admin preview #123',status,conclusion:status==='completed'?'failure':null};
+  if(url.includes('/workflows/codex-comment.yml/runs?'))return Response.json({workflow_runs:[run]});
+  if(url.endsWith('/actions/runs/456'))return Response.json(run);
   if(url.endsWith('/dispatches')){dispatches++;assert.deepEqual(JSON.parse(options.body),{ref:WORKFLOW_REF,inputs:{issue:'123'}});return new Response(null,{status:204});}
   throw Error('Unexpected URL '+url);
  });

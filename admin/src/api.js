@@ -1,3 +1,5 @@
+import {requestState} from '../shared/requests.js';
+export {requestState,description} from '../shared/requests.js';
 const pendingReads=new Map();
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function perform(path,body) {
@@ -12,7 +14,7 @@ async function perform(path,body) {
   if(response.status===401){window.location.assign('/login');throw Error('로그인이 만료됐습니다.');}
   if(!write&&attempt===0&&[429,502,503,504].includes(response.status)){await response.body?.cancel();await pause(700);continue;}
   let data;try{data=await response.json();}catch{throw Error(write?'처리 결과를 확인하지 못했습니다. 중복 제출하지 말고 목록을 확인해 주세요.':'조회 응답을 읽지 못했습니다. 잠시 후 다시 불러와 주세요.');}
-  if(!response.ok)throw Error(data.error||'처리하지 못했습니다.');
+  if(!response.ok){const error=Error(data.error||'처리하지 못했습니다.');error.status=response.status;throw error;}
   if(write)pendingReads.clear();
   return data;
  }
@@ -23,21 +25,12 @@ export function api(path,body) {
  const read=perform(path).finally(()=>{if(pendingReads.get(path)===read)pendingReads.delete(path);});
  pendingReads.set(path,read);return read;
 }
-export function requestState(r) {
- if(r.pull?.merged)return 'done';
- if(r.state==='closed'||r.pull?.state==='closed')return 'closed';
- if(r.pull)return 'review';
- if(r.retry?.state==='pending')return 'working';
- if(r.auth)return 'auth_required';
- if(r.run?.status==='completed'&&['failure','cancelled','timed_out'].includes(r.run.conclusion))return 'failed';
- return 'working';
-}
 export const isRestoration=r=>!!(r.restoration||r.pull?.restoration)||/<!-- restore:/.test(r.pull?.body||'');
 export const requestLabel=r=>requestState(r)==='done'?(isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':labels[requestState(r)];
 export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`‘${target.name}’ 버전으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin Preview\] /,'');};
 export const labels={done:'반영 완료',closed:'종료',review:'확인 필요',failed:'작업 실패',auth_required:'Codex 연결 필요',working:'진행 중'};
 export const date=value=>value?new Date(value).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
-export function description(body) {return (body||'').replace(/<!--[\s\S]*?-->\s*/g,'').split('## 수정 요청\n')[1]?.split('\n\n운영 홈페이지')[0]||(body||'').replace(/<!--[\s\S]*?-->\s*/g,'');}
+
 
 export function ciLabel(detail,error) {
  if(error)return '검사 조회 실패';

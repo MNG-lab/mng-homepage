@@ -1,3 +1,4 @@
+import {readCatalog,saveCatalog,invalidateCatalog,allReads} from './github-catalog.js';
 import {previewStatus} from './preview.js';
 import nacl from 'tweetnacl';
 import {blake2b} from '@noble/hashes/blake2.js';
@@ -55,6 +56,8 @@ export function selectQualityRun(runs,pr,id,allowMergedFallback=false) {
   (allowMergedFallback&&!!pr.merged_at&&r.event==='pull_request'&&r.head_branch===pr.head.ref&&r.head_repository?.full_name===REPOSITORY&&r.repository?.full_name===REPOSITORY&&!r.pull_requests?.length)
  )).sort((a,b)=>b.id-a.id)[0];
 }
+function isRequestRun(r){return r.head_branch===WORKFLOW_REF&&r.event==='workflow_dispatch'&&r.path==='.github/workflows/codex-comment.yml'&&/^Admin preview #[1-9]\d*$/.test(r.display_title||'');}
+function runSummary(r){return {id:r.id,attempt:r.run_attempt,createdAt:r.created_at,title:r.display_title,status:r.status,conclusion:r.conclusion,url:r.html_url};}
 export async function createGitHub(env, fetcher=fetch, options={}) {
   assertPreviewConfig(env);
   if (!/^\d+$/.test(env.GITHUB_APP_ID || '') || !/^\d+$/.test(env.GITHUB_INSTALLATION_ID || '') || !env.GITHUB_APP_PRIVATE_KEY) throw new GitHubError('GitHub App 연결이 필요합니다.',503);
@@ -71,27 +74,24 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     if (!path.startsWith('/') || path.split('/').some(segment=>segment==='..'||segment==='.') || path.includes('://')) throw new GitHubError('잘못된 GitHub 경로입니다.',400);
     const response=await fetcher(`${API}/repos/${REPOSITORY}${path}`,{method,headers:headers(installation.token),body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',signal:AbortSignal.timeout(15000)});
     if (!response.ok) throw new GitHubError(response.status===409 || response.status===422 ? 'GitHub 상태가 변경되었습니다. 새로고침 후 확인해 주세요.' : 'GitHub 요청을 완료하지 못했습니다.',response.status===404?404:response.status===409||response.status===422?409:502);
-    const text=await response.text();return text?JSON.parse(text):null;
+    const text=await response.text();
+    if(method!=='GET')await invalidateCatalog(env.DB);
+    return text?JSON.parse(text):null;
   }
   return {
-    async list() {
-      // Bounded pagination; report truncation instead of silently hiding older data.
-      const result=[];
-      for(let page=1;page<=10;page++) {
-        const batch=await call(`/issues?state=all&labels=${TEST_LABEL}&per_page=100&page=${page}`);
-        for(const issue of batch) { try{assertTestIssue(issue);result.push(issue);}catch{} }
-        if(batch.length<100) return result;
-      }
-      throw new GitHubError('조회 범위가 너무 큽니다. 기간별 조회가 필요합니다.');
+    async list(options={}) {
+      return readCatalog(env.DB,'issues',async(page,since)=>{
+        const batch=await call(`/issues?state=all&sort=updated&direction=desc&per_page=100&page=${page}${since?'&since='+encodeURIComponent(since):''}`);
+        return {items:batch.filter(issue=>{try{assertTestIssue(issue);return true;}catch{return false;}}).map(i=>({number:i.number,title:i.title,body:i.body,html_url:i.html_url,state:i.state,created_at:i.created_at,updated_at:i.updated_at})),removed:batch.filter(issue=>{try{assertTestIssue(issue);return false;}catch{return true;}}).map(i=>i.number),done:batch.length<100};
+      },options);
     },
-    async pulls() {
-      const result=[];
-      for(let page=1;page<=10;page++) {
-        const batch=await call(`/pulls?state=all&base=${encodeURIComponent(TEST_BASE)}&per_page=100&page=${page}`);
-        for(const pull of batch) {try{assertTestPull(pull);result.push(pull);}catch{}}
-        if(batch.length<100) return describePulls(result.map(p=>({number:p.number,title:p.title,url:p.html_url,state:p.state,merged:!!p.merged_at,head:{ref:p.head.ref,sha:p.head.sha},draft:p.draft,mergedAt:p.merged_at,mergeSha:p.merge_commit_sha,body:p.body})));
-      }
-      throw new GitHubError('PR 조회 범위를 초과했습니다.');
+    async pulls(options={}) {
+      const pulls=await readCatalog(env.DB,'pulls',async(page,since)=>{
+        const batch=await call(`/pulls?state=all&sort=updated&direction=desc&per_page=100&page=${page}`);
+        const valid=batch.filter(p=>{try{assertTestPull(p);return true;}catch{return false;}});
+        return {items:valid.map(p=>({number:p.number,title:p.title,url:p.html_url,state:p.state,merged:!!p.merged_at,head:{ref:p.head.ref,sha:p.head.sha},draft:p.draft,mergedAt:p.merged_at,mergeSha:p.merge_commit_sha,body:p.body})),removed:batch.filter(p=>!valid.includes(p)).map(p=>p.number),done:batch.length<100||!!(since&&batch.at(-1)?.updated_at<since)};
+      },options);
+      return describePulls(pulls);
     },
     async issue(id) {const issue=await call(`/issues/${number(id)}`);assertTestIssue(issue);return issue;},
     async createRequest(input) {
@@ -112,7 +112,7 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     async pull(id) {const pr=await call(`/pulls/${number(id)}`);assertTestPull(pr);return pr;},
     async current() {return (await call(`/git/ref/heads/${TEST_BASE}`)).object.sha;},
     async history() {
-      const [pulls,current]=await Promise.all([this.pulls(),this.current()]);
+      const [pulls,current]=await allReads([this.pulls(),this.current()]);
       return {current,revisions:pulls.filter(p=>p.merged).sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt))};
     },
     async preview(head) {
@@ -134,14 +134,44 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       return {head:pr.head.sha,preview,files:files.map(f=>({path:f.filename,additions:f.additions,deletions:f.deletions,patch:f.patch||null})),truncated:files.length===100,ci:ci?{status:ci.status,conclusion:ci.conclusion,url:ci.html_url}:null};
     },
     async run(id) {return call(`/actions/runs/${number(id)}`);},
-    async runs() {
-      const runs=await call('/actions/workflows/codex-comment.yml/runs?branch=codex%2Fadmin-portal&event=workflow_dispatch&per_page=100');
-      return (runs.workflow_runs||[]).map(r=>({id:r.id,attempt:r.run_attempt,createdAt:r.created_at,title:r.display_title,status:r.status,conclusion:r.conclusion,url:r.html_url}));
+    async runs(options={}) {
+      // Do not add branch/event filters here: GitHub caps filtered run searches
+      // at 1,000. Page the workflow itself and validate branch/event locally.
+      const runs=await readCatalog(env.DB,'runs',async(page,since)=>{
+        const batch=(await call(`/actions/workflows/codex-comment.yml/runs?per_page=100&page=${page}`)).workflow_runs||[];
+        return {items:batch.filter(isRequestRun).map(runSummary),done:batch.length<100||!!(since&&batch.at(-1)?.created_at<since)};
+      },options);
+      const latest=new Map();
+      for(const run of runs.sort((a,b)=>b.id-a.id))if(!latest.has(run.title))latest.set(run.title,run);
+      // Creation-date feeds do not update when an existing run finishes.
+      // Refresh active runs directly, and persist their final status.
+      const active=[...latest.values()].filter(r=>r.status!=='completed'),updated=[];
+      for(let i=0;i<active.length;i+=4)await allReads(active.slice(i,i+4).map(async old=>{
+        const fresh=await this.refreshRun(old);latest.set(old.title,fresh);if(!fresh.unavailable)updated.push(fresh);
+      }));
+      await saveCatalog(env.DB,'runs',updated);
+      return [...latest.values()].sort((a,b)=>b.id-a.id);
+    },
+    async requestRun(id) {
+      const run=await this.run(id);
+      if(!isRequestRun(run))throw new GitHubError('요청의 실행 기록을 확인할 수 없습니다.',409);
+      return runSummary(run);
+    },
+    async refreshRun(old,required=false){
+      try{return await this.requestRun(old.id);}
+      catch(error){if(!required&&error.status===404)return {...old,unavailable:true};throw error;}
+    },
+    async latestRun(id,{force=false}={}) {
+      const run=(await this.runs({force})).find(r=>r.title===`Admin preview #${number(id)}`);
+      if(!run)return null;
+      // Also observes external reruns of old run IDs and their new attempt.
+      const fresh=await this.refreshRun(run,force);
+      if(fresh.title!==run.title)throw new GitHubError('요청과 실행 기록이 일치하지 않습니다.',409);
+      if(!fresh.unavailable)await saveCatalog(env.DB,'runs',[fresh]);return fresh;
     },
     async retry(id,claim,beforeRetry=async()=>{}) {
       const issue=await this.issue(id);
-      const [pulls,runs]=await Promise.all([this.pulls(),this.runs()]);
-      const run=runs.find(r=>r.title===`Admin preview #${id}`);
+      const [pulls,run]=await allReads([this.pulls({force:true}),this.latestRun(id,{force:true})]);
       if(issue.state!=='open'||pulls.some(p=>p.head.ref.startsWith(`admin-preview/issue-${id}-`)&&(p.state==='open'||p.merged))||!run||run.status!=='completed'||!['failure','cancelled','timed_out'].includes(run.conclusion))throw new GitHubError('실패가 확인된 열린 요청만 다시 실행할 수 있습니다.',409);
       await beforeRetry(run);
       await claim(`retry:${id}:${run.id}:${run.attempt||1}`);
@@ -149,8 +179,8 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     },
     async close(id) {
       const issue=await this.issue(id);
-      const pulls=(await this.pulls()).filter(p=>p.head.ref.startsWith(`admin-preview/issue-${id}-`)&&p.state==='open');
-      for(const pull of pulls) await call(`/pulls/${pull.number}`,'PATCH',{state:'closed'});
+      const pulls=(await this.pulls({force:true})).filter(p=>p.head.ref.startsWith(`admin-preview/issue-${id}-`)&&p.state==='open');
+      for(const pull of pulls){await this.pull(pull.number);await call(`/pulls/${pull.number}`,'PATCH',{state:'closed'});}
       if(issue.state!=='closed')await call(`/issues/${number(id)}`,'PATCH',{state:'closed',state_reason:'not_planned'});
       return {ok:true};
     },

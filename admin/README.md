@@ -157,3 +157,15 @@ GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY.
 - 추가 migration: `0004_request_recovery.sql`. 원격 테스트 DB에 적용 후 Worker를 배포합니다.
 - 버튼 클릭 즉시 로딩을 표시하며 연결 상태는 5초, 요청은 30초마다 갱신합니다. 로그인 탭에서 돌아오면 연결을 즉시 확인합니다. 결과는 관련 버튼 아래 표시합니다.
 - UI 참고: [Carbon inline loading](https://www.carbondesignsystem.com/building-blocks/core/components/inline-loading/guidelines), [Atlassian section message](https://atlassian.design/components/section-message/usage).
+
+### 요청 목록 서버 페이징
+
+- `GET /api/requests?q=...&status=...&page=...`는 서버에서 검색·상태 필터와 최신순 정렬을 적용하고 최대 20개 및 전체 일치 건수를 반환합니다. 실패 필터에는 Codex 연결 필요도 포함합니다. 범위를 넘는 페이지는 마지막 페이지로 보정합니다.
+- 검색어·상태·페이지는 URL에 유지합니다. 검색/필터 변경 시 1페이지로 이동하며, 상세를 열고 새로고침하거나 목록으로 돌아와도 이전 조건을 유지합니다.
+- 상세는 `GET /api/requests/:id`로 직접 조회합니다. 목록의 현재 페이지와 무관합니다. 대시보드는 `view=summary`로 전체 집계/최근 5개/확인할 작업 5개를 별도로 조회합니다. 설정의 인증 중단 목록도 전체 요청 중 해당 상태만 서버에서 20개씩 조회합니다.
+- `0005_github_catalog.sql`은 기존 테스트 D1에 GitHub 읽기 캐시와 동기화 위치를 추가합니다. 이슈/PR은 변경된 기록, 실행은 새로 생성된 기록을 이어서 가져옵니다. 캐시는 15초 재사용하며 요청 화면의 30초 조회 주기는 유지합니다. 같은 내용은 다시 쓰지 않습니다.
+- 처음 가져올 기록이 많으면 한 호출에 소스별 최대 3페이지를 저장하고 다음 조회에서 이어갑니다. 완료 전에 부분 집계나 빈 목록을 반환하지 않습니다. 조회 중 안내와 재시도를 제공하며, 진행 중인 다른 저장 작업도 완료한 후 응답합니다.
+- 워크플로 실행을 분기·이벤트 검색 조건 없이 페이지 순회한 뒤 테스트 브랜치/이벤트/이름을 검증해 저장합니다. [GitHub의 조건부 검색 1,000개 제한](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow)에 걸려 오래된 요청이 빠지지 않도록 합니다. 진행 중 실행과 상세/재실행 대상은 run ID로 현재 상태 및 attempt를 다시 조회합니다.
+- 재실행 전에는 최신 실행·열린 이슈·기존 PR·인증 갱신 여부를 다시 확인하고 기존 중복 실행 예약을 사용합니다. GitHub에서 삭제한 실행은 마지막 확인 상태라는 안내를 표시하며 검증할 수 없는 실행을 재실행하지 않습니다.
+- 읽기 캐시는 인증 파일/토큰을 저장하지 않습니다. 기존 테스트 DB/Worker를 사용하며 새 유료 서비스는 추가하지 않습니다. D1 저장은 [무료 호출 한도](https://developers.cloudflare.com/d1/platform/limits/)를 고려해 배치 처리합니다.
+- 검증: 47개 요청의 20/20/7 분할, 필터 후 마지막 페이지/빈 결과, 1,205개 실행 이후의 오래된 요청 조회·재실행, 최신 attempt와 중복 방지, 검색/필터/뒤로가기/새로고침, 설정의 2페이지 및 모바일 레이아웃.

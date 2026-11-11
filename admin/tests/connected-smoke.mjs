@@ -1,6 +1,7 @@
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {paginateRequests,requestSummary,listQuery} from '../worker/request-list.js';
 const server=spawn('npm',['run','admin:preview','--','--port','4193'],{stdio:'ignore'});
 let browser;
 try {
@@ -8,7 +9,7 @@ try {
  browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  let records=[],submissions=0,approvals=0,restores=0,readFailures=1,delayedNewList=0;const sha='a'.repeat(40);let role='owner';let sameSnapshot=false;let previewState='building';let historyCurrent=sha;let deviceFlow=null;let deviceStarts=0,holdDeviceRead=false,heldDeviceRead,releaseDeviceRead,holdLogin=false,releaseLogin,retries=0;
  await page.route('**/api/**',async route=>{
-  const req=route.request(),path=new URL(req.url()).pathname;const body=req.method()==='POST'?req.postDataJSON():null;
+  const req=route.request(),url=new URL(req.url()),path=url.pathname;const body=req.method()==='POST'?req.postDataJSON():null;
   if(path==='/api/settings/device-login'){
    const captured=structuredClone(deviceFlow);
    if(holdDeviceRead){holdDeviceRead=false;heldDeviceRead=true;await new Promise(resolve=>{releaseDeviceRead=resolve;});}
@@ -22,10 +23,12 @@ try {
   if(path==='/api/requests/123/retry'){retries++;assert.ok(body.requestId);records[0].retry={state:'pending'};return route.fulfill({json:{issue:123}});}
   if(path==='/api/session')return route.fulfill({json:{user:{email:'owner@example.test',role},mode:'github'}});
   if(path==='/api/requests'){
-   if(body){submissions++;delayedNewList=1;assert.match(body.requestId,/^[0-9a-f-]{36}$/);records=[{id:123,title:body.title,description:body.description,url:'https://github.com/MNG-lab/mng-homepage/issues/123',state:'open',createdAt:'2026-11-10T01:00:00Z',pull:null}];return route.fulfill({json:{issue:123}});}
+   if(body){submissions++;delayedNewList=0;assert.match(body.requestId,/^[0-9a-f-]{36}$/);records=[{id:123,title:body.title,description:body.description,url:'https://github.com/MNG-lab/mng-homepage/issues/123',state:'open',createdAt:'2026-11-10T01:00:00Z',pull:null}];return route.fulfill({json:{issue:123}});}
    if(readFailures-->0)return route.abort('failed');
-   return route.fulfill({json:{requests:delayedNewList-->0?[]:records}});
+   const rows=delayedNewList-->0?[]:records;
+   return route.fulfill({json:url.searchParams.get('view')==='summary'?requestSummary(rows):paginateRequests(rows,listQuery(url.searchParams))});
   }
+  if(/^\/api\/requests\/\d+$/.test(path)){const record=records.find(r=>r.id===Number(path.split('/').at(-1)));return route.fulfill({status:record?200:404,json:record?{request:record}:{error:'요청이 없습니다.'}});}
   if(path==='/api/pulls/124')return route.fulfill({json:{head:sha,preview:{head:sha,state:previewState,url:previewState==='ready'?'https://fc3ef735.mng-homepage.pages.dev':null},files:[{path:'src/App.jsx',additions:1,deletions:1,patch:'-old\n+new'}],ci:{status:'completed',conclusion:'success',url:'https://github.com/MNG-lab/mng-homepage/actions'}}});
   if(path==='/api/pulls/124/approve'){approvals++;assert.equal(body.head,sha);records[0].pull.merged=true;records[0].pull.state='closed';records[0].state='closed';return route.fulfill({json:{merged:true}});}
   if(path==='/api/history')return route.fulfill({json:{current:historyCurrent,revisions:records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}))}});
@@ -53,6 +56,30 @@ try {
  await page.getByRole('button',{name:'변경 이력',exact:true}).click();await page.getByText('이전 버전으로 되돌림',{exact:true}).waitFor();await page.getByText('‘Members 소개 수정’ 버전으로 되돌렸습니다',{exact:true}).waitFor();await page.getByRole('link',{name:'해당 버전 보기 →',exact:true}).waitFor();
 
  await page.getByRole('button',{name:'수정 요청',exact:true}).click();await page.getByLabel('요청 검색').fill('missing');await page.getByText('조건에 맞는 요청이 없습니다.').waitFor();
+ // 47 records: status/search are applied by the server before slicing.
+ records=Array.from({length:47},(_,i)=>({id:1000-i,title:`Members 수정 ${i+1}`,description:'검색 본문',state:'open',createdAt:new Date(Date.UTC(2026,10,10,0,0,47-i)).toISOString(),run:i<42?{id:1000-i,attempt:1,status:'completed',conclusion:'failure'}:null}));
+ await page.goto('http://127.0.0.1:4193/requests?status=failed&q=Members&page=2');
+ await page.getByRole('navigation',{name:'요청 목록 페이지'}).getByText('2 / 3 페이지').waitFor();
+ assert.equal(await page.locator('.connected-list>li').count(),20);
+ assert.equal(await page.getByLabel('요청 검색').inputValue(),'Members');
+ assert.equal(await page.getByLabel('상태',{exact:true}).inputValue(),'failed');
+ await page.locator('.connected-list>li a').first().click();await page.waitForURL('**/requests/980?**');
+ await page.reload();await page.getByRole('heading',{name:'Members 수정 21',exact:true}).waitFor();
+ await page.getByRole('link',{name:'목록으로 돌아가기',exact:true}).click();
+ await page.getByText('2 / 3 페이지',{exact:true}).waitFor();assert.match(page.url(),/page=2/);
+ const pager=page.getByRole('navigation',{name:'요청 목록 페이지'});
+ await pager.getByRole('button',{name:'다음',exact:true}).click();await pager.getByText('3 / 3 페이지').waitFor();
+ assert.equal(await page.locator('.connected-list>li').count(),2);assert.equal(await pager.getByRole('button',{name:'다음'}).isDisabled(),true);
+ await page.goBack();await pager.getByText('2 / 3 페이지').waitFor();await page.reload();await pager.getByText('2 / 3 페이지').waitFor();
+ await page.getByLabel('요청 검색').fill('검색 본문');await page.waitForURL('**q=**');
+ await pager.getByText('1 / 3 페이지').waitFor();assert.equal(new URL(page.url()).searchParams.get('q'),'검색 본문');
+ await page.getByLabel('상태',{exact:true}).selectOption('working');await pager.getByText('1 / 1 페이지').waitFor();assert.equal(await page.locator('.connected-list>li').count(),5);
+ assert.equal(new URL(page.url()).searchParams.get('q'),'검색 본문');
+ await page.goto('http://127.0.0.1:4193/requests?page=999');await page.waitForURL('**page=3');await pager.getByText('3 / 3 페이지').waitFor();
+ await page.goto('http://127.0.0.1:4193/dashboard');await page.locator('.stat-card').filter({hasText:'확인이 필요한 실패'}).getByText('42',{exact:false}).waitFor();assert.equal(await page.locator('.connected-list').first().locator('li').count(),5);
+ records=records.map((r,i)=>({...r,auth:i<25?{renewed:false}:null,run:{id:r.id,attempt:1,status:'completed',conclusion:'failure'}}));
+ await page.goto('http://127.0.0.1:4193/settings?recovery_page=2#codex-connection');
+ await page.getByRole('navigation',{name:'인증 문제로 멈춘 요청 페이지'}).getByText('2 / 2 페이지').waitFor();assert.equal(await page.locator('.recovery-requests li').count(),5);
  deviceFlow={id:'previous-login',kind:'login',state:'connected',code:null};
  records=[{id:123,title:'중단된 Members 수정',state:'open',description:'기존 요청',run:{id:100,attempt:1,status:'completed',conclusion:'failure'},auth:{renewed:false}}];
  await page.goto('http://127.0.0.1:4193/requests/123');await page.getByRole('link',{name:'Codex 다시 연결하러 가기'}).click();
@@ -91,5 +118,5 @@ try {
  await page.screenshot({path:'/private/tmp/mng-settings-mobile.png',fullPage:true});
  sameSnapshot=true;await page.goto('http://127.0.0.1:4193/history/124');await page.getByRole('button',{name:'현재와 같은 상태입니다'}).waitFor();assert.equal(await page.getByRole('button',{name:'현재와 같은 상태입니다'}).isDisabled(),true);
  role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
- assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, search, owner/editor UI, mobile layout, no runtime errors');
+ assert.deepEqual(errors,[]);console.log('PASS: distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, owner/editor UI, mobile layout, no runtime errors');
 } finally {await browser?.close();server.kill('SIGTERM');}

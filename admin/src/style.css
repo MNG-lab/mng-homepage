@@ -1744,3 +1744,9 @@ select {
 .recovery-requests ul{list-style:none;padding:0;margin:0}.recovery-requests li{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid #e0e7f1}
 .recovery-requests li>div{min-width:0}.recovery-requests a{font-weight:600;overflow-wrap:anywhere}.recovery-requests small{display:block;color:#62768f;margin-top:6px}.recovery-requests button{flex-shrink:0}
 @media(max-width:700px){.recovery-requests li{align-items:stretch;flex-direction:column}}
+
+.request-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid #e0e7f1;padding-top:20px;margin-top:12px}
+.request-pagination p{font-size:13px;color:#52657e;margin:0}.request-pagination p span{white-space:nowrap}
+.request-pagination>div{display:flex;align-items:center;gap:16px}.request-pagination>div>span{font-size:13px;white-space:nowrap}
+.request-pagination button{min-width:64px;min-height:44px}.request-pagination button:disabled{cursor:default}
+@media(max-width:700px){.request-pagination{align-items:stretch;flex-direction:column}.request-pagination>div{justify-content:space-between}}

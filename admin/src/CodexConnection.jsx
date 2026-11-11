@@ -1,10 +1,11 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {Link} from 'react-router-dom';
 import {api,date,requestState,requestTitle} from './api.js';
+import Pagination from './Pagination.jsx';
 import CopyButton from './CopyButton.jsx';
 const active=['queued','waiting','saving'];
 const states={auth_required:'Codex를 다시 연결해 주세요',queued:'작업을 준비하고 있습니다',waiting:'로그인을 기다리고 있습니다',saving:'새 인증을 저장하고 있습니다',connected:'Codex 재연결 완료',expired:'연결 시간이 지났습니다',failed:'연결을 완료하지 못했습니다',uncertain:'처리 결과를 확인해야 합니다'};
-export default function CodexConnection({requests=[],refresh=async()=>{},onConnected=()=>{}}){
+export default function CodexConnection({requests=[],refresh=async()=>{},onConnected=()=>{},pagination,connectionRequired,onPageChange,loading=false}){
  const [flow,setFlow]=useState(null),[loaded,setLoaded]=useState(false),[error,setError]=useState(''),[readError,setReadError]=useState(''),[pending,setPending]=useState(null),[consent,setConsent]=useState(false);
  const [retrying,setRetrying]=useState(null),[notice,setNotice]=useState(''),[submitted,setSubmitted]=useState([]);
  const retryIds=useRef(new Map()),connectedId=useRef(null);
@@ -51,7 +52,7 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
   }
  }
  const busy=!!pending,running=active.includes(flow?.state);
- const needsConnection=stopped.some(r=>!r.auth.renewed);
+ const needsConnection=connectionRequired??stopped.some(r=>!r.auth.renewed);
  const view=pending?{kind:pending,state:'submitting'}:needsConnection&&(!flow||flow.state==='connected')?{kind:'login',state:'auth_required'}:flow;
  const processing=busy||['queued','saving'].includes(view?.state)||(view?.state==='waiting'&&!view.code);
  const success=view?.state==='connected',warning=['auth_required','expired','failed','uncertain'].includes(view?.state);
@@ -77,7 +78,7 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
  {view?.state==='uncertain'&&<p>처리 결과를 확인하지 못했습니다. 작업 기록과 인증 갱신 시간을 확인해 주세요.</p>}
  </div>
  <div className="connection-status-tools"><button className="text-button" disabled={busy} onClick={()=>{void load(true);void refresh();}}>상태 새로고침</button>{!busy&&flow?.runUrl&&<a className="text-button" href={flow.runUrl} target="_blank" rel="noreferrer">연결 작업 기록 ↗</a>}</div>
- <div className="recovery-requests"><h3>인증 문제로 멈춘 요청</h3>{stopped.length?<><p>다시 실행하면 원래 요청으로 자동 수정을 시작합니다. Codex 사용량이 발생하며, 생성된 PR은 검토 후 승인해야 합니다.</p><ul>{stopped.map(r=>{const key=`${r.id}:${r.run.id}:${r.run.attempt||1}`,waiting=retrying===key||submitted.includes(key);return <li key={key}><div><Link to={`/requests/${r.id}`}>#{r.id} · {requestTitle(r)}</Link><small>{r.retry?.state==='uncertain'?'재실행 접수 여부를 확인해 주세요.':r.auth.renewed?'새 인증 저장됨 · 다시 실행할 수 있습니다':'위에서 Codex를 다시 연결해 주세요.'}</small></div><button className="secondary" disabled={busy||running||!!retrying||waiting||!r.auth.renewed||!!r.retry} aria-busy={retrying===key} onClick={()=>retry(r)}>{retrying===key?<><span className="spinner" aria-hidden="true"/>접수 중…</>:submitted.includes(key)?'재실행 접수됨':'이 요청 다시 실행'}</button></li>;})}</ul></>:<p className="connected-empty">현재 인증 문제로 멈춘 요청이 없습니다.</p>}</div>
+ <div className="recovery-requests"><h3>인증 문제로 멈춘 요청</h3>{loading&&!pagination?<p>요청을 불러오는 중…</p>:stopped.length?<><p>다시 실행하면 원래 요청으로 자동 수정을 시작합니다. Codex 사용량이 발생하며, 생성된 PR은 검토 후 승인해야 합니다.</p><ul>{stopped.map(r=>{const key=`${r.id}:${r.run.id}:${r.run.attempt||1}`,waiting=retrying===key||submitted.includes(key);return <li key={key}><div><Link to={`/requests/${r.id}`}>#{r.id} · {requestTitle(r)}</Link><small>{r.retry?.state==='uncertain'?'재실행 접수 여부를 확인해 주세요.':r.auth.renewed?'새 인증 저장됨 · 다시 실행할 수 있습니다':'위에서 Codex를 다시 연결해 주세요.'}</small></div><button className="secondary" disabled={busy||running||!!retrying||waiting||!r.auth.renewed||!!r.retry||r.run?.unavailable} aria-busy={retrying===key} onClick={()=>retry(r)}>{retrying===key?<><span className="spinner" aria-hidden="true"/>접수 중…</>:submitted.includes(key)?'재실행 접수됨':'이 요청 다시 실행'}</button></li>;})}</ul></>:<p className="connected-empty">현재 인증 문제로 멈춘 요청이 없습니다.</p>}<Pagination value={pagination} onChange={onPageChange} loading={loading} label="인증 문제로 멈춘 요청 페이지"/></div>
  {notice&&<p role="status" className="inline-note">{notice}</p>}
  <p className="progress-note">연결 상태는 5초, 요청 목록은 30초마다 확인합니다. 로그인 화면에서 돌아오면 연결 상태를 바로 갱신합니다.</p>
  </section>;
