@@ -14,5 +14,5 @@ if(kind==='pr'){
 }else if(process.argv[2]!=='check'){
  const prs=JSON.parse(gh('api','--paginate','--slurp',`repos/${repo}/pulls?state=open&base=main&per_page=100`)).flat().filter(p=>p.head.repo.full_name===repo&&branchRequest(p.head.ref)?.issue===id);
  if(prs.length>1)throw Error('Multiple open PRs exist; comment on the intended PR instead');
- if(prs.length){const pr=prs[0];git('fetch','origin',`${pr.head.ref}:${pr.head.ref}`);git('checkout',pr.head.ref);appendFileSync(process.env.GITHUB_ENV,`TARGET_KIND=pr\nPR_NUMBER=${pr.number}\nNUMBER=${pr.number}\nTARGET_REF=${pr.head.ref}\n`);}
+ if(prs.length){const pr=prs[0];git('fetch','origin',`${pr.head.ref}:${pr.head.ref}`);git('checkout',pr.head.ref);appendFileSync(process.env.GITHUB_ENV,`SOURCE_ISSUE=${id}\nTARGET_KIND=pr\nPR_NUMBER=${pr.number}\nNUMBER=${pr.number}\nTARGET_REF=${pr.head.ref}\n`);}
 }

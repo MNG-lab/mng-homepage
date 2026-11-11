@@ -299,7 +299,7 @@ jobs:
               REQUEST="$(jq -r '.issue.title // ""' "$GITHUB_EVENT_PATH")"
             fi
           elif [[ "$EVENT" == "workflow_dispatch" ]]; then
-            ISSUE_NUMBER="${NUMBER:?}"
+            ISSUE_NUMBER="${SOURCE_ISSUE:-${NUMBER:?}}"
             REQUEST="$(gh issue view "$ISSUE_NUMBER" --json body -q '.body // ""')"
             if [[ -z "${REQUEST// }" ]]; then
               REQUEST="$(gh issue view "$ISSUE_NUMBER" --json title -q '.title // ""')"
