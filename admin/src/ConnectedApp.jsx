@@ -5,6 +5,7 @@ import {api,requestState,requestLabel,requestTitle,isRestoration,labels,date} fr
 import {appliedVersion} from '../shared/version.js';
 import Pagination from './Pagination.jsx';
 import LoadingIndicator from './LoadingIndicator.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import History from './History.jsx';
 import Settings from './Settings.jsx';
 import RequestDetail from './RequestDetail.jsx';
@@ -17,7 +18,7 @@ export default function ConnectedApp({user}) {
  const [requestId,setRequestId]=useState(()=>sessionStorage.getItem('mng-request-id')||crypto.randomUUID());
  const params=new URLSearchParams(location.search),query=params.get('q')||'',filter=params.get('status')||'all';
  const [draftQuery,setDraftQuery]=useState(query);
- const refreshSequence=useRef(0);
+ const refreshSequence=useRef(0),activeRead=useRef(null);
  const detailId=location.pathname.match(/^\/requests\/(\d+)$/)?.[1];
  const isDashboard=location.pathname==='/dashboard'||location.pathname==='/';
  const isSettings=location.pathname==='/settings',isNew=location.pathname==='/requests/new',isHistory=location.pathname.startsWith('/history');
@@ -35,24 +36,30 @@ export default function ConnectedApp({user}) {
   navigate({pathname:'/requests',search:next.toString()},{replace});
  }
  function changeRecovery(value){const next=new URLSearchParams(location.search);if(value===1)next.delete('recovery_page');else next.set('recovery_page',value);navigate({pathname:'/settings',search:next.toString(),hash:location.hash});}
- async function refresh(){
-  if(!path)return;
-  const seq=++refreshSequence.current;setLoading(true);
-  try{
-   const value=await api(path);
-   if(seq!==refreshSequence.current)return;
-   setData({path,value});setError('');
-   if(value.pagination&&String(value.pagination.page)!==(isSettings?recoveryPage:listPage)){
-    if(isSettings)changeRecovery(value.pagination.page);else changeList({page:value.pagination.page},{replace:true});
-   }
-  }catch(e){if(seq===refreshSequence.current){setError(e.status===404&&detailId?'':e.message);if(e.status===404)setData({path,value:{}});}}
-  finally{if(seq===refreshSequence.current)setLoading(false);}
+ function refresh(){
+  if(!path)return Promise.resolve(null);
+  // Manual refresh and automatic polling share the same read and outcome.
+  if(location.pathname==='/requests'&&activeRead.current?.path===path)return activeRead.current.promise;
+  const seq=++refreshSequence.current,read={path};setLoading(true);
+  read.promise=(async()=>{
+   try{
+    const value=await api(path);
+    if(seq!==refreshSequence.current)return null;
+    setData({path,value});setError('');
+    if(value.pagination&&String(value.pagination.page)!==(isSettings?recoveryPage:listPage)){
+     if(isSettings)changeRecovery(value.pagination.page);else changeList({page:value.pagination.page},{replace:true});
+    }
+    return true;
+   }catch(e){if(seq===refreshSequence.current){setError(e.status===404&&detailId?'':e.message);if(e.status===404)setData({path,value:{}});return false;}return null;}
+   finally{if(seq===refreshSequence.current)setLoading(false);if(activeRead.current===read)activeRead.current=null;}
+  })();
+  activeRead.current=read;return read.promise;
  }
  useEffect(()=>{
   if(!path){++refreshSequence.current;setLoading(false);setError('');return;}
   setError('');refresh();const update=()=>{if(document.visibilityState==='visible')refresh();};
   const timer=setInterval(update,30000);document.addEventListener('visibilitychange',update);
-  return()=>{++refreshSequence.current;clearInterval(timer);document.removeEventListener('visibilitychange',update);};
+  return()=>{++refreshSequence.current;activeRead.current=null;clearInterval(timer);document.removeEventListener('visibilitychange',update);};
  },[path]);
  useEffect(()=>{setDraftQuery(query);},[query,location.key]);
  useEffect(()=>{
@@ -81,7 +88,7 @@ export default function ConnectedApp({user}) {
     </>:isHistory?<History user={user} refresh={refresh}/>:isSettings?<Settings user={user} requests={requests} refresh={refresh} pagination={current?.pagination} connectionRequired={current?.connectionRequired} onPageChange={changeRecovery} loading={loading||!current}/>:isNew?<form className="panel connected-panel connected-form" onSubmit={submit}>
      <label>어느 페이지인가요?<select value={page} onChange={e=>setPage(e.target.value)}>{pages.map(p=><option key={p}>{p}</option>)}</select></label><label>요청 제목<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>어떻게 바꾸면 될까요?<textarea required rows={7} maxLength={5000} value={description} onChange={e=>setDescription(e.target.value)} placeholder="어느 부분을 어떤 내용으로 바꿀지 적어 주세요."/></label><p>내용은 공개 GitHub 이슈에 등록됩니다. 비밀번호·토큰·개인정보는 입력하지 마세요.</p><div className="connected-heading"><button type="button" className="secondary" onClick={()=>navigate('/requests')}>취소</button><button className="primary" disabled={busy}>{busy?'접수 중…':'수정 요청 보내기'}</button></div>
     </form>:selected?<RequestDetail key={selected.id} request={selected} user={user} refresh={refresh} listSearch={location.search}/>:detailId?<section className="panel connected-panel"><>{loading?<LoadingIndicator label="요청 불러오는 중"/>:<h2>{error?'요청을 불러오지 못했어요':'요청을 찾을 수 없어요'}</h2>}</><Link to={`/requests${location.search}`}>요청 목록으로 돌아가기</Link></section>:<section className="panel connected-panel">
-     <div className="connected-heading"><h2>{tab==='active'?'처리할 요청':'지난 요청'}</h2><button className="secondary" onClick={refresh}>새로고침</button></div>
+     <div className="connected-heading"><h2>{tab==='active'?'처리할 요청':'지난 요청'}</h2><RefreshButton key={path} onRefresh={refresh}/></div>
      <div className="request-tabs" role="group" aria-label="요청 구분">{[['active','처리 중'],['past','지난 요청']].map(([value,label])=><button key={value} type="button" aria-pressed={tab===value} onClick={()=>switchTab(value)}>{label} {current?.scopeCounts&&<span>{current.scopeCounts[value]}</span>}</button>)}</div>
      <p className="request-tab-description">{tab==='active'?'자동 수정 중이거나 검토·재실행이 필요한 요청입니다.':'반영을 마쳤거나 종료한 요청입니다. 반영된 홈페이지는 버전 화면에서 확인할 수 있습니다.'}</p>
      <div className="request-tools"><label>요청 검색<input type="search" value={draftQuery} maxLength={200} onChange={e=>setDraftQuery(e.target.value)} placeholder="제목, 내용, 요청 번호, 버전 번호"/></label><label>상태<select aria-label="상태" value={filter} onChange={e=>changeList({status:e.target.value,q:draftQuery,page:1})}><option value="all">전체</option>{tabStatuses.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label></div>

@@ -1895,3 +1895,12 @@ select {
 @media (prefers-reduced-motion: reduce) {
   .content-loading .spinner { animation: none !important; }
 }
+
+/* Keep manual refresh feedback next to the action without replacing the list. */
+.refresh-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-width:166px;white-space:nowrap}
+.refresh-button .spinner,.refresh-button .refresh-icon{flex-shrink:0;width:17px;height:17px}
+.refresh-button .spinner{border-color:currentColor;border-top-color:transparent}
+.refresh-button[aria-busy="true"]{opacity:1;cursor:wait;color:#315c9c;background:#f1f5fc;border-color:#c9d8ee}
+.refresh-button.is-success{color:#25694d;background:#edf8f2;border-color:#badfcd}
+.refresh-button.is-error{color:#a8342e;border-color:#e6b8b4}
+@media(prefers-reduced-motion:reduce){.refresh-button .spinner{animation:none!important}}
