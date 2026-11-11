@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom';
 import {api,date,requestState,requestTitle} from './api.js';
 import CopyButton from './CopyButton.jsx';
 const active=['queued','waiting','saving'];
-const states={queued:'작업을 준비하고 있습니다',waiting:'로그인을 기다리고 있습니다',saving:'새 인증을 저장하고 있습니다',connected:'Codex 재연결 완료',expired:'연결 시간이 지났습니다',failed:'연결을 완료하지 못했습니다',uncertain:'처리 결과를 확인해야 합니다'};
+const states={auth_required:'Codex를 다시 연결해 주세요',queued:'작업을 준비하고 있습니다',waiting:'로그인을 기다리고 있습니다',saving:'새 인증을 저장하고 있습니다',connected:'Codex 재연결 완료',expired:'연결 시간이 지났습니다',failed:'연결을 완료하지 못했습니다',uncertain:'처리 결과를 확인해야 합니다'};
 export default function CodexConnection({requests=[],refresh=async()=>{},onConnected=()=>{}}){
  const [flow,setFlow]=useState(null),[loaded,setLoaded]=useState(false),[error,setError]=useState(''),[readError,setReadError]=useState(''),[pending,setPending]=useState(null),[consent,setConsent]=useState(false);
  const [retrying,setRetrying]=useState(null),[notice,setNotice]=useState(''),[submitted,setSubmitted]=useState([]);
@@ -51,9 +51,10 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
   }
  }
  const busy=!!pending,running=active.includes(flow?.state);
- const view=pending?{kind:pending,state:'submitting'}:flow;
+ const needsConnection=stopped.some(r=>!r.auth.renewed);
+ const view=pending?{kind:pending,state:'submitting'}:needsConnection&&(!flow||flow.state==='connected')?{kind:'login',state:'auth_required'}:flow;
  const processing=busy||['queued','saving'].includes(view?.state)||(view?.state==='waiting'&&!view.code);
- const success=view?.state==='connected',warning=['expired','failed','uncertain'].includes(view?.state);
+ const success=view?.state==='connected',warning=['auth_required','expired','failed','uncertain'].includes(view?.state);
  function buttonContent(kind,label){
   if(kind!==view?.kind||(!busy&&!running))return label;
   const text=busy?'연결 요청 중…':view.state==='saving'?'인증 저장 중…':view.state==='waiting'&&view.code?'로그인 승인 대기':'로그인 준비 중…';
@@ -69,6 +70,7 @@ export default function CodexConnection({requests=[],refresh=async()=>{},onConne
  {busy&&<p>요청이 접수되면 진행 상태가 자동으로 바뀝니다. 잠시만 기다려 주세요.</p>}
  {view?.state==='queued'&&<p>실행 환경을 준비하고 있습니다. 준비가 끝나면 로그인 코드가 자동으로 표시됩니다.</p>}
  {view?.state==='waiting'&&(view.code?<><p>OpenAI 페이지를 열고 아래 일회용 코드를 입력해 승인하세요.</p><div className="device-code"><code>{view.code}</code><CopyButton value={view.code}/></div><a className="primary" href="https://auth.openai.com/codex/device" target="_blank" rel="noopener noreferrer">OpenAI에서 로그인하기 ↗</a><p className="progress-note">승인 후 자동으로 인증을 저장합니다. 연결 대기 기한: {date(view.expiresAt)}</p></>:<p>OpenAI 로그인 코드를 준비하고 있습니다.</p>)}
+ {view?.state==='auth_required'&&<p>이전 연결 이후 인증 문제로 멈춘 요청이 있습니다. 위에서 다시 로그인한 뒤 아래 요청을 실행해 주세요.</p>}
  {view?.state==='connected'&&<p>새 인증을 저장했습니다. 아래에 멈춘 요청이 있으면 다시 실행하세요. 홈페이지 변경은 PR을 검토하고 승인한 뒤 반영됩니다.</p>}
  {view?.state==='expired'&&<p>연결 시간이 지났습니다. 다시 연결해 새 코드를 받아 주세요.</p>}
  {view?.state==='failed'&&<p>로그인을 완료하지 못했습니다. 기기 코드 로그인 설정을 확인하고 다시 연결해 주세요.</p>}

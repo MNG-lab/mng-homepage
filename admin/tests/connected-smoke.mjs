@@ -53,10 +53,12 @@ try {
  await page.getByRole('button',{name:'변경 이력',exact:true}).click();await page.getByText('이전 버전으로 되돌림',{exact:true}).waitFor();await page.getByText('‘Members 소개 수정’ 버전으로 되돌렸습니다',{exact:true}).waitFor();await page.getByRole('link',{name:'해당 버전 보기 →',exact:true}).waitFor();
 
  await page.getByRole('button',{name:'수정 요청',exact:true}).click();await page.getByLabel('요청 검색').fill('missing');await page.getByText('조건에 맞는 요청이 없습니다.').waitFor();
+ deviceFlow={id:'previous-login',kind:'login',state:'connected',code:null};
  records=[{id:123,title:'중단된 Members 수정',state:'open',description:'기존 요청',run:{id:100,attempt:1,status:'completed',conclusion:'failure'},auth:{renewed:false}}];
  await page.goto('http://127.0.0.1:4193/requests/123');await page.getByRole('link',{name:'Codex 다시 연결하러 가기'}).click();
  await page.getByRole('heading',{name:'구성원 관리'}).waitFor();await page.getByRole('heading',{name:'Codex 연결',exact:true}).waitFor();
- await page.getByText('Codex를 연결할 수 있습니다',{exact:true}).waitFor();
+ await page.getByText('Codex를 다시 연결해 주세요',{exact:true}).waitFor();
+ assert.equal(await page.getByText('Codex 재연결 완료',{exact:true}).count(),0);
  assert.equal(await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).isDisabled(),true);
  assert.equal(await page.getByRole('button',{name:'인증 만료 상황 체험하기'}).count(),0);
  assert.equal(await page.getByRole('button',{name:'Codex 다시 연결',exact:true}).isDisabled(),true);
