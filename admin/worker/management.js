@@ -14,9 +14,6 @@ export async function readMember(env,email,sub,bind=false) {
  }
  return row&&(!row.sub||row.sub===sub)?{email,sub,role:row.role}:null;
 }
-export function fresh(user) {
- if(!user.authTime || Date.now()/1000-user.authTime>600) throw new GitHubError('보안을 위해 다시 로그인한 뒤 10분 이내에 진행해 주세요.',403);
-}
 export const audit=(env,user,action,target)=>env.DB.prepare('INSERT INTO audit(actor,action,target) VALUES (?,?,?)').bind(user.email||user.sub,action,String(target)).run();
 export function managementAPI({github=createGitHub}={}) {return async(request,env,user)=>{
  try {
@@ -37,7 +34,6 @@ export function managementAPI({github=createGitHub}={}) {return async(request,en
   const raw=await request.text();if(raw.length>40000)return json({error:'입력이 너무 큽니다.'},413);
   const body=JSON.parse(raw);
   if(path==='/api/settings/transfer/accept') {
-   fresh(user);
    const transfer=await env.DB.prepare('SELECT * FROM ownership WHERE id=1 AND to_email=? AND expires_at>?').bind(user.email,Date.now()).first();
    if(!transfer) throw new GitHubError('유효한 이전 요청이 없습니다.',409);
    // A single SQLite statement changes both roles. A concurrent cancellation or revocation makes it a no-op.
@@ -47,7 +43,6 @@ export function managementAPI({github=createGitHub}={}) {return async(request,en
    await audit(env,user,'ownership.accept',transfer.from_email);return json({ok:true,reload:true});
   }
   if(user.role!=='owner')return json({error:'최고 관리자만 변경할 수 있습니다.'},403);
-  fresh(user);
   if(path==='/api/settings/members') {
    const email=String(body.email||'').trim().toLowerCase();
    if(!/^[a-z0-9.+_-]+@gmail\.com$/.test(email)||!['admin','editor'].includes(body.role)||typeof body.active!=='boolean')throw new GitHubError('Gmail 계정과 권한을 확인해 주세요.',400);

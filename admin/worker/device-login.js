@@ -1,6 +1,6 @@
 import {createRemoteJWKSet,jwtVerify} from 'jose';
 import {createGitHub,GitHubError,REPOSITORY,WORKFLOW_REF,assertPreviewConfig} from './github.js';
-import {fresh,audit} from './management.js';
+import {audit} from './management.js';
 import {recordCredentialUpdate} from './request-recovery.js';
 const keys=createRemoteJWKSet(new URL('https://token.actions.githubusercontent.com/.well-known/jwks'));
 const endpoint='/api/internal/device-login';
@@ -59,7 +59,6 @@ export function deviceAPI({github=createGitHub,verifyRunner=verify}={}){return a
    const row=await latest();return json({flow:row?{id:row.id,kind:row.kind,state:row.state,code:row.state==='waiting'?row.code:null,expiresAt:row.expires_at,runUrl:row.run_id?`https://github.com/${REPOSITORY}/actions/runs/${row.run_id}`:null}:null});
   }
   if(request.method!=='POST'||request.headers.get('Origin')!==env.APP_ORIGIN||!request.headers.get('Content-Type')?.startsWith('application/json'))return json({error:'허용되지 않은 요청입니다.'},403);
-  fresh(user);
   const raw=await request.text();if(raw.length>1000)return json({error:'입력이 너무 큽니다.'},413);
   const body=JSON.parse(raw);
   if(path!=='/api/settings/device-login/start'||body.kind!=='login')return json({error:'잘못된 요청입니다.'},400);

@@ -13,12 +13,12 @@ test('runner claims bind repository IDs, branch, exact workflow SHA and one run'
  for(const key of Object.keys(claims))assert.equal(validClaims({...claims,[key]:'wrong'},row),false,key);
  assert.equal(validClaims(claims,{sha,run_id:'124'}),false);
 });
-test('owner and recent same-origin login required; concurrent sessions are refused',async()=>{
+test('owner and same-origin login required without a freshness deadline; concurrent sessions are refused',async()=>{
  const {env,handle}=setup();
- for(const user of [null,{...owner,role:'admin'},{...owner,authTime:1}])assert.equal((await handle(start('login'),env,user)).status,403);
+ for(const user of [null,{...owner,role:'admin'}])assert.equal((await handle(start('login'),env,user)).status,403);
  assert.equal((await handle(start('login','https://evil.test'),env,owner)).status,403);
  assert.equal((await handle(start('verify'),env,owner)).status,400);
- assert.equal((await handle(start('login'),env,owner)).status,202);
+ assert.equal((await handle(start('login'),env,{...owner,authTime:Math.floor(Date.now()/1000)-1800})).status,202);
  assert.equal((await handle(start('login'),env,owner)).status,409);
  assert.equal((await handle(new Request(origin+'/api/settings/device-login'),env,{...owner,role:'editor'})).status,403);
 });

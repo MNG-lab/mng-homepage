@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {managementAPI,readMember} from '../worker/management.js';
 import {database} from './d1.mjs';
-const owner={email:'chominho96@gmail.com',sub:'owner',role:'owner',authTime:Math.floor(Date.now()/1000)};
+const owner={email:'chominho96@gmail.com',sub:'owner',role:'owner',authTime:Math.floor(Date.now()/1000)-1800};
 const origin='https://test.example';
 const post=(path,body={},source=origin)=>new Request(origin+'/api/settings'+path,{method:'POST',headers:{Origin:source,'Content-Type':'application/json'},body:JSON.stringify(body)});
 const setup=()=>({APP_ORIGIN:origin,MEMBERS_DB:'true',DB:database()});
-test('member changes require owner, same origin and fresh authentication; owner cannot be removed',async()=>{
+test('member changes accept an existing login, require owner and same origin; owner cannot be removed',async()=>{
  const env=setup(),handle=managementAPI();const body={email:'editor@gmail.com',role:'editor',active:true};
- for(const [user,source] of [[{...owner,role:'editor'},origin],[owner,'https://evil.test'],[{...owner,authTime:1},origin]])assert.equal((await handle(post('/members',body,source),env,user)).status,403);
+ for(const [user,source] of [[{...owner,role:'editor'},origin],[owner,'https://evil.test']])assert.equal((await handle(post('/members',body,source),env,user)).status,403);
  assert.equal((await handle(post('/members',{...body,email:owner.email,active:false}),env,owner)).status,409);
  assert.equal((await handle(post('/members',body),env,owner)).status,200);
  assert.equal((await readMember(env,body.email,'editor-sub',true)).role,'editor');
