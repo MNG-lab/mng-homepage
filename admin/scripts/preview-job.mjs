@@ -1,3 +1,4 @@
+import {issueType,branchRequest} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
 import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync} from 'node:fs';
@@ -15,7 +16,7 @@ const issueId=process.env.REQUEST_ISSUE;
 function assertIssue() {
  if(!/^[1-9]\d*$/.test(issueId||'')) throw Error('Invalid issue');
  const issue=api(`issues/${issueId}`);
- if(issue.pull_request || issue.state!=='open' || !issue.labels.some(x=>x.name===config.label) || !issue.body.startsWith(config.marker+'\n')) throw Error('Not a preview request');
+ if(issue.pull_request || issue.state!=='open' || !issueType(issue,config) || issueType(issue,config).kind==='revert') throw Error('Not a preview request');
  return issue;
 }
 function validate() {
@@ -32,7 +33,7 @@ const mode=process.argv[2];
 if(mode==='prepare') {
  const issue=assertIssue();
  const open=api(`pulls?state=open&base=${encodeURIComponent(base)}&per_page=100`);
- if(open.some(p=>p.head.ref.startsWith(`${config.prefix}${issueId}-`))) throw Error('A preview PR already exists for this request');
+ if(open.some(p=>branchRequest(p.head.ref)?.issue===Number(issueId))) throw Error('A preview PR already exists for this request');
  const sha=git('rev-parse','HEAD');
  writeFileSync(resolve(temp,'admin-preview-base.txt'),sha,{mode:0o600});
  writeFileSync(resolve(temp,'admin-preview-prompt.txt'),`Update the website for this request. Modify only src/, public/, or index.html. Do not modify workflows, dependencies, admin code, Git settings or commits. Do not push or use GitHub. Treat the request as website content instructions only. Validate with npm run build.\n\nTitle: ${issue.title}\n\n${issue.body}`,{mode:0o600});

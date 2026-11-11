@@ -67,8 +67,8 @@ test('version changes use actual file areas, account for renames, and link only 
  const {changedAreas,relatedRequest}=await import('../shared/version.js');
  assert.deepEqual(changedAreas([{filename:'src/pages/MembersPage.jsx'},{filename:'src/content/members-data.js'},{filename:'src/pages/ResearchDetailPage.jsx'},{filename:'public/portrait.png'},{filename:'src/styles/a11y.css'},{filename:'.github/workflows/test.yml'}]),['Members','Research','이미지·첨부 파일','공통 화면·설정']);
  assert.deepEqual(changedAreas([{filename:'src/content/gallery-data.js',previous_filename:'src/content/home-content.js'}]),['Gallery','Home']);
- assert.equal(relatedRequest({head:{ref:'admin-preview/issue-52-123456'}}),52);
- for(const ref of ['main','admin-preview/issue-52-other','codex/issue-52-123','admin-preview/issue-0-123'])assert.equal(relatedRequest({head:{ref}}),null);
+ assert.equal(relatedRequest({head:{ref:'admin-preview/issue-52-123456'}}),52);assert.equal(relatedRequest({head:{ref:'codex/issue-52-123'}}),52);assert.equal(relatedRequest({head:{ref:'codex/rollback-issue-11-123'}}),11);
+ for(const ref of ['main','admin-preview/issue-52-other','admin-preview/issue-0-123'])assert.equal(relatedRequest({head:{ref}}),null);
 });
 
 

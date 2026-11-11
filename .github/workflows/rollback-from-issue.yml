@@ -1,4 +1,5 @@
 name: Rollback from issue
+run-name: 'Rollback request #${{ github.event.issue.number }}'
 
 on:
   issues:
@@ -226,6 +227,14 @@ jobs:
           fi
 
           echo "status=success" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the rollback request is still open
+        if: steps.revert.outputs.status == 'success'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REQUEST_ISSUE: ${{ github.event.issue.number }}
+        run: |
+          test "$(gh issue view "$REQUEST_ISSUE" --json state --jq .state)" = "OPEN"
 
       - name: Push rollback branch
         if: steps.revert.outputs.status == 'success'

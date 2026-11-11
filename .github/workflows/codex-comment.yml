@@ -1,7 +1,7 @@
 name: Codex comment-to-code (Issue/PR) - no approval prompts
 
 run-name: >-
-  ${{ inputs.device_session && 'Admin Codex reconnection' || (inputs.admin_request && github.ref == 'refs/heads/main') && format('Admin request #{0}', inputs.issue) || github.ref == 'refs/heads/codex/admin-portal' && (inputs.device_session && 'Admin Codex reconnection' || inputs.verify_device_auth && 'Admin device login verification' || format('Admin preview #{0}', inputs.issue)) || 'Codex comment-to-code' }}
+  ${{ inputs.device_session && 'Admin Codex reconnection' || (inputs.admin_request && github.ref == 'refs/heads/main') && format('Admin request #{0}', inputs.issue) || github.ref == 'refs/heads/codex/admin-portal' && (inputs.device_session && 'Admin Codex reconnection' || inputs.verify_device_auth && 'Admin device login verification' || format('Admin preview #{0}', inputs.issue)) || (github.event.issue.pull_request || github.event_name == 'pull_request_review_comment') && format('Codex PR #{0}', github.event.issue.number || github.event.pull_request.number) || format('Codex request #{0}', github.event.issue.number || inputs.issue) }}
 
 on:
   issues:
@@ -40,7 +40,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: codex-${{ github.repository }}-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue || github.run_id }}
+  group: codex-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -80,6 +80,11 @@ jobs:
       environment: production
     secrets: inherit
   codex:
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
     if: >
       github.ref != 'refs/heads/codex/admin-portal' && !inputs.admin_request && !inputs.device_session && !inputs.verify_device_auth && (
       github.event_name == 'workflow_dispatch' || (
@@ -93,7 +98,7 @@ jobs:
         (contains(github.event.comment.body, '@codex') || contains(github.event.comment.body, '/codex')) &&
         (
           (github.event.issue.pull_request == null &&
-           contains(join(github.event.issue.labels.*.name, ','), 'codex-auto')) ||
+           (contains(github.event.issue.labels.*.name, 'codex-auto') || contains(github.event.issue.labels.*.name, 'admin-request'))) ||
           (github.event.issue.pull_request != null)
         )
       ) || (
@@ -119,6 +124,11 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
+
+      - name: Load trusted request coordination scripts
+        run: |
+          mkdir -p "$RUNNER_TEMP/mng-automation"
+          git archive "$GITHUB_SHA" admin/scripts/report-github-result.mjs admin/scripts/codex-errors.mjs admin/scripts/github-target.mjs admin/shared/github-sync.js | tar -x -C "$RUNNER_TEMP/mng-automation"
 
       - name: Setup Node.js
         uses: actions/setup-node@v7.1.0
@@ -260,6 +270,11 @@ jobs:
             git checkout "$HEAD_REF"
           fi
 
+      - name: Reuse the open PR for this request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node "$RUNNER_TEMP/mng-automation/admin/scripts/github-target.mjs"
+
       - name: Assign issue to app bot
         if: (github.event_name == 'issues' || github.event_name == 'workflow_dispatch') && env.TARGET_KIND == 'issue'
         env:
@@ -338,6 +353,7 @@ jobs:
           printf "%s\n" "$REQUEST" >> "$PROMPT_FILE"
 
       - name: Run Codex (non-interactive, NO approvals)
+        id: generate
         env:
           CODEX_HOME: ${{ runner.temp }}/codex-home
         run: |
@@ -345,8 +361,14 @@ jobs:
           codex exec \
             --dangerously-bypass-approvals-and-sandbox \
             --model "${{ secrets.CODEX_MODEL }}" \
+            --json \
             -o /tmp/codex_last_message.txt \
-            - < /tmp/codex_prompt.txt | tee /tmp/codex_out.txt
+            - < /tmp/codex_prompt.txt 2> /tmp/codex_err.txt | tee /tmp/codex_out.txt
+
+      - name: Verify the request is still open
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: node "$RUNNER_TEMP/mng-automation/admin/scripts/github-target.mjs" check
 
       - name: Commit & push changes
         env:
@@ -538,3 +560,11 @@ jobs:
           BODY="✅ Codex 작업 완료. 변경사항을 \`${TARGET_REF}\` 브랜치에 반영해서 push 했어요."
           BODY+=$'\n\n<details><summary>Codex 실행 요약 (마지막 120줄)</summary>\n\n```text\n'"$SUMMARY"$'\n```\n\n</details>'
           gh pr comment "$PR_NUMBER" --body "$BODY"
+
+      - name: Report request authentication status to admin
+        if: always() && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          CODEX_OUTCOME: ${{ steps.generate.outcome }}
+          CODEX_CREDENTIAL_PRESENT: ${{ secrets.CODEX_CLI_KEY != '' }}
+        run: node "$RUNNER_TEMP/mng-automation/admin/scripts/report-github-result.mjs"

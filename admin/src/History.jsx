@@ -1,3 +1,4 @@
+import {isRevert} from '../shared/github-sync.js';
 import {production} from './environment.js';
 import React,{useEffect,useState,useRef} from 'react';
 import {Link,useNavigate,useLocation} from 'react-router-dom';
@@ -18,7 +19,7 @@ function VersionHeader({revision:r,current=false,level=3,environment=false,listS
   <Heading className="version-title">{versionTitle(r)}</Heading>
   <div className="version-meta">
    <span className="version-number" aria-label={`반영된 ${versionLabel(r.number)}`}>{versionLabel(r.number)}</span>
-   <span className="version-kind">{r.restoration?'되돌리기':'수정'}</span>
+   <span className="version-kind">{r.restoration?'되돌리기':isRevert({pull:r})?'변경 취소':'수정'}</span>
    {r.restoration&&<span className="version-target">대상 <Link to={`/history/${r.restoration.number}${listSearch}`} aria-label={`되돌린 대상 ${versionLabel(r.restoration.number)} 상세 보기`}>{versionLabel(r.restoration.number)}</Link></span>}
    <time dateTime={r.mergedAt||undefined}>{versionDate(r.mergedAt)} 반영</time>
    {requestId(r)&&<Link className="version-request" to={`/requests/${requestId(r)}?tab=past`}>요청 #{requestId(r)}</Link>}
