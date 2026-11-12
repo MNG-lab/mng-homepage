@@ -56,7 +56,7 @@ try {
    const list=url.searchParams.get('view')!=='summary';if(list)requestListReads++;
    if(readFailures-->0)return route.abort('failed');
    if(list&&requestFailures-->0)return route.fulfill({status:503,json:{error:'요청 조회 오류'}});
-   const rows=delayedNewList-->0?[]:records,json=list?paginateRequests(rows,listQuery(url.searchParams)):requestSummary(rows);
+   const rows=delayedNewList-->0?[]:records,json=url.searchParams.get('view')==='catalog'?{requests:rows}:list?paginateRequests(rows,listQuery(url.searchParams)):requestSummary(rows);
    if(list&&holdRequestRead){holdRequestRead=false;heldRequestRead=true;await new Promise(resolve=>{releaseRequestRead=resolve;});}
    return route.fulfill({json});
   }
@@ -107,16 +107,15 @@ try {
  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await refreshControl.locator('.spinner').evaluate(el=>getComputedStyle(el).animationName),'none');await page.emulateMedia({reducedMotion:'no-preference'});
  releaseRequestRead();await page.getByRole('button',{name:'새로고침 완료',exact:true}).waitFor();assert.equal(await refreshControl.isDisabled(),false);assert.equal(await refreshControl.getAttribute('aria-busy'),'false');assert.equal((await refreshControl.boundingBox()).width,width);assert.equal(await refreshStatus.innerText(),'요청 목록: 새로고침했습니다.');
  await page.getByRole('button',{name:'새로고침',exact:true}).waitFor();
- // Automatic polling stays quiet; a click during its read shares the result.
- holdRequestRead=true;heldRequestRead=false;const beforeAuto=requestListReads;await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
- for(let i=0;i<100&&!heldRequestRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldRequestRead,true);assert.equal(await refreshControl.innerText(),'새로고침');assert.equal(await refreshStatus.innerText(),'');
- await refreshControl.click();await page.getByRole('button',{name:'새로고침 중…',exact:true}).waitFor();assert.equal(requestListReads,beforeAuto+1);releaseRequestRead();await page.getByRole('button',{name:'새로고침 완료',exact:true}).waitFor();
+ // Returning to the browser does not refresh the saved request catalogue.
+ const beforeAuto=requestListReads;await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+ await new Promise(r=>setTimeout(r,100));assert.equal(requestListReads,beforeAuto);assert.equal(await refreshControl.innerText(),'새로고침');
  requestFailures=2;await refreshControl.click();await page.getByRole('button',{name:'새로고침 재시도',exact:true}).waitFor();await page.getByRole('alert').filter({hasText:'요청 조회 오류'}).waitFor();assert.equal(await page.getByText('새로고침 확인용 요청',{exact:true}).count(),1);assert.equal(await page.getByRole('button',{name:'새로고침 완료',exact:true}).count(),0);
  await refreshControl.click();await page.getByRole('button',{name:'새로고침 완료',exact:true}).waitFor();assert.equal(await page.getByRole('alert').count(),0);
  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'refresh button mobile overflow');await page.setViewportSize({width:1440,height:1000});
- // A late result from another tab/filter cannot show a success notice in this one.
+ // A full refresh serves both tabs; switching tabs stays instant during the read.
  holdRequestRead=true;heldRequestRead=false;await refreshControl.click();for(let i=0;i<100&&!heldRequestRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldRequestRead,true);
- await page.getByRole('button',{name:/^지난 요청/}).click();await page.getByText('아직 지난 요청이 없습니다.',{exact:true}).waitFor();releaseRequestRead();await new Promise(r=>setTimeout(r,100));assert.equal(await refreshControl.innerText(),'새로고침');assert.equal(await refreshStatus.innerText(),'');
+ await page.getByRole('button',{name:/^지난 요청/}).click();await page.getByText('아직 지난 요청이 없습니다.',{exact:true}).waitFor();assert.equal(await refreshControl.getAttribute('aria-busy'),'true');releaseRequestRead();await page.getByRole('button',{name:'새로고침 완료',exact:true}).waitFor();
  records=[];await page.goto('http://127.0.0.1:4193/requests');await page.getByText('지금 처리할 요청이 없습니다. 완료된 작업은 지난 요청에서 확인하세요.').waitFor();
  await page.getByRole('button',{name:'새 수정 요청',exact:true}).click();await page.getByLabel('어느 페이지인가요?',{exact:true}).selectOption('Members');await page.getByRole('textbox',{name:'요청 제목',exact:true}).fill('Connected test');await page.getByLabel('어떻게 바꾸면 될까요?',{exact:true}).fill('Update Members test content');holdWritePath='/api/requests';await page.getByRole('button',{name:'수정 요청 보내기',exact:true}).click();
  const submitPending=page.getByRole('button',{name:'요청 접수 중…',exact:true});await submitPending.waitFor();assert.equal(await submitPending.getAttribute('aria-busy'),'true');assert.equal(await submitPending.isDisabled(),true);assert.equal(await submitPending.locator('.spinner').count(),1);assert.equal(submissions,0);
@@ -183,7 +182,7 @@ try {
  historyRows=historyRows.slice(0,8);await page.reload();await historyPager.getByRole('button',{name:'2페이지',exact:true}).waitFor();assert.equal(await page.locator('.version-card').count(),1);
  historyRows=historyRows.slice(0,7);await page.reload();await page.waitForURL('**/history');await page.locator('.version-card').getByText('버전 294',{exact:true}).waitFor();assert.equal(await page.locator('.version-card').count(),6);assert.equal(await historyPager.count(),0);
  historyRows=[];await page.reload();await page.getByText('아직 반영된 버전이 없습니다.',{exact:true}).waitFor();assert.equal(await historyPager.count(),0);historyRows=null;
- // 47 records: status/search are applied by the server before slicing.
+ // All 47 records are loaded once; local status/search still precede pagination.
  records=Array.from({length:47},(_,i)=>({id:1000-i,title:`Members 수정 ${i+1}`,description:'검색 본문',state:'open',createdAt:new Date(Date.UTC(2026,10,10,0,0,47-i)).toISOString(),run:i<42?{id:1000-i,attempt:1,status:'completed',conclusion:'failure'}:null}));
  await page.goto('http://127.0.0.1:4193/requests?status=failed&q=Members&page=2');
  await page.getByRole('navigation',{name:'요청 목록 페이지'}).locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();
@@ -194,20 +193,21 @@ try {
  await page.reload();await page.getByRole('heading',{name:'Members 수정 21',exact:true}).waitFor();
  await page.getByRole('link',{name:'목록으로 돌아가기',exact:true}).click();
  await page.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.match(page.url(),/page=2/);
- const pager=page.getByRole('navigation',{name:'요청 목록 페이지'});
+ const pager=page.getByRole('navigation',{name:'요청 목록 페이지'}),cachedPageReads=requestListReads;
  await pager.getByRole('button',{name:'3페이지',exact:true}).click();await pager.locator('button[aria-current="page"]').filter({hasText:/^3$/}).waitFor();
- assert.equal(await page.locator('.connected-list>li').count(),2);assert.equal(await pager.getByRole('button',{name:'다음'}).isDisabled(),true);
+ assert.equal(await page.locator('.connected-list>li').count(),2);assert.equal(await pager.getByRole('button',{name:'다음'}).isDisabled(),true);assert.equal(requestListReads,cachedPageReads,'page changes use the loaded catalogue');
  await page.goBack();await pager.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();await page.reload();await pager.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();
- await page.getByLabel('요청 검색').fill('검색 본문');await page.waitForURL('**q=**');
+ const cachedSearchReads=requestListReads;await page.getByLabel('요청 검색').fill('검색 본문');await page.waitForURL('**q=**');
  await pager.locator('button[aria-current="page"]').filter({hasText:/^1$/}).waitFor();assert.equal(new URL(page.url()).searchParams.get('q'),'검색 본문');
  await page.getByLabel('상태',{exact:true}).selectOption('working');await page.locator('.connected-list>li').nth(4).waitFor();await pager.waitFor({state:'hidden'});assert.equal(await page.locator('.connected-list>li').count(),5);
- assert.equal(new URL(page.url()).searchParams.get('q'),'검색 본문');
+ assert.equal(new URL(page.url()).searchParams.get('q'),'검색 본문');assert.equal(requestListReads,cachedSearchReads,'search and filters do not fetch');
  await page.goto('http://127.0.0.1:4193/requests?page=999');await page.waitForURL('**page=3');await pager.locator('button[aria-current="page"]').filter({hasText:/^3$/}).waitFor();
  const activeRecords=records;
  records=[...activeRecords,...Array.from({length:25},(_,i)=>({id:2000+i,title:`Members 지난 요청 ${i+1}`,description:'검색 본문',state:'closed',pull:{number:3000+i,merged:true,state:'closed'}}))];
  await page.goto('http://127.0.0.1:4193/requests?q=Members');await page.locator('button[aria-current="page"]').filter({hasText:/^1$/}).waitFor();
+ const cachedTabReads=requestListReads;requestFailures=2; // Any accidental tab/page fetch now fails.
  await page.getByRole('button',{name:/^지난 요청/}).click();await page.locator('button[aria-current="page"]').filter({hasText:/^1$/}).waitFor();assert.equal(new URL(page.url()).searchParams.get('q'),'Members');
- await pager.getByRole('button',{name:'다음',exact:true}).click();await page.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await page.locator('.managed-requests>li').count(),5);
+ await pager.getByRole('button',{name:'다음',exact:true}).click();await page.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await page.locator('.managed-requests>li').count(),5);assert.equal(requestListReads,cachedTabReads,'both tabs and later pages were loaded together');assert.equal(requestFailures,2);requestFailures=0;
  await page.reload();await page.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await page.getByRole('button',{name:/^지난 요청/}).getAttribute('aria-pressed'),'true');
  await page.getByRole('button',{name:/^처리 중/}).click();await page.locator('button[aria-current="page"]').filter({hasText:/^1$/}).waitFor();await page.goBack();await page.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();
  records=activeRecords;
@@ -319,5 +319,5 @@ try {
  const incoming=page.getByRole('region',{name:'최고 관리자 변경 요청',exact:true});await incoming.getByRole('button',{name:'최고 관리자 역할 수락',exact:true}).click();assert.equal(settingsWrites.length,6);assert.equal(await page.getByRole('heading',{name:'구성원 관리',exact:true}).count(),0);
  await incoming.getByRole('dialog').getByRole('button',{name:'확인하고 수락',exact:true}).click();await page.getByRole('heading',{name:'구성원 관리',exact:true}).waitFor();assert.equal(settingsWrites.at(-1).path,'/api/settings/transfer/accept');
  role='editor';await page.goto('http://127.0.0.1:4193/settings');await page.getByRole('heading',{name:'로그인 정보'}).waitFor();assert.equal(await page.getByRole('heading',{name:'구성원 관리'}).count(),0);await page.goto('http://127.0.0.1:4193/history/124');await page.getByText('되돌리면 달라지는 범위:',{exact:false}).waitFor();assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).count(),0);
- assert.deepEqual(errors,[]);console.log('PASS: shared refresh feedback for history/list/detail/preview/Codex/audit, retained content on reload/error, safe approval and restore controls during reads, pending submit spinner, hidden single-page pagination, immediate manual refresh feedback, duplicate suppression, shared quiet polling, success/error/retry, reduced motion, stale refresh isolation, distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, six-row history server pagination/current pinning/old detail/stale reads/retry, server pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, five-record audit server pagination, independent pagers/back/reload, stale audit reads and retry, connection completion only for the current visit, in-progress login reload, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
+ assert.deepEqual(errors,[]);console.log('PASS: shared refresh feedback for history/list/detail/preview/Codex/audit, retained content on reload/error, safe approval and restore controls during reads, pending submit spinner, hidden single-page pagination, immediate manual refresh feedback, duplicate suppression, manual catalogue refresh without tab/focus refetch, success/error/retry, reduced motion, stale refresh isolation, distinct dashboard/requests/history/settings, routes, back/forward, submission, diff/CI approval confirmation, restoration, six-row history server pagination/current pinning/old detail/stale reads/retry, cached request pagination, URL search/status/back/reload, old detail links, independent summaries/recovery pages, five-record audit server pagination, independent pagers/back/reload, stale audit reads and retry, connection completion only for the current visit, in-progress login reload, scoped settings confirmation/error/success, member access and ownership offer/cancel/accept, owner/editor UI, mobile layout, no runtime errors');
 } finally {await browser?.close();server.kill('SIGTERM');}

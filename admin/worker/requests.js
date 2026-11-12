@@ -32,6 +32,7 @@ export function requestsAPI({github=createGitHub}={}) {
    if(url.pathname==='/api/requests' && request.method==='GET') {
     const query=listQuery(url.searchParams);
     const requests=await requestCatalog(gh,env);
+    if(url.searchParams.get('view')==='catalog')return reply({requests});
     return reply(url.searchParams.get('view')==='summary'?requestSummary(requests):paginateRequests(requests,query));
    }
    const requestDetail=url.pathname.match(/^\/api\/requests\/([1-9]\d*)$/);

@@ -1,9 +1,10 @@
 import {production,review} from './environment.js';
 import organizationAvatar from "./assets/mng-lab-avatar.png";
-import React,{useEffect,useState,useRef} from 'react';
+import React,{useEffect,useState,useRef,useMemo} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router-dom';
 import {api,requestState,requestLabel,requestTitle,isRestoration,isRevert,labels,date} from './api.js';
 import {appliedVersion} from '../shared/version.js';
+import {paginateRequests} from '../shared/request-list.js';
 import Pagination from './Pagination.jsx';
 import LoadingIndicator from './LoadingIndicator.jsx';
 import RefreshButton from './RefreshButton.jsx';
@@ -16,18 +17,20 @@ function RequestRows({requests,search='',manage=false}) {return <ul className={`
 export default function ConnectedApp({user}) {
  const location=useLocation(),navigate=useNavigate();
  const [data,setData]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
+ const [catalog,setCatalog]=useState(null);
  const params=new URLSearchParams(location.search),query=params.get('q')||'',filter=params.get('status')||'all';
- const [draftQuery,setDraftQuery]=useState(query);
  const refreshSequence=useRef(0),activeRead=useRef(null);
  const detailId=location.pathname.match(/^\/requests\/(\d+)$/)?.[1];
  const isDashboard=location.pathname==='/dashboard'||location.pathname==='/';
  const isSettings=location.pathname==='/settings',isNew=location.pathname==='/requests/new',isHistory=location.pathname.startsWith('/history');
+ const isRequestList=!isDashboard&&!isSettings&&!isNew&&!isHistory&&!detailId;
  const listPage=params.get('page')||'1',recoveryPage=params.get('recovery_page')||'1';
  const tab=['active','past'].includes(params.get('tab'))?params.get('tab'):['done','closed'].includes(filter)?'past':'active';
  const tabStatuses=Object.entries(labels).filter(([value])=>['done','closed'].includes(value)===(tab==='past'));
- function switchTab(value){changeList({tab:value,status:'all',q:draftQuery,page:1});}
- const path=isHistory||isNew?null:detailId?`/api/requests/${detailId}`:isDashboard?'/api/requests?view=summary':isSettings?`/api/requests?status=auth_required&page_size=3&page=${recoveryPage}`:`/api/requests?${new URLSearchParams({q:query,status:filter,page:listPage,scope:tab})}`;
- const current=data?.path===path?data.value:null,requests=current?.requests||[],selected=current?.request;
+ function switchTab(value){changeList({tab:value,status:'all',q:query,page:1});}
+ const path=isHistory||isNew?null:detailId?`/api/requests/${detailId}`:isDashboard?'/api/requests?view=summary':isSettings?`/api/requests?status=auth_required&page_size=3&page=${recoveryPage}`:'/api/requests?view=catalog';
+ const listView=useMemo(()=>catalog?paginateRequests(catalog.requests,{q:query,status:filter,scope:tab,page:Number.isSafeInteger(Number(listPage))&&Number(listPage)>0?Number(listPage):1}):null,[catalog,query,filter,tab,listPage]);
+ const current=isRequestList?listView:data?.path===path?data.value:null,requests=current?.requests||[],selected=current?.request;
  const counts=current?.counts||{},attention=current?.attention||[],recent=current?.recent||[];
  const pageTitle=isDashboard?'대시보드':isNew?'새 수정 요청':isHistory?'홈페이지 버전':isSettings?'설정':detailId?'요청 상세':'요청 관리';
  function changeList(values,{replace=false}={}){
@@ -45,28 +48,37 @@ export default function ConnectedApp({user}) {
    try{
     const value=await api(path);
     if(seq!==refreshSequence.current)return null;
-    setData({path,value,updatedAt:Date.now()});setError('');
+    if(isRequestList)setCatalog(value);
+    else {
+     setData({path,value,updatedAt:Date.now()});
+     // Detail reads after approval, closing, retrying, or creation update the
+     // cached list too, without another full GitHub catalogue request.
+     if(value.request)setCatalog(previous=>previous?{requests:[value.request,...previous.requests.filter(r=>r.id!==value.request.id)].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id-a.id)}:previous);
+    }
+    setError('');
     if(value.pagination&&String(value.pagination.page)!==(isSettings?recoveryPage:listPage)){
      if(isSettings)changeRecovery(value.pagination.page);else changeList({page:value.pagination.page},{replace:true});
     }
     return true;
-   }catch(e){if(seq===refreshSequence.current){setError(e.status===404&&detailId?'':e.message);if(e.status===404)setData({path,value:{}});return false;}return null;}
+   }catch(e){if(seq===refreshSequence.current){setError(e.status===404&&detailId?'':e.message);if(e.status===404){setData({path,value:{}});if(detailId)setCatalog(previous=>previous?{requests:previous.requests.filter(r=>r.id!==Number(detailId))}:previous);}return false;}return null;}
    finally{if(seq===refreshSequence.current)setLoading(false);if(activeRead.current===read)activeRead.current=null;}
   })();
   activeRead.current=read;return read.promise;
  }
  useEffect(()=>{
   if(!path){++refreshSequence.current;setLoading(false);setError('');return;}
+  if(isRequestList){
+   setError('');
+   if(catalog)setLoading(false);else refresh();
+   return()=>{++refreshSequence.current;activeRead.current=null;};
+  }
   setError('');refresh();const update=()=>{if(document.visibilityState==='visible')refresh();};
   const timer=setInterval(update,30000);document.addEventListener('visibilitychange',update);
   return()=>{++refreshSequence.current;activeRead.current=null;clearInterval(timer);document.removeEventListener('visibilitychange',update);};
  },[path]);
- useEffect(()=>{setDraftQuery(query);},[query,location.key]);
  useEffect(()=>{
-  if(location.pathname!=='/requests'||draftQuery===query)return;
-  const timer=setTimeout(()=>changeList({q:draftQuery,page:1},{replace:true}),350);
-  return()=>clearTimeout(timer);
- },[draftQuery,query,location.pathname,location.search]);
+  if(isRequestList&&listView&&String(listView.pagination.page)!==listPage)changeList({page:listView.pagination.page},{replace:true});
+ },[isRequestList,listView,listPage]);
  useEffect(()=>{document.title=`${pageTitle} · MNG 홈페이지 관리 어드민`;setNotice('');},[location.pathname,pageTitle]);
  return <div className="app-shell">
   <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리 어드민</small></span></Link><div className="workspace-label">WORKSPACE <span>{review?'화면 검토':production?'운영':'연동 테스트'}</span></div>
@@ -98,9 +110,9 @@ export default function ConnectedApp({user}) {
      <div className="connected-heading"><h2>{tab==='active'?'처리할 요청':'지난 요청'}</h2><RefreshButton key={path} onRefresh={refresh}/></div>
      <div className="request-tabs" role="group" aria-label="요청 구분">{[['active','처리 중'],['past','지난 요청']].map(([value,label])=><button key={value} type="button" aria-pressed={tab===value} onClick={()=>switchTab(value)}>{label} {current?.scopeCounts&&<span>({current.scopeCounts[value]})</span>}</button>)}</div>
      <p className="request-tab-description">{tab==='active'?'자동 수정 중이거나 검토·재실행이 필요한 요청입니다.':'반영을 마쳤거나 종료한 요청입니다. 반영된 홈페이지는 버전 화면에서 확인할 수 있습니다.'}</p>
-     <div className="request-tools"><label>요청 검색<input type="search" value={draftQuery} maxLength={200} onChange={e=>setDraftQuery(e.target.value)} placeholder="제목, 내용, 요청 번호, 버전 번호"/></label><label>상태<select aria-label="상태" value={filter} onChange={e=>changeList({status:e.target.value,q:draftQuery,page:1})}><option value="all">전체</option>{tabStatuses.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label></div>
+     <div className="request-tools"><label>요청 검색<input type="search" value={query} maxLength={200} onChange={e=>changeList({q:e.target.value,page:1},{replace:true})} placeholder="제목, 내용, 요청 번호, 버전 번호"/></label><label>상태<select aria-label="상태" value={filter} onChange={e=>changeList({status:e.target.value,q:query,page:1})}><option value="all">전체</option>{tabStatuses.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label></div>
      <div aria-busy={loading||(!current&&!error)}>{!current?(error?<p>목록을 불러오지 못했습니다. 다시 불러오기를 눌러 주세요.</p>:<LoadingIndicator label="요청 목록 불러오는 중"/>):requests.length?<RequestRows requests={requests} search={location.search} manage/>:<p className="connected-empty">{query||filter!=='all'?'조건에 맞는 요청이 없습니다.':tab==='active'?'지금 처리할 요청이 없습니다. 완료된 작업은 지난 요청에서 확인하세요.':'아직 지난 요청이 없습니다.'}</p>}</div>
-     <Pagination value={current?.pagination} loading={loading} onChange={value=>changeList({page:value})}/>
+     <Pagination value={current?.pagination} loading={loading&&!current} onChange={value=>changeList({page:value})}/>
     </section>}
    </main></div>
  </div>;

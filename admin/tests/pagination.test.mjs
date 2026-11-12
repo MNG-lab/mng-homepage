@@ -23,6 +23,10 @@ test('server returns 20 rows after search and status filtering, with global summ
  page=await get('?q=absent&page=99');assert.equal(page.requests.length,0);assert.equal(page.pagination.page,1);assert.equal(page.pagination.total,0);
  page=await get('?page=999');assert.equal(page.pagination.page,3);assert.equal(page.requests.length,7);
  const summary=await get('?view=summary');assert.deepEqual(summary.counts,{review:0,working:5,failed:42});assert.equal(summary.recent.length,5);assert.equal(summary.attention.length,5);
+ const catalog=await get('?view=catalog');assert.equal(catalog.requests.length,47);assert.equal(catalog.requests.at(-1).id,1);assert.equal(catalog.pagination,undefined);
+ const {paginateRequests}=await import('../shared/request-list.js');
+ assert.deepEqual(paginateRequests(catalog.requests,{status:'failed',q:'Members',page:3}).requests.map(r=>r.id),[2,1]);
+ const denied=await api(new Request(origin+'/api/requests?view=catalog'),config,null);assert.equal(denied.status,403);
  const detail=await get('/1');assert.equal(detail.request.id,1);assert.equal(detail.request.run.id,1);
  for(const query of ['?page_size=0','?page_size=4','?page_size=1000','?page=0','?page=-1','?page=1.5','?page=99999999999999999','?status=unknown','?q='+'a'.repeat(201)])assert.equal((await get(query)).status,400);
  // Auth-failed requests count with failures, but also have their own paged filter.
