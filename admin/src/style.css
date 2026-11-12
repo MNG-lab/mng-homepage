@@ -93,6 +93,10 @@ svg {
   display: flex;
   flex-direction: column;
   z-index: 5;
+  overflow-y: auto;
+}
+.sidebar > * {
+  flex-shrink: 0;
 }
 .brand {
   display: flex;
@@ -184,6 +188,58 @@ nav {
   margin-top: auto;
   padding-top: 60px;
 }
+.sidebar-quick-links {
+  margin-top: auto;
+  padding: 32px 0 24px;
+}
+.sidebar-quick-links h2 {
+  border-top: 1px solid #e7ecf2;
+  margin: 0 10px 8px;
+  padding-top: 18px;
+  color: #68768a;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.quick-links-nav {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+}
+.quick-link:hover,
+.quick-link:focus-visible {
+  background: #f4f7fb;
+}
+.quick-link:hover strong,
+.quick-link:focus-visible strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.quick-link-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #eef1f6;
+  color: #475569;
+}
+.quick-link-icon.lab {
+  background: #eaf5f0;
+  color: #367964;
+}
+.quick-link-icon svg { width: 18px; height: 18px; }
+.quick-link-label { display: grid; gap: 1px; }
+.quick-link-label strong { color: #35435a; font-size: 12px; font-weight: 600; }
+.quick-link-label small { color: #68768a; font-size: 10px; white-space: nowrap; }
+.quick-link-external { flex: 0 0 16px; width: 16px; height: 16px; margin-left: auto; color: #68768a; }
 .help-card {
   background: #f7f9fc;
   border: 1px solid #edf0f5;
@@ -1237,6 +1293,16 @@ select {
   .sidebar-bottom {
     display: none;
   }
+  .sidebar-quick-links { margin: 0; padding: 12px 0 16px; }
+  .sidebar-quick-links h2 { display: none; }
+  .sidebar-quick-links .quick-links-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+  .sidebar-quick-links .quick-link { gap: 8px; padding: 8px; background: #f6f8fb; }
+  .sidebar-quick-links .quick-link:hover { background: #edf2f8; }
+  .sidebar-quick-links .quick-link-icon { flex-basis: 28px; height: 28px; }
   nav {
     display: flex;
     gap: 8px;
