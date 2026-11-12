@@ -28,10 +28,14 @@ try {
  });
  await page.goto('http://127.0.0.1:4195/requests/new');
  assert.equal(await page.getByRole('button',{name:'변경 취소',exact:true}).count(),0);
+ assert.equal(await page.getByRole('textbox').first().getAttribute('id'),'request-title');
  assert.equal(await page.getByLabel('수정 유형',{exact:true}).count(),0);
  await page.getByLabel('어느 페이지인가요?',{exact:true}).selectOption('Multiple');
  await page.getByLabel('다른 페이지 주소',{exact:true}).fill('https://dglab.yonsei.ac.kr/\nhttps://dglab.yonsei.ac.kr/members');
  await page.getByLabel('어떻게 바꾸면 될까요?',{exact:true}).fill('첫 사진을 소개에 넣고 두 번째 사진을 참고해 주세요.');
+ assert.equal(await page.locator('.request-auto-title strong').innerText(),'첫 사진을 소개에 넣고 두 번째 사진을 참고해 주세요.');
+ await page.getByRole('textbox',{name:'요청 제목',exact:true}).fill('내가 정한 제목');assert.equal(await page.locator('.request-auto-title').count(),0);
+ await page.getByRole('textbox',{name:'요청 제목',exact:true}).fill('');await page.locator('.request-auto-title').waitFor();
  await page.getByText('추가로 전달할 내용',{exact:true}).click();
  await page.getByLabel('정확히 넣을 문구',{exact:true}).fill('KR: 연구실\nEN: Lab');
  const input=page.getByLabel('첨부할 사진 선택',{exact:true});
@@ -57,6 +61,6 @@ try {
  assert.equal(created.at(-1).rollbackType,'pr');assert.equal(created.at(-1).rollbackTarget,'201');assert.equal(created.at(-1).sourceRequest,101);assert.equal(created.at(-1).sourceMergeSha,'a'.repeat(40));
  completed.reversal={requestId:123,state:'pending'};await page.goto('http://127.0.0.1:4195/requests/101');await page.getByRole('link',{name:'변경 취소 요청 #123 보기 →'}).waitFor();assert.equal(await page.getByRole('button',{name:'이 변경 취소',exact:true}).count(),0);
  completed.reversal=null;role='editor';await page.goto('http://127.0.0.1:4195/requests/101');await page.getByRole('heading',{name:completed.title,exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'이 변경 취소',exact:true}).count(),0);
- await page.goto('http://127.0.0.1:4195/requests/new');await page.getByRole('button',{name:'제목 수정',exact:true}).click();await page.getByRole('textbox',{name:'요청 제목',exact:true}).fill('직접 쓴 제목');await page.reload();assert.equal(await page.getByRole('textbox',{name:'요청 제목',exact:true}).inputValue(),'직접 쓴 제목');
+ await page.goto('http://127.0.0.1:4195/requests/new');await page.getByRole('textbox',{name:'요청 제목',exact:true}).fill('직접 쓴 제목');await page.reload();assert.equal(await page.getByRole('textbox',{name:'요청 제목',exact:true}).inputValue(),'직접 쓴 제목');
  assert.deepEqual(errors,[]);console.log('composer smoke: simplified form, auto/editable title, photos, retry, mobile, request-bound cancellation and role guards passed');
 }finally{await browser?.close();server.kill('SIGTERM');}

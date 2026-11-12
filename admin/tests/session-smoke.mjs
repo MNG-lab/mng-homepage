@@ -34,7 +34,6 @@ try {
  await page.getByRole('button',{name:'대시보드',exact:true}).click();assert.equal(refreshes,2,'rapid activity is throttled');
  await page.clock.fastForward(61000);
  await renewed(()=>page.getByRole('button',{name:'새 수정 요청',exact:true}).click());
- await page.getByRole('button',{name:'제목 수정',exact:true}).click();
  await page.clock.fastForward(61000);
  await renewed(()=>page.getByRole('textbox',{name:'요청 제목',exact:true}).pressSequentially('Session test'));
  const afterTyping=refreshes;await page.clock.fastForward(61000);

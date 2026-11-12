@@ -16,7 +16,7 @@ export default function NewRequest({onSubmitted,onCancel}) {
   const [draft,setDraft]=useState(initial),[files,setFiles]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[phase,setPhase]=useState('접수 중…'),[dragging,setDragging]=useState(false);
   const urls=useRef([]),fileInput=useRef(null),submitting=useRef(false);
   useEffect(()=>{sessionStorage.setItem(draftKey,JSON.stringify(draft));},[draft]);
-  const [editTitle,setEditTitle]=useState(!!draft.title),[customUrls,setCustomUrls]=useState(draft.page==='Multiple'||!!(draft.targetUrls&&draft.targetUrls!==websiteURL(draft.page)));
+  const [customUrls,setCustomUrls]=useState(draft.page==='Multiple'||!!(draft.targetUrls&&draft.targetUrls!==websiteURL(draft.page)));
   const suggestedTitle=suggestRequestTitle(draft);
   useEffect(()=>()=>urls.current.forEach(url=>URL.revokeObjectURL(url)),[]);
   function change(key,value){setDraft(previous=>({...previous,[key]:value}));}
@@ -56,6 +56,12 @@ export default function NewRequest({onSubmitted,onCancel}) {
   const field=(key,label,{required=false,rows=3,placeholder='',maxLength=5000}={})=><label className="request-field" key={key}><FieldLabel required={required}>{label}</FieldLabel><textarea aria-label={label} required={required} rows={rows} maxLength={maxLength} value={draft[key]} onChange={e=>change(key,e.target.value)} placeholder={placeholder}/></label>;
   return <form className="request-compose" onSubmit={submit} onPaste={event=>{if(event.clipboardData.files.length){event.preventDefault();addFiles(event.clipboardData.files);}}}>
     <fieldset disabled={busy} className="request-fieldset">
+      <section className="panel connected-panel request-title-section">
+        <label className="request-title-label" htmlFor="request-title">요청 제목 <span aria-hidden="true">선택</span></label>
+        <p id="request-title-hint" className="request-title-hint">제목을 적으면 그대로 사용합니다. 비워 두면 아래 수정 내용으로 자동 작성합니다.</p>
+        <input id="request-title" className="request-title-input" aria-describedby="request-title-hint" maxLength={100} value={draft.title} onChange={e=>change('title',e.target.value)} placeholder="예: Members 프로필 사진 교체"/>
+        {!draft.title.trim()&&suggestedTitle&&<div className="request-auto-title"><span>자동 제목</span><strong>{suggestedTitle}</strong></div>}
+      </section>
       <section className="panel connected-panel connected-form request-section">
         <div className="request-section-heading"><div><h2>수정할 내용</h2><p>바꿀 부분과 원하는 결과를 편하게 적어 주세요.</p></div><p className="request-required-note"><span className="request-required-mark" aria-hidden="true">*</span> 필수 입력</p></div>
         <div className="request-page-picker"><label className="request-field"><FieldLabel required>어느 페이지인가요?</FieldLabel><select required aria-label="어느 페이지인가요?" value={draft.page} onChange={e=>changePage(e.target.value)}><option value="" disabled>페이지를 선택해 주세요</option>{pages.map(page=><option key={page} value={page}>{page==='Multiple'?'여러 페이지 / 직접 입력':page}</option>)}</select></label>{draft.page&&draft.page!=='Multiple'&&<button type="button" className="text-button" aria-expanded={customUrls} onClick={()=>{setCustomUrls(value=>!value);if(customUrls)change('targetUrls',websiteURL(draft.page));}}>{customUrls?'기본 주소 사용':'다른 주소 지정'}</button>}</div>
@@ -71,11 +77,10 @@ export default function NewRequest({onSubmitted,onCancel}) {
         {!!files.length&&<ul className="attachment-grid">{files.map((item,index)=><li key={item.id}><a href={item.url} target="_blank" rel="noreferrer"><img src={item.url} alt={`첨부 사진 ${index+1}: ${item.file.name}`}/></a><div><strong>{item.file.name}</strong><small>{bytesLabel(item.file.size)} · {item.status==='uploading'?'업로드 중…':item.status==='uploaded'?'업로드 완료':item.status==='failed'?'업로드 재시도 필요':'전송 대기'}</small><label>사진 설명<input maxLength={200} value={item.caption} placeholder="예: 교체할 프로필 사진" onChange={e=>setFiles(previous=>previous.map(f=>f.id===item.id?{...f,caption:e.target.value}:f))}/></label><button type="button" className="text-button" aria-label={`${item.file.name} 첨부 제거`} onClick={()=>remove(item)}>첨부 제거</button></div></li>)}</ul>}
         {field('sourceLinks','참고 링크',{rows:2,placeholder:'이미지 주소, 참고 사이트, 문서 링크 등을 붙여넣으세요.'})}
       </section>
-      <details className="panel connected-panel request-extra"><summary><span><strong>추가로 전달할 내용</strong><small>정확히 넣을 문구 · 변경하지 않을 부분</small></span></summary><div className="request-section">
+      <details className="panel connected-panel request-extra"><summary><span className="request-extra-text"><strong>추가로 전달할 내용</strong><small>정확히 넣을 문구 · 변경하지 않을 부분</small></span><svg className="request-extra-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path className="request-extra-icon-vertical" d="M12 5v14"/></svg></summary><div className="request-section">
         {field('exactText','정확히 넣을 문구',{rows:4,placeholder:'국문: …\n영문: …'})}
         {field('outOfScope','변경하지 않을 부분',{placeholder:'예: 다른 페이지의 디자인과 구성원 순서는 유지해 주세요.'})}
       </div></details>
-      <section className="request-title-preview" aria-label="요청 제목"><div><span className="request-help">요청 제목</span><strong aria-live="polite">{draft.title.trim()||suggestedTitle||'내용을 입력하면 제목이 자동으로 만들어집니다.'}</strong></div><button type="button" className="text-button" aria-expanded={editTitle} onClick={()=>setEditTitle(value=>!value)}>제목 수정</button>{editTitle&&<label className="request-field"><FieldLabel>요청 제목</FieldLabel><input aria-label="요청 제목" maxLength={100} value={draft.title} onChange={e=>change('title',e.target.value)} placeholder={suggestedTitle||'비워 두면 내용에서 자동으로 만듭니다.'}/><small className="request-help">비워 두면 위 제목을 사용합니다.</small></label>}</section>
     </fieldset>
     {error&&<p className="error-note" role="alert">{error}</p>}
     <div className="request-submit-panel"><p>내용과 첨부 사진은 공개 GitHub 저장소에 등록됩니다. 비밀번호·개인정보·비공개 자료는 넣지 마세요.</p><div className="action-row"><button type="button" className="secondary" disabled={busy} onClick={onCancel}>취소</button><ActionButton type="submit" busy={busy} busyLabel={phase}>수정 요청 보내기</ActionButton></div></div>
