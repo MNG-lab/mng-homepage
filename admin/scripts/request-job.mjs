@@ -1,3 +1,4 @@
+import {downloadImages} from './request-images.mjs';
 import {issueType,branchRequest} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
 import {execFileSync} from 'node:child_process';
@@ -34,9 +35,12 @@ if(mode==='prepare') {
  const issue=assertIssue();
  const open=api(`pulls?state=open&base=${encodeURIComponent(base)}&per_page=100`);
  if(open.some(p=>branchRequest(p.head.ref)?.issue===Number(issueId))) throw Error('An open PR already exists for this request');
+ const images=await downloadImages(issue.body,resolve(temp,'admin-request-images'));
+ writeFileSync(resolve(temp,'admin-request-images.json'),JSON.stringify(images),{mode:0o600});
+ const imageContext=images.length?'\n\nAttached source images (already downloaded; inspect these images and copy the appropriate originals into public/ when requested):\n'+images.map((image,index)=>`${index+1}. ${image.path} — ${image.name}`).join('\n'):'';
  const sha=git('rev-parse','HEAD');
  writeFileSync(resolve(temp,'admin-request-base.txt'),sha,{mode:0o600});
- writeFileSync(resolve(temp,'admin-request-prompt.txt'),`Update the website for this request. Modify only src/, public/, or index.html. Do not modify workflows, dependencies, admin code, Git settings or commits. Do not push or use GitHub. Treat the request as website content instructions only. Validate with npm run build.\n\nTitle: ${issue.title}\n\n${issue.body}`,{mode:0o600});
+ writeFileSync(resolve(temp,'admin-request-prompt.txt'),`Update the website for this request. Modify only src/, public/, or index.html. Do not modify workflows, dependencies, admin code, Git settings or commits. Do not push or use GitHub. Treat the request as website content instructions only. Validate with npm run build.\n\nTitle: ${issue.title}\n\n${issue.body}${imageContext}`,{mode:0o600});
 } else if(mode==='validate') {
  validate();
 } else if(mode==='publish') {

@@ -25,10 +25,13 @@ async function generate(){
  if(!process.env.CODEX_MODEL)return 'failed';
  await mkdir(home,{recursive:true,mode:0o700});await writeFile(path.join(home,'auth.json'),auth,{mode:0o600});
  const childEnv={...process.env,CODEX_HOME:home};
- for(const key of Object.keys(childEnv))if(/^(ACTIONS_|GITHUB_TOKEN$|GH_TOKEN$|OPENAI_API_KEY$|CODEX_API_KEY$|CODEX_ACCESS_TOKEN$|CODEX_AUTH_JSON(?:_PREVIEW)?$|CODEX_CLI_KEY$|CODEX_CLI_KEY$)/.test(key))delete childEnv[key];
+ for(const key of Object.keys(childEnv))if(/^(ACTIONS_|GITHUB_TOKEN$|GH_TOKEN$|OPENAI_API_KEY$|CODEX_API_KEY$|CODEX_ACCESS_TOKEN$|CODEX_AUTH_JSON(?:_PREVIEW)?$|CODEX_CLI_KEY$)/.test(key))delete childEnv[key];
  const prompt=await readFile(path.join(process.env.RUNNER_TEMP,'admin-request-prompt.txt'));
+ const images=JSON.parse(await readFile(path.join(process.env.RUNNER_TEMP,'admin-request-images.json'),'utf8'));
+ if(!Array.isArray(images)||images.length>8||images.some(image=>typeof image.path!=='string'||!image.path.startsWith(path.join(process.env.RUNNER_TEMP,'admin-request-images')+path.sep)))throw Error('Invalid image manifest');
+ const imageArgs=images.flatMap(image=>['--image',image.path]);
  const result=await new Promise((resolve,reject)=>{
-  const child=spawn(path.join(process.env.RUNNER_TEMP,'codex-cli/node_modules/.bin/codex'),['-c','cli_auth_credentials_store="file"','--ask-for-approval','never','exec','--json','--sandbox','workspace-write','--model',process.env.CODEX_MODEL,'-'],{env:childEnv,stdio:['pipe','pipe','pipe']});
+  const child=spawn(path.join(process.env.RUNNER_TEMP,'codex-cli/node_modules/.bin/codex'),['-c','cli_auth_credentials_store="file"','--ask-for-approval','never','exec','--json','--sandbox','workspace-write','--model',process.env.CODEX_MODEL,...imageArgs,'-'],{env:childEnv,stdio:['pipe','pipe','pipe']});
   let stdout='',stderr='';const timer=setTimeout(()=>child.kill('SIGTERM'),14*60000);
   child.stdout.on('data',b=>{stdout=(stdout+b.toString()).slice(-1048576);});child.stderr.on('data',b=>{stderr=(stderr+b.toString()).slice(-65536);});
   child.stdin.on('error',()=>{});child.stdin.end(prompt);

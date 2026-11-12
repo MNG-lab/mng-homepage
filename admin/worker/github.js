@@ -1,3 +1,5 @@
+import {normalizeRequest,requestBody} from '../shared/request-form.js';
+import {ATTACHMENT_BRANCH} from '../shared/images.js';
 import {issueType,branchRequest,runIdentity} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
 import {changedAreas,relatedRequest} from '../shared/version.js';
@@ -96,11 +98,30 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       return describePulls(pulls);
     },
     async issue(id) {const issue=await call(`/issues/${number(id)}`);assertManagedIssue(issue,config);return issue;},
-    async createRequest(input) {
-      if (typeof input.title!=='string' || !input.title.trim() || input.title.length>100 || typeof input.description!=='string' || !input.description.trim() || input.description.length>5000 || !['Home','Research','Professor','Members','Publications','Gallery','Contact'].includes(input.page)) throw new GitHubError('요청 제목·페이지·내용을 확인해 주세요.',400);
-      if(!/^[0-9a-f-]{36}$/.test(input.requestId || '')) throw new GitHubError('요청 식별자가 필요합니다.',400);
-      // No personal email or credentials are copied into the public repository.
-      return call('/issues','POST',{title:`${config.title}${input.title.trim()}`,body:`${config.marker}\n<!-- request-id:${input.requestId} -->\n\n## 작업 대상\n${TEST_BASE}\n\n## 페이지\n${input.page}\n\n## 수정 요청\n${input.description.trim()}\n\n${config.mode==='production'?'관리자 승인 후 운영 홈페이지에 반영됩니다.':'운영 홈페이지에 반영되지 않는 어드민 연동 테스트 요청입니다.'}`,labels:[config.label]});
+    async createRequest(input,attachments=[]) {
+      let value;try{value=normalizeRequest(input);}catch(e){throw new GitHubError(e.message,400);}
+      if(value.kind==='rollback'&&config.mode!=='production')throw new GitHubError('변경 취소는 운영 환경에서 사용할 수 있습니다.',400);
+      return call('/issues','POST',{title:`${value.kind==='rollback'?'[변경취소] ':config.title}${value.title}`,body:requestBody(value,config,attachments),labels:value.kind==='rollback'?[value.rollbackType==='latest'?'rollback-simple-request':'rollback-request']:[config.label]});
+    },
+    async storeAttachment({path,content,blobSha,branch}) {
+      if(branch!==ATTACHMENT_BRANCH||!/^requests\/[a-f\d-]{36}\/[a-f\d-]{36}\.(png|jpg|gif|webp)$/.test(path))throw new GitHubError('잘못된 첨부 경로입니다.',400);
+      for(let attempt=0;attempt<3;attempt++) {
+        const head=(await call(`/git/ref/heads/${ATTACHMENT_BRANCH}`)).object.sha;
+        try {
+          const existing=await call(`/contents/${path}?ref=${head}`);
+          if(existing.sha!==blobSha)throw new GitHubError('같은 식별자의 사진 내용이 다릅니다.',409);
+          return `https://raw.githubusercontent.com/${REPOSITORY}/${head}/${path}`;
+        }catch(e){if(e.status!==404)throw e;}
+        try {
+          const result=await call(`/contents/${path}`,'PUT',{message:'Store request attachment [skip ci]',branch:ATTACHMENT_BRANCH,content});
+          return `https://raw.githubusercontent.com/${REPOSITORY}/${result.commit.sha}/${path}`;
+        }catch(e){if(e.status!==409||attempt===2)throw e;}
+      }
+    },
+    async dispatchRollback(id) {
+      const issue=await this.issue(id);
+      if(config.mode!=='production'||issue.state!=='open'||issueType(issue,config)?.kind!=='revert')throw new GitHubError('열린 변경 취소 요청만 실행할 수 있습니다.',409);
+      return call('/actions/workflows/rollback-from-issue.yml/dispatches','POST',{ref:WORKFLOW_REF,inputs:{issue:String(number(id))}});
     },
     async automationHead() {return (await call(`/git/ref/heads/${WORKFLOW_REF}`)).object.sha;},
     async dispatchDevice(id) {

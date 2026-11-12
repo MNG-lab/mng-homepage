@@ -1,3 +1,7 @@
+import {deployment} from '../shared/deployment.js';
+import {extractImages,MAX_IMAGES} from '../shared/images.js';
+import {normalizeRequest,requestBody} from '../shared/request-form.js';
+import {uploadAttachment,requestAttachments} from './attachments.js';
 import {allReads} from './github-catalog.js';
 import {listQuery,paginateRequests,requestSummary,requestCatalog} from './request-list.js';
 import {historyPage,paginateHistory} from './history-list.js';
@@ -13,6 +17,16 @@ export function requestsAPI({github=createGitHub}={}) {
   if(!['GET','HEAD'].includes(request.method) && request.headers.get('Origin')!==env.APP_ORIGIN) return reply({error:'잘못된 요청 출처입니다.'},403);
   try {
    const gh=await github(env);
+   const removal=url.pathname.match(/^\/api\/attachments\/([a-f\d-]{36})\/remove$/);
+   if(removal&&request.method==='POST'){
+    const row=await env.DB.prepare('SELECT * FROM attachments WHERE id=?').bind(removal[1]).first();
+    if(!row||row.actor_sub!==user.sub)return reply({error:'첨부 사진을 찾을 수 없습니다.'},404);
+    if(await env.DB.prepare('SELECT id FROM requests WHERE id=?').bind(row.request_id).first())return reply({error:'이미 접수한 요청의 사진은 제거할 수 없습니다.'},409);
+    await env.DB.prepare('UPDATE attachments SET removed=1 WHERE id=? AND actor_sub=?').bind(row.id,user.sub).run();
+    return reply({removed:true});
+   }
+   const upload=url.pathname.match(/^\/api\/attachments\/([a-f\d-]{36})$/);
+   if(upload&&request.method==='POST')return reply(await uploadAttachment(request,env,user,gh,upload[1]),201);
    if(url.pathname==='/api/requests' && request.method==='GET') {
     const query=listQuery(url.searchParams);
     const requests=await requestCatalog(gh,env);
@@ -73,10 +87,14 @@ export function requestsAPI({github=createGitHub}={}) {
    if(url.pathname==='/api/requests' && request.method==='POST') {
     if(!request.headers.get('Content-Type')?.startsWith('application/json')) return reply({error:'JSON 요청이 필요합니다.'},415);
     const raw=await request.text();
-    if(raw.length>12000) return reply({error:'요청이 너무 깁니다.'},413);
+    if(raw.length>48000) return reply({error:'요청이 너무 깁니다.'},413);
     let body;try{body=JSON.parse(raw);}catch{return reply({error:'잘못된 요청입니다.'},400);}
     if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(body.requestId||'')) return reply({error:'요청 식별자를 확인해 주세요.'},400);
-    const payload=JSON.stringify({title:body.title,page:body.page,description:body.description});
+    try{body=normalizeRequest(body);}catch(e){throw new GitHubError(e.message,400);}
+    if(body.kind==='rollback'&&user.role==='editor')return reply({error:'관리자만 변경 취소를 요청할 수 있습니다.'},403);
+    const attachments=await requestAttachments(env,user,body);
+    if(extractImages(requestBody(body,deployment(env),attachments)).length>MAX_IMAGES)throw new GitHubError('파일과 링크를 합쳐 사진은 8개까지 첨부할 수 있습니다.',400);
+    const payload=JSON.stringify(body);
     const insert=await env.DB.prepare("INSERT OR IGNORE INTO requests (id,actor_sub,payload,state) VALUES (?,?,?,'creating')").bind(body.requestId,user.sub,payload).run();
     if(!insert.meta.changes) {
       const row=await env.DB.prepare('SELECT * FROM requests WHERE id=?').bind(body.requestId).first();
@@ -85,13 +103,13 @@ export function requestsAPI({github=createGitHub}={}) {
       return reply({error:'이미 처리 중이거나 결과 확인이 필요한 요청입니다. 새 요청을 만들지 말고 목록을 확인해 주세요.'},409);
     }
     let issue;
-    try {issue=await gh.createRequest(body);} catch(error) {
+    try {issue=await gh.createRequest(body,attachments);} catch(error) {
       await env.DB.prepare("UPDATE requests SET state='uncertain' WHERE id=?").bind(body.requestId).run();
       throw error;
     }
     await env.DB.prepare("UPDATE requests SET issue_number=?,state='created' WHERE id=?").bind(issue.number,body.requestId).run();
     await env.DB.prepare("UPDATE requests SET state='dispatching' WHERE id=?").bind(body.requestId).run();
-    try {await gh.dispatch(issue.number);} catch {
+    try {await (body.kind==='rollback'?gh.dispatchRollback(issue.number):gh.dispatch(issue.number));} catch {
       // An HTTP timeout does not prove dispatch failed. Never auto-dispatch twice.
       return reply({issue:issue.number,state:'dispatching',warning:'이슈는 생성됐습니다. 작업 실행 응답을 확인하지 못해 중복 실행하지 않았습니다.'},202);
     }

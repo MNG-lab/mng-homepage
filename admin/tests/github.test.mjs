@@ -33,7 +33,7 @@ test('installation token is restricted to one repo; requests never add productio
  });
  assert.deepEqual(calls[0].body.repositories,['mng-homepage']);
  assert.equal(calls[0].body.permissions.secrets,undefined);
- await gh.createRequest({title:'Update members',description:'Test text',page:'Members',requestId:'12345678-1234-1234-1234-123456789abc'});
+ await gh.createRequest({title:'Update members',description:'Test text',page:'Members',requestId:'12345678-1234-4234-9234-123456789abc'});
  assert.deepEqual(calls.at(-1).body.labels,['admin-preview']);
  assert.ok(!calls.at(-1).body.body.includes('@gmail.com'));
  await gh.dispatch(123);assert.equal(calls.at(-1).body.ref,WORKFLOW_REF);
