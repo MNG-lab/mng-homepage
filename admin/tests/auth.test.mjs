@@ -4,6 +4,7 @@ import {SignJWT, decodeJwt} from 'jose';
 import {createHandler} from '../worker/index.js';
 import {createSession} from '../worker/sessions.js';
 import {database} from './d1.mjs';
+import {googleProfilePicture} from '../worker/profile-picture.js';
 const allow={limit:async()=>({success:true})};
 const env = {APP_ORIGIN:'https://admin.example.test',GOOGLE_CLIENT_ID:'client',GOOGLE_CLIENT_SECRET:'test-secret',SESSION_SECRET:'a'.repeat(64),MEMBERS_JSON:JSON.stringify({'owner@gmail.com':{role:'owner'}}),DB:database(),REQUEST_LIMITER:allow,LOGIN_LIMITER:allow,WRITE_LIMITER:allow,ASSETS:{fetch:async()=>new Response('private app')}};
 const req=(path,opts={})=>new Request(env.APP_ORIGIN+path,opts);
@@ -30,7 +31,7 @@ test('login uses state, nonce, PKCE and secure cookie; rejects invalid state bef
  let exchanges=0;
  const h=createHandler({fetchToken:async()=>{exchanges++; throw Error();}});
  const {cookie,p,url}=await begin(h);
- assert.equal(url.searchParams.get('scope'),'openid email');
+ assert.equal(url.searchParams.get('scope'),'openid email profile');
  assert.equal(url.searchParams.get('code_challenge_method'),'S256');
  assert.equal(url.searchParams.get('state'),p.state);
  assert.equal(url.searchParams.get('nonce'),p.nonce);
@@ -74,6 +75,28 @@ test('logout requires same-origin POST and preview denies all mutation APIs',asy
 });
 
 const refreshRequest=jwt=>req('/api/session/refresh',{method:'POST',headers:{Cookie:`__Host-mng_session=${jwt}`,Origin:env.APP_ORIGIN,'Content-Type':'application/json'},body:'{}'});
+
+test('verified Google picture stays in the server session through renewal; missing or unsafe pictures do not block login',async()=>{
+ const picture='https://lh3.googleusercontent.com/a/example=s96-c';
+ for(const supplied of [picture,undefined,'https://untrusted.example/photo.png']){
+  let p;
+  const h=createHandler({fetchToken:async()=>Response.json({id_token:'mock'}),verifyIdentity:async()=>({sub:'google-sub',email:'owner@gmail.com',email_verified:true,nonce:p.nonce,picture:supplied})});
+  const flow=await begin(h);p=flow.p;
+  const callback=await h(req(`/auth/google/callback?code=abc&state=${p.state}`,{headers:{Cookie:flow.cookie}}),env);
+  assert.equal(callback.headers.get('location'),'/dashboard');
+  const cookie=cookiePair(callback.headers.getSetCookie().find(c=>c.startsWith('__Host-mng_session='))),jwt=cookie.split('=')[1];
+  assert.equal(decodeJwt(jwt).picture,undefined,'profile URL is not added to the cookie');
+  const response=await h(req('/api/session',{headers:{Cookie:cookie}}),env),user=(await response.json()).user;
+  assert.equal(user.picture,supplied===picture?picture:null);assert.equal(user.role,'owner');assert.equal(user.sessionId,undefined);
+  assert.equal((await (await h(refreshRequest(jwt),env)).json()).user.picture,user.picture);
+  assert.match(response.headers.get('Content-Security-Policy'),/img-src[^;]+https:\/\/\*\.googleusercontent\.com/);
+ }
+});
+
+test('profile URLs allow only HTTPS Google image hosts without credentials',()=>{
+ for(const value of ['https://lh3.googleusercontent.com/a/photo=s96-c','https://lh3.ggpht.com/a/photo'])assert.equal(googleProfilePicture(value),value);
+ for(const value of [null,{},'javascript:alert(1)','data:image/png;base64,abc','http://lh3.googleusercontent.com/a','https://googleusercontent.com.attacker.test/a','https://attackergoogleusercontent.com/a','https://name:pass@lh3.googleusercontent.com/a','https://lh3.googleusercontent.com:8443/a','https://localhost/a','x'.repeat(2049)])assert.equal(googleProfilePicture(value),null);
+});
 
 test('active sessions renew for six hours, preserve login time, and expire after inactivity',async t=>{
  const start=Date.UTC(2026,10,11);t.mock.timers.enable({apis:['Date'],now:start});

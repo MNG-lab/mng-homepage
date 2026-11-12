@@ -1661,6 +1661,7 @@ select {
 .header-account {display:flex;align-items:center;gap:12px;min-width:0;}
 .header-account-avatar {display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:50%;background:#edf2f9;color:#536e94;box-shadow:inset 0 0 0 1px #e1e8f2;}
 .header-account-avatar svg {width:23px;height:23px;}
+.header-account-avatar img {display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .header-account-info {display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;}
 .header-account-email {display:block;max-width:300px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:1.5;color:#33435a;}
 .header-account .role-badge {padding:1px 7px;border-radius:5px;font-size:11px;font-weight:600;line-height:1.6;}

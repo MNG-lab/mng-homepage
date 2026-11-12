@@ -34,6 +34,8 @@ Wrangler 배포는 운영 UI를 다시 빌드합니다. 운영 config는 `ADMIN_
 
 로그인 계정은 현재 승인된 `chominho96@gmail.com`이며, 6시간 활동 기반 서버 세션 및 접근 제한을 유지합니다. Google OAuth 앱은 제한된 허용 계정으로 운영합니다. 새 구성원은 어드민 구성원과 Google 테스트 사용자 양쪽에 추가해야 합니다. OAuth 앱 공개 전환은 이번 배포 범위에 포함하지 않습니다.
 
+상단 프로필 사진은 Google 로그인의 `profile` 범위로 받은 검증된 ID token의 `picture`를 사용합니다. 사진 주소만 서버 세션에 저장하며, 사진이 없거나 불러오지 못하면 기본 아이콘을 표시합니다. 배포 전 `0011_session_profile_picture.sql`을 적용하세요. 기존 세션은 그대로 유지되고, 사진은 다음 Google 로그인 때 받아옵니다. 이름·Google 액세스 토큰은 보관하지 않습니다.
+
 ## GitHub와 함께 사용하기
 
 GitHub와 어드민은 같은 이슈·PR·Actions를 조회하고 조작합니다. 별도 이슈 복사본을 만들지 않습니다.

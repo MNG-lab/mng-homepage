@@ -18,7 +18,7 @@ const port=Number(process.env.MNG_REVIEW_PORT||4196),origin=`http://127.0.0.1:${
 const conflictScenario=process.env.MNG_REVIEW_SCENARIO==='conflict';
 if(!Number.isInteger(port)||port<1024||port>65535||!existsSync(resolve(assets,'index.html')))throw Error('Build admin:build:review first');
 const config=deployment({ADMIN_ENV:'production'}),DB=database(),env={DB,ADMIN_ENV:'production',APP_ORIGIN:origin,GITHUB_ENABLED:'true'};
-const user={sub:'local-review-owner',email:'review@example.test',role:'owner'},repo='MNG-lab/mng-homepage';
+const user={sub:'local-review-owner',email:'review@example.test',role:'owner',picture:'/review/avatar.svg'},repo='MNG-lab/mng-homepage';
 const issues=new Map(),pulls=new Map(),images=new Map(),runs=new Map();let next=300;
 const stamp=()=>new Date().toISOString(),sha=value=>createHash('sha1').update(String(value)).digest('hex');
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -96,6 +96,7 @@ const server=createServer(async(req,res)=>{
   if(req.method!=='GET'&&req.method!=='HEAD'&&req.headers.origin!==origin&&req.headers.origin!==`http://localhost:${port}`)return send(403,'Invalid origin');
   if(url.pathname==='/api/session'||url.pathname==='/api/session/refresh')return send(200,JSON.stringify({user,mode:'github'}),'application/json');
   if(url.pathname==='/auth/logout'){res.writeHead(303,{Location:'/requests/new'});return res.end();}
+  if(url.pathname==='/review/avatar.svg')return send(200,'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="#426b9f"/><text x="40" y="53" font-family="Arial,sans-serif" font-size="38" fill="white" text-anchor="middle">M</text></svg>','image/svg+xml');
   if(url.pathname==='/review/image'){const bytes=images.get(url.searchParams.get('url'));return bytes?send(200,bytes,bytes[0]===137?'image/png':bytes[0]===255?'image/jpeg':bytes.toString('ascii',0,3)==='GIF'?'image/gif':'image/webp'):send(404,'Review image missing');}
   if(conflictScenario&&['/review/conflict/issue','/review/conflict/run'].includes(url.pathname))return send(200,document(url.pathname.endsWith('/issue')?'원본 요청 댓글 — 로컬 예시':'실행 기록 — 로컬 예시',`<p>실제 GitHub 화면이나 실행 기록이 아닙니다. 충돌 시 현재 자동화가 남기는 안내를 확인하기 위한 예시입니다.</p><section><h2>변경 취소를 완료하지 못했습니다.</h2><p>대상과 충돌 여부를 확인해 주세요.</p><pre>${esc(conflictMessage)}</pre><p>이 예시에서는 이후 요청에서 같은 소개 문구를 다시 수정해 자동 취소할 수 없습니다. 이 요청으로 홈페이지는 변경되지 않았으며, 어드민에서 재실행할 수 없습니다.</p><a href="/requests/103">어드민의 실패 화면으로 돌아가기</a></section>`));
   if(url.pathname==='/review/templates'){

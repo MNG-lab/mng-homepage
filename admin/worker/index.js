@@ -1,4 +1,5 @@
 import {loginPage} from './login-page.js';
+import {googleProfilePicture} from './profile-picture.js';
 import {requestResultAPI} from './request-recovery.js';
 import {deviceAPI} from './device-login.js';
 const handleDevice=deviceAPI();
@@ -60,7 +61,7 @@ export async function session(request, env) {
   if(!saved)return null;
   // A membership lookup outage is a service error, not an expired login.
   const member = await readMember(env,p.email,p.sub,true);
-  return member ? {...member,authTime:Math.floor(saved.created_at/1000),sessionId:p.sid} : null;
+  return member ? {...member,picture:googleProfilePicture(saved.picture),authTime:Math.floor(saved.created_at/1000),sessionId:p.sid} : null;
 }
 const publicUser=({sessionId,...user})=>user;
 function json(data, status=200) {
@@ -75,7 +76,7 @@ function secure(response) {
   result.headers.set('Referrer-Policy', 'no-referrer');
   result.headers.set('X-Content-Type-Options', 'nosniff');
   result.headers.set('X-Frame-Options', 'DENY');
-  result.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://raw.githubusercontent.com https://github.com https://user-images.githubusercontent.com https://private-user-images.githubusercontent.com https://github-production-user-asset-6210df.s3.amazonaws.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+  result.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://raw.githubusercontent.com https://github.com https://user-images.githubusercontent.com https://private-user-images.githubusercontent.com https://github-production-user-asset-6210df.s3.amazonaws.com https://*.googleusercontent.com https://*.ggpht.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   return result;
 }
 
@@ -99,7 +100,7 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
         const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
         const transaction = await sign({state,nonce,verifier},env,'mng-flow',600);
         const target = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-        target.search = new URLSearchParams({client_id:env.GOOGLE_CLIENT_ID,redirect_uri:`${origin(env)}/auth/google/callback`,response_type:'code',scope:'openid email',state,nonce,code_challenge:challenge,code_challenge_method:'S256',prompt:'select_account'}).toString();
+        target.search = new URLSearchParams({client_id:env.GOOGLE_CLIENT_ID,redirect_uri:`${origin(env)}/auth/google/callback`,response_type:'code',scope:'openid email profile',state,nonce,code_challenge:challenge,code_challenge_method:'S256',prompt:'select_account'}).toString();
         return secure(redirect(target.href, {'Set-Cookie':cookie(flowName,transaction,600)}));
       }
       if (path === '/auth/google/callback' && request.method === 'GET') {
@@ -116,7 +117,7 @@ export function createHandler({fetchToken=fetch, verifyIdentity=verifyGoogle}={}
           // For non-Google-managed email, require a pre-bound immutable subject.
           const member = JSON.parse(env.MEMBERS_JSON || '{}')[email];
           if (!user || (!email.endsWith('@gmail.com') && !identity.hd && member?.sub !== identity.sub)) throw new Error('Not allowed');
-          const sid=await createSession(env,email,identity.sub);
+          const sid=await createSession(env,email,identity.sub,identity.picture);
           const token = await sign({email,sub:identity.sub,sid},env,'mng-session',ttl);
           const result = redirect('/dashboard');
           result.headers.append('Set-Cookie',cookie(flowName,'',0));
