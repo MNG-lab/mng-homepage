@@ -1,23 +1,13 @@
-import {ADMIN_ORIGIN} from '../shared/hosting.js';
+import {reportRequestResult} from './request-result.mjs';
 import {deployment} from '../shared/deployment.js';
 const config=deployment({ADMIN_ENV:process.env.ADMIN_ENV});
 import {spawn} from 'node:child_process';
 import {mkdir,readFile,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {isAuthFailure} from './codex-errors.mjs';
-const endpoint=ADMIN_ORIGIN+'/api/internal/request-result';
 const issue=Number(process.env.REQUEST_ISSUE),home=path.join(process.env.RUNNER_TEMP,'admin-codex');
 if(!Number.isSafeInteger(issue)||issue<1||process.env.GITHUB_REPOSITORY!=='MNG-lab/mng-homepage'||process.env.GITHUB_REF!==`refs/heads/${config.ref}`)throw Error('Invalid request invocation');
 process.umask(0o077);
-async function report(reason){
- const url=new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);url.searchParams.set('audience',endpoint);
- const identity=await fetch(url,{headers:{Authorization:`Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`},signal:AbortSignal.timeout(15000)});
- if(!identity.ok)throw Error('Runner identity unavailable');
- const {value}=await identity.json();
- for(let attempt=0;attempt<2;attempt++){
-  try{const result=await fetch(endpoint,{method:'POST',headers:{Authorization:`Bearer ${value}`,'Content-Type':'application/json'},body:JSON.stringify({issue,reason}),signal:AbortSignal.timeout(15000),redirect:'error'});if(!result.ok)throw Error('Result unavailable');return;}catch(e){if(attempt===1)throw e;}
- }
-}
 async function generate(){
  const auth=process.env.CODEX_AUTH_JSON;
  if(!auth)return 'auth_required';
@@ -41,6 +31,6 @@ async function generate(){
 }
 let reason='failed';
 try{reason=await generate();}catch{}finally{await rm(home,{recursive:true,force:true});}
-try{await report(reason);}catch{console.error('Could not report the execution result to the admin.');process.exitCode=1;}
+try{await reportRequestResult({issue,reason});}catch{console.error('Could not report the execution result to the admin.');process.exitCode=1;}
 console.log({success:'Website changes generated. Continue with validation and PR review.',auth_required:'Codex reconnection required. The owner can reconnect in admin settings, then retry this request.',failed:'Codex did not complete the request. Check configuration or retry after investigating.'}[reason]);
 if(reason!=='success')process.exitCode=1;

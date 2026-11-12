@@ -1,3 +1,4 @@
+import {requestFailure} from '../shared/request-failure.js';
 import {isRevert} from '../shared/github-sync.js';
 export {isRevert} from '../shared/github-sync.js';
 import {requestState} from '../shared/requests.js';
@@ -29,9 +30,9 @@ export function api(path,body) {
  pendingReads.set(path,read);return read;
 }
 export const isRestoration=r=>!!(r.restoration||r.pull?.restoration)||/<!-- restore:/.test(r.pull?.body||'');
-export const requestLabel=r=>requestState(r)==='done'?(isRevert(r)?'변경 취소 완료':isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':labels[requestState(r)];
+export const requestLabel=r=>requestState(r)==='done'?(isRevert(r)?'변경 취소 완료':isRestoration(r)?'되돌리기 완료':'수정 반영 완료'):requestState(r)==='auth_required'&&r.auth?.renewed?'다시 실행 가능':requestState(r)==='failed'&&requestFailure(r.failure?.code)?requestFailure(r.failure.code).label:labels[requestState(r)];
 export const requestTitle=r=>{const target=r.restoration||r.pull?.restoration;return target?`${versionReference(target)}으로 되돌리기`:r.displayTitle||r.title?.replace(/^\[Admin(?: Preview)?\] /,'');};
-export const labels={done:'반영 완료',closed:'종료',review:'확인 필요',failed:'작업 실패',auth_required:'Codex 연결 필요',working:'진행 중'};
+export const labels={done:'반영 완료',closed:'닫힘',review:'확인 필요',failed:'작업 실패',auth_required:'Codex 연결 필요',working:'진행 중'};
 export const date=value=>value?new Date(value).toLocaleString('ko-KR',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 
 
@@ -49,12 +50,12 @@ export function progress(r,detail,{approving=false}={}) {
  if(r.pull){steps[1]={...steps[1],state:'complete',text:'변경 준비 완료'};steps[2]={...steps[2],state:'active',text:detail?.ci?.conclusion==='success'?'승인 대기':detail?.ci?.status==='completed'?'검사 결과 확인 필요':detail?.ci?'자동 검사 중':'검사 조회 대기'};}
  else if(r.retry?.state==='pending')steps[1]={...steps[1],state:'active',text:'재실행 접수됨'};
  else if(state==='auth_required')steps[1]={...steps[1],state:'stopped',text:r.auth?.renewed?'다시 실행 대기':'Codex 연결 필요'};
- else if(state==='failed')steps[1]={...steps[1],state:'failed',text:'작업 실패'};
+ else if(state==='failed')steps[1]={...steps[1],state:'failed',text:requestFailure(r.failure?.code)?.label||'작업 실패'};
  else if(r.run?.status==='in_progress')steps[1]={...steps[1],state:'active',text:'작업 실행 중'};
  else if(r.run?.status==='queued'||r.run?.status==='waiting')steps[1].text='실행 대기';
  else if(r.run?.status==='completed')steps[1]={...steps[1],state:'active',text:'변경 결과 확인 중'};
  if(r.pull&&detail?.ci?.status==='completed'&&detail.ci.conclusion!=='success')steps[2]={...steps[2],state:'failed',text:ciLabel(detail)};
- if(state==='closed'){const i=r.pull?2:1;steps[i]={...steps[i],state:'stopped',text:'요청 종료'};}
+ if(state==='closed'){const i=r.pull?2:1;steps[i]={...steps[i],state:'stopped',text:'요청 닫힘'};}
  else if(approving){steps[2]={...steps[2],state:'complete',text:'승인 요청 완료'};steps[3]={...steps[3],state:'active',text:'반영 요청 처리 중'};}
  return steps;
 }

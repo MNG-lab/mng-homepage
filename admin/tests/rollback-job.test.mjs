@@ -34,8 +34,9 @@ if(args[0]==='api'){
  state.created++;state.body=fs.readFileSync(args[args.indexOf('--body-file')+1],'utf8');save();console.log('https://github.com/MNG-lab/mng-homepage/pull/92');
 }else throw Error('Unexpected command '+args.join(' '));
 `);execFileSync('chmod',['+x',join(bin,'gh')]);
- const env={...identity,PATH:bin+':'+process.env.PATH,GITHUB_REPOSITORY:'MNG-lab/mng-homepage',GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'issues',REQUEST_ISSUE:'91',GITHUB_RUN_ID:'100',BOT_SLUG:'mng-ai-code-bot',RUNNER_TEMP:root,ROLLBACK_TEST_STATE:state};
- return {root,site,remote,git,first,second,state,commit,execute:()=>execFileSync(process.execPath,[script],{cwd:site,env,stdio:'pipe'}),read:()=>JSON.parse(readFileSync(state))};
+ const output=join(root,'step-output');writeFileSync(output,'');
+ const env={...identity,GITHUB_OUTPUT:output,PATH:bin+':'+process.env.PATH,GITHUB_REPOSITORY:'MNG-lab/mng-homepage',GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'issues',REQUEST_ISSUE:'91',GITHUB_RUN_ID:'100',BOT_SLUG:'mng-ai-code-bot',RUNNER_TEMP:root,ROLLBACK_TEST_STATE:state};
+ return {root,site,remote,git,first,second,state,commit,output,execute:()=>execFileSync(process.execPath,[script],{cwd:site,env,stdio:'pipe'}),read:()=>JSON.parse(readFileSync(state))};
 }
 test('all rollback modes create a review branch and keep main unchanged',()=>{
  for(const type of ['latest','pr','commit']){
@@ -48,9 +49,25 @@ test('all rollback modes create a review branch and keep main unchanged',()=>{
 });
 test('retry after a pushed branch keeps the original target and recovers PR creation',()=>{
  const f=fixture('latest');try{
-  writeFileSync(f.state,JSON.stringify({...f.read(),failPR:true}));assert.throws(f.execute);
+  writeFileSync(f.state,JSON.stringify({...f.read(),failPR:true}));assert.throws(f.execute);assert.equal(readFileSync(f.output,'utf8'),'');
   const published=f.git('rev-parse','HEAD');f.git('checkout','main');f.git('branch','-D','codex/rollback-issue-91-100');const newer=f.commit('later.txt','later');f.git('push','origin','main');
   f.execute();assert.equal(f.git('rev-parse','main'),newer);assert.equal(f.git('ls-remote','--heads','origin','refs/heads/codex/rollback-issue-91-100').split(/\s/)[0],published);
   assert.equal(f.read().created,1);assert.ok(f.read().body.includes(f.second));assert.ok(!f.read().body.includes(newer));
  }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('actual Git conflict and empty revert report different non-retryable results without a PR',()=>{
+ for(const code of ['rollback_conflict','rollback_no_changes']){
+  const f=fixture('pr');try{
+   if(code==='rollback_conflict')f.commit('first.txt','changed later');
+   else f.git('revert','--no-edit',f.first);
+   f.git('push','origin','main');const base=f.git('rev-parse','main');
+   assert.throws(f.execute);
+   assert.equal(f.git('rev-parse','main'),base);assert.equal(f.git('rev-parse','origin/main'),base);
+   assert.equal(f.git('ls-remote','--heads','origin','refs/heads/codex/rollback-issue-91-100'),'');
+   assert.equal(f.git('ls-files','--unmerged'),'');assert.equal(f.read().created,0);
+   assert.equal(readFileSync(f.output,'utf8'),`failure_code=${code}\n`);
+   assert.match(f.read().comments.at(-1).body,/홈페이지가 변경되지는 않았습니다/);
+  }finally{rmSync(f.root,{recursive:true,force:true});}
+ }
 });

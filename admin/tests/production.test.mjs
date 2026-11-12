@@ -53,7 +53,7 @@ test('production request, dispatch, merge and credential writes use main and COD
 });
 test('same DB preserves test data while keeping production catalog and credential status separate',async()=>{
  const DB=database();await recordCredentialUpdate({...preview,DB});
- DB.sqlite.prepare("INSERT INTO request_run_results VALUES ('456',1,123,?,'auth_required',1)").run(sha);
+ DB.sqlite.prepare("INSERT INTO request_run_results(run_id,attempt,issue,sha,reason,created_at) VALUES ('456',1,123,?,'auth_required',1)").run(sha);
  await assert.rejects(assertRetryCredential({...prod,DB},123,{id:456,attempt:1,createdAt:'2000-01-01'}));
  await recordCredentialUpdate({...prod,DB});await assertRetryCredential({...prod,DB},123,{id:456,attempt:1,createdAt:'2000-01-01'});
  const {privateKey}=await generateKeyPair('RS256',{extractable:true});
@@ -82,7 +82,7 @@ test('deployed origin and trusted callback clients use the same production host'
  const {ADMIN_ORIGIN}=await import('../shared/hosting.js');
  const config=JSON.parse(await readFile(new URL('../wrangler.jsonc',import.meta.url),'utf8'));
  assert.equal(config.name,'admin');assert.equal(config.vars.APP_ORIGIN,ADMIN_ORIGIN);assert.equal(ADMIN_ORIGIN,'https://admin.mng-lab.workers.dev');assert.equal(config.d1_databases[0].database_name,'mng-admin');
- for(const name of ['device-login-job.mjs','run-request-codex.mjs','report-github-result.mjs']){
+ for(const name of ['device-login-job.mjs','request-result.mjs','report-github-result.mjs']){
   const script=await readFile(new URL('../scripts/'+name,import.meta.url),'utf8');assert.match(script,/import \{ADMIN_ORIGIN\} from '\.\.\/shared\/hosting.js'/);assert.doesNotMatch(script,/chominho96-aaa|mng-admin-preview/);
  }
  const workflow=await readFile(new URL('../../.github/workflows/codex-comment.yml',import.meta.url),'utf8');assert.match(workflow,/git archive[^\n]+admin\/shared\/hosting.js/);assert.match(workflow,/uses: \.\/.github\/workflows\/admin-request.yml/);

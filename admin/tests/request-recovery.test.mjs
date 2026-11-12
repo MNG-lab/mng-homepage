@@ -70,3 +70,41 @@ test('auth classification excludes tool output, rate limits, quota and ordinary 
  assert.equal(isAuthFailure('user says 401 Unauthorized'),false);
  assert.equal(isAuthFailure('','Error: refresh_token_expired'),true);
 });
+
+test('rollback results require their own signed workflow and exact run attempt',async()=>{
+ const {env:base}=setup(),env={...base,ADMIN_ENV:'production',GITHUB_WORKFLOW_REF:'main',GITHUB_TEST_BASE:'main'};
+ const signed={...claims,sub:'repo:MNG-lab/mng-homepage:ref:refs/heads/main',ref:'refs/heads/main',workflow_ref:'MNG-lab/mng-homepage/.github/workflows/rollback-from-issue.yml@refs/heads/main'};delete signed.job_workflow_ref;delete signed.job_workflow_sha;
+ const actual={...ghRun,head_branch:'main',path:'.github/workflows/rollback-from-issue.yml',display_title:'Rollback request #5'};
+ const github=async()=>({issue:async()=>({number:5}),run:async()=>actual});
+ const handle=requestResultAPI({github,verifyRunner:async()=>signed});
+ const result=(failureCode='rollback_conflict',reason='failed')=>post('/api/internal/request-result',{issue:5,reason,failureCode});
+ assert.equal(validRequestClaims(signed,env),true);
+ for(const changes of [{event_name:'push'},{job_workflow_ref:'anything'},{ref:'refs/heads/feature'},{workflow_ref:signed.workflow_ref.replace('@refs/heads/main','@refs/heads/feature')}])assert.equal(validRequestClaims({...signed,...changes},env),false);
+ assert.equal((await handle(result('rollback_conflict','success'),env)).status,400);
+ assert.equal((await handle(result('made_up'),env)).status,400);
+ assert.equal((await handle(result(),env)).status,200);
+ assert.equal((await handle(result(),env)).status,200);
+ assert.equal((await handle(result('rollback_no_changes'),env)).status,409);
+ const stale=requestResultAPI({github:async()=>({...await github(),run:async()=>({...actual,run_attempt:2})}),verifyRunner:async()=>signed});
+ assert.equal((await stale(result(),env)).status,403);
+ const codex=setup();assert.equal((await codex.handle(result(),codex.env)).status,400);
+ let metadata=await recoveryMetadata(env),failed={...run,workflow:'rollback'};
+ assert.deepEqual(metadata(5,failed).failure,{code:'rollback_conflict',retryable:false});
+ assert.equal(metadata(6,failed).failure.code,'rollback_unverified');
+ assert.equal(metadata(5,{...failed,attempt:2}).failure.code,'rollback_unverified');
+ assert.deepEqual(metadata(5,{...failed,status:'in_progress'}),{});
+ assert.equal(metadata(5,{...run,id:999,workflow:'codex'}).failure,null);
+ let dispatches=0;
+ const retry=requestsAPI({github:async()=>({retry:async(id,claim,check)=>{await check(failed);await claim('retry:5:123:1');dispatches++;}})});
+ const retryRequest=()=>post('/api/requests/5/retry',{requestId:crypto.randomUUID()});
+ for(const code of ['rollback_conflict','rollback_no_changes']){
+  env.DB.sqlite.prepare('UPDATE request_run_results SET failure_code=?').run(code);
+  const response=await retry(retryRequest(),env,owner);assert.equal(response.status,409);assert.ok((await response.json()).error);
+ }
+ env.DB.sqlite.prepare('DELETE FROM request_run_results').run();
+ assert.equal((await retry(retryRequest(),env,owner)).status,409,'unknown rollback failure must not bypass the gate');
+ assert.equal(dispatches,0);assert.equal(env.DB.sqlite.prepare('SELECT count(*) n FROM operation_claims').get().n,0);
+ env.DB.sqlite.prepare("INSERT INTO request_run_results(run_id,attempt,issue,sha,reason,created_at) VALUES ('123',1,5,?,'failed',?)").run(sha,Date.now());
+ assert.equal((await retry(retryRequest(),env,owner)).status,201,'verified transient failure remains retryable');
+ assert.equal(dispatches,1);
+});

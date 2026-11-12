@@ -1,5 +1,6 @@
 import {execFileSync} from 'node:child_process';
-import {writeFileSync} from 'node:fs';
+import {writeFileSync,appendFileSync} from 'node:fs';
+import {requestFailure} from '../shared/request-failure.js';
 import {join} from 'node:path';
 import {parseRollback} from '../shared/rollback.js';
 import {branchRequest} from '../shared/github-sync.js';
@@ -40,8 +41,14 @@ try {
     if(!message.includes(`MNG-Rollback-Target: ${sha}`)||!message.includes(`request #${id}`))throw Error('기존 브랜치가 다른 작업의 결과입니다. 개발 담당자가 확인해 주세요.');
   } else {
   git('checkout','-b',branch);
-  try{git('revert',...(parents>1?['-m','1']:[]),'--no-commit',sha);}catch{try{git('revert','--abort');}catch{}throw Error('다른 변경과 충돌하거나 이미 취소된 변경입니다. 개발 담당자가 PR·커밋을 확인해 주세요.');}
-  if(!git('status','--porcelain'))throw Error('취소할 변경이 남아 있지 않습니다.');
+  try{git('revert',...(parents>1?['-m','1']:[]),'--no-commit',sha);}catch(error){
+    // Git's unmerged index, not stderr text, distinguishes a content conflict.
+    let conflict=false;try{conflict=!!git('ls-files','--unmerged');}catch{}
+    try{git('revert','--abort');}catch{}
+    if(conflict)throw Object.assign(Error(requestFailure('rollback_conflict').title),{failureCode:'rollback_conflict'});
+    throw error;
+  }
+  if(!git('status','--porcelain'))throw Object.assign(Error(requestFailure('rollback_no_changes').title),{failureCode:'rollback_no_changes'});
   const botId=JSON.parse(gh('api',`users/${bot}`)).id;
   const env={...process.env,GIT_AUTHOR_NAME:bot,GIT_AUTHOR_EMAIL:`${botId}+${bot}@users.noreply.github.com`,GIT_COMMITTER_NAME:bot,GIT_COMMITTER_EMAIL:`${botId}+${bot}@users.noreply.github.com`};
   run('git',['commit','-m',`revert: ${reference} (request #${id})\n\nMNG-Rollback-Target: ${sha}`],{env});
@@ -54,6 +61,9 @@ try {
   gh('issue','comment',id,'--repo',repo,'--body',`변경 취소 PR을 만들었습니다: ${url}`);
   console.log(url);
 }catch(error){
-  try{gh('issue','comment',id,'--repo',repo,'--body',`변경 취소를 완료하지 못했습니다. 대상과 충돌 여부를 확인해 주세요.\n\n${error.message.slice(0,1000)}`);}catch{}
+  const failure=requestFailure(error.failureCode);
+  if(failure&&process.env.GITHUB_OUTPUT)appendFileSync(process.env.GITHUB_OUTPUT,`failure_code=${error.failureCode}\n`);
+  const message=failure?`${failure.title}\n\n${failure.description}\n이 요청으로 홈페이지가 변경되지는 않았습니다.\n\n${failure.next}\n같은 요청을 다시 실행해도 해결되지 않습니다.`:`변경 취소 작업을 완료하지 못했습니다. 실행 기록에서 원인을 확인해 주세요.\n\n${error.message.slice(0,1000)}`;
+  try{gh('issue','comment',id,'--repo',repo,'--body',message);}catch{}
   throw error;
 }

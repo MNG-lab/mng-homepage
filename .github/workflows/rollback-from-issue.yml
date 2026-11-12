@@ -22,6 +22,9 @@ jobs:
        (github.event.issue.user.type != 'Bot' &&
         (contains(github.event.issue.labels.*.name, 'rollback-request') || contains(github.event.issue.labels.*.name, 'rollback-simple-request')) &&
         contains(fromJSON('["COLLABORATOR","CONTRIBUTOR","MEMBER","OWNER"]'), github.event.issue.author_association)))
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -44,8 +47,16 @@ jobs:
         with:
           node-version-file: .nvmrc
       - name: Create rollback review PR
+        id: rollback
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           BOT_SLUG: ${{ steps.app.outputs.app-slug }}
           REQUEST_ISSUE: ${{ inputs.issue || github.event.issue.number }}
         run: node admin/scripts/rollback-job.mjs
+      - name: Report request result to admin
+        if: ${{ always() && contains(fromJSON('["success","failure"]'), steps.rollback.outcome) }}
+        env:
+          REQUEST_ISSUE: ${{ inputs.issue || github.event.issue.number }}
+          REQUEST_RESULT: ${{ steps.rollback.outcome == 'success' && 'success' || 'failed' }}
+          REQUEST_FAILURE_CODE: ${{ steps.rollback.outputs.failure_code }}
+        run: node admin/scripts/report-rollback-result.mjs

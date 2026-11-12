@@ -16,7 +16,7 @@ export default function useReadResource(path,{scopeKey=path,refreshKey,interval=
    try{
     const value=await api(path);
     if(!isCurrent())return null;
-    lastValue.current={path,scopeKey,value};setResult({path,scopeKey,value});setFailure(null);latest.current.onLoad(value);
+    lastValue.current={path,scopeKey,value};setResult({path,scopeKey,value,updatedAt:Date.now()});setFailure(null);latest.current.onLoad(value);
     return true;
    }catch(e){if(!isCurrent())return null;setFailure({path,scopeKey,message:e.message});return false;}
    finally{if(isCurrent())setPending(null);if(active.current===read)active.current=null;}
@@ -32,5 +32,5 @@ export default function useReadResource(path,{scopeKey=path,refreshKey,interval=
  },[refresh,refreshKey,interval]);
  const matches=value=>value?.path===path&&value?.scopeKey===scopeKey;
  const data=path&&matches(result)?result.value:null,error=path&&matches(failure)?failure.message:'';
- return {data,error,loading:!!path&&(matches(pending)||(!data&&!error)),refresh};
+ return {data,error,updatedAt:path&&matches(result)?result.updatedAt:null,loading:!!path&&(matches(pending)||(!data&&!error)),refresh};
 }

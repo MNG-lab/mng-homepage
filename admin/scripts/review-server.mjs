@@ -13,6 +13,7 @@ import {parseRollback} from '../shared/rollback.js';
 import {branchRequest} from '../shared/github-sync.js';
 const root=fileURLToPath(new URL('../../',import.meta.url)),assets=resolve(root,'dist-admin-review');
 const port=Number(process.env.MNG_REVIEW_PORT||4196),origin=`http://127.0.0.1:${port}`;
+const conflictScenario=process.env.MNG_REVIEW_SCENARIO==='conflict';
 if(!Number.isInteger(port)||port<1024||port>65535||!existsSync(resolve(assets,'index.html')))throw Error('Build admin:build:review first');
 const config=deployment({ADMIN_ENV:'production'}),DB=database(),env={DB,ADMIN_ENV:'production',APP_ORIGIN:origin,GITHUB_ENABLED:'true'};
 const user={sub:'local-review-owner',email:'review@example.test',role:'owner'},repo='MNG-lab/mng-homepage';
@@ -29,6 +30,15 @@ for(const [id,page,title,description] of [[101,'Members','Members 소개 문구 
  const issue={number:id,title,body:requestBody(input,config),labels:[{name:'admin-request'}],state:'closed',created_at:stamp(),html_url:`/review/external?kind=issue&id=${id}`};
  issues.set(id,issue);pulls.set(id+100,makePull(id+100,issue,{merged:true}));
 }
+// Optional failure fixture: uses the real request UI, result metadata and retry guard.
+// A separate port keeps the user's existing form review and in-memory data intact.
+const conflictMessage='이 변경만 자동으로 취소할 수 없어요. 이후 작업에서 같은 내용을 수정해, 어떤 내용을 남길지 확인이 필요합니다.';
+if(conflictScenario){
+ const input=normalizeRequest({requestId:crypto.randomUUID(),kind:'rollback',title:'요청 #101 변경 취소',rollbackType:'pr',rollbackTarget:'201',sourceRequest:101,sourceMergeSha:sha('merge201'),reason:'소개 문구를 이전 내용으로 되돌려 주세요.',expectedResult:'나중에 추가한 연구 내용은 유지해 주세요.'});
+ issues.set(103,{number:103,title:input.title,body:requestBody(input,config),labels:[{name:'rollback-request'}],state:'open',created_at:stamp(),html_url:'/review/conflict/issue'});
+ DB.sqlite.prepare("INSERT INTO request_run_results(run_id,attempt,issue,sha,reason,created_at,failure_code) VALUES ('203',1,103,?,'failed',?,'rollback_conflict')").run(sha('conflict203'),Date.now());
+ runs.set(103,{id:203,attempt:1,issue:103,workflow:'rollback',event:'workflow_dispatch',status:'completed',conclusion:'failure',url:'/review/conflict/run'});
+}
 const gh={
  async list(){return [...issues.values()];},async pulls(){return [...pulls.values()];},async runs(){return [...runs.values()];},
  async issue(id){const issue=issues.get(id);if(!issue)throw new GitHubError('요청을 찾을 수 없습니다.',404);return issue;},
@@ -37,6 +47,12 @@ const gh={
  async createRequest(input,attachments=[]){const value=normalizeRequest(input),number=next++,issue={number,title:value.title,body:requestBody(value,config,attachments),labels:[{name:value.kind==='rollback'?'rollback-request':'admin-request'}],state:'open',created_at:stamp(),html_url:`/review/external?kind=issue&id=${number}`};issues.set(number,issue);return issue;},
  async dispatch(id){const i=await this.issue(id),number=next++;pulls.set(number,makePull(number,i));runs.set(id,{id:number,issue:id,workflow:'codex',event:'workflow_dispatch',status:'completed',conclusion:'success',url:`/review/external?kind=run&id=${id}`});},
  async dispatchRollback(id){const i=await this.issue(id);parseRollback(i);const number=next++;pulls.set(number,makePull(number,i,{kind:'revert'}));runs.set(id,{id:number,issue:id,workflow:'rollback',event:'workflow_dispatch',status:'completed',conclusion:'success',url:`/review/external?kind=run&id=${id}`});},
+ async retry(id,claim,check){
+  if(!conflictScenario||id!==103)throw new GitHubError('이 검토 화면에서는 충돌 예시 요청만 다시 실행할 수 있습니다.',400);
+  const run=runs.get(id);if((await this.issue(id)).state!=='open')throw new GitHubError('종료한 요청입니다.',409);
+  await check(run);
+  await claim(`retry:${id}:${run.id}:${run.attempt}`);run.attempt++;
+ },
  async storeAttachment({path,content}){const url=`https://raw.githubusercontent.com/${repo}/${sha(content)}/${path}`;images.set(url,Buffer.from(content,'base64'));return url;},
  async detail(id){const p=await this.pull(id);return {head:p.head.sha,canApprove:true,preview:{head:p.head.sha,state:'ready',url:`/review/website/${id}`},ci:{status:'completed',conclusion:'success',url:`/review/external?kind=check&id=${id}`},files:[{path:'src/content/example.js',additions:1,deletions:1,patch:'- 변경 전 내용 (검토 예시)\n+ 요청한 내용 (검토 예시)'}],truncated:false};},
  async merge(id,head){const p=await this.pull(id);if(p.head.sha!==head||p.state!=='open')throw new GitHubError('변경을 다시 확인해 주세요.',409);Object.assign(p,{state:'closed',merged:true,mergedAt:stamp(),merged_at:stamp(),mergeSha:sha('merge'+id),merge_commit_sha:sha('merge'+id)});const i=issues.get(branchRequest(p.head.ref).issue);i.state='closed';return {merged:true,sha:p.mergeSha};},
@@ -56,6 +72,7 @@ const server=createServer(async(req,res)=>{
   if(url.pathname==='/api/session'||url.pathname==='/api/session/refresh')return send(200,JSON.stringify({user,mode:'github'}),'application/json');
   if(url.pathname==='/auth/logout'){res.writeHead(303,{Location:'/requests/new'});return res.end();}
   if(url.pathname==='/review/image'){const bytes=images.get(url.searchParams.get('url'));return bytes?send(200,bytes,bytes[0]===137?'image/png':bytes[0]===255?'image/jpeg':bytes.toString('ascii',0,3)==='GIF'?'image/gif':'image/webp'):send(404,'Review image missing');}
+  if(conflictScenario&&['/review/conflict/issue','/review/conflict/run'].includes(url.pathname))return send(200,document(url.pathname.endsWith('/issue')?'원본 요청 댓글 — 로컬 예시':'실행 기록 — 로컬 예시',`<p>실제 GitHub 화면이나 실행 기록이 아닙니다. 충돌 시 현재 자동화가 남기는 안내를 확인하기 위한 예시입니다.</p><section><h2>변경 취소를 완료하지 못했습니다.</h2><p>대상과 충돌 여부를 확인해 주세요.</p><pre>${esc(conflictMessage)}</pre><p>이 예시에서는 이후 요청에서 같은 소개 문구를 다시 수정해 자동 취소할 수 없습니다. 이 요청으로 홈페이지는 변경되지 않았으며, 어드민에서 재실행할 수 없습니다.</p><a href="/requests/103">어드민의 실패 화면으로 돌아가기</a></section>`));
   if(url.pathname==='/review/templates'){
    const names=['change-request','rollback-request','rollback-simple-request'];
    return send(200,document('GitHub 이슈 양식 변경안',`<p>이 브랜치의 실제 양식입니다. 아직 main에 반영하지 않았습니다. GitHub는 제목을 직접 입력해야 하고 조건부로 입력란을 접을 수 없어, 아래 추가 항목도 함께 표시됩니다.</p><section><h2>홈페이지 수정 요청</h2><ol>${Object.entries(simpleFieldLabels).map(([key,label])=>`<li><strong>${esc(label)}</strong> ${['page','description'].includes(key)?'· 필수':'· 추가 정보'}</li>`).join('')}</ol><p>필수: 페이지와 수정 내용. 수정 유형·현재 상태·제출 전 체크박스는 제거했습니다.</p></section><section><h2>변경 취소</h2><p>어드민: 완료된 요청 → 이 변경 취소 → 이유 입력 → 검토 요청 생성.<br>GitHub: PR/커밋 번호를 직접 지정하는 개발자용 양식과 직전 변경 취소 양식을 유지합니다.</p></section>${names.map(name=>`<section><details><summary>${esc(name)}.yml 원문 보기</summary><pre>${esc(readFileSync(resolve(root,'.github/ISSUE_TEMPLATE',name+'.yml'),'utf8'))}</pre></details></section>`).join('')}`));

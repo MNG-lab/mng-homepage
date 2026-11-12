@@ -2014,3 +2014,24 @@ select {
 .review-environment p {margin:0;color:#6e5724;line-height:1.6;}
 .review-environment .action-row {margin:0;gap:20px;}
 @media(max-width:650px){.request-page-picker,.revert-request-intro {align-items:stretch;flex-direction:column;gap:14px;}.request-page-picker>.request-field {max-width:none;}.request-page-picker>.text-button {align-self:flex-start;margin-bottom:0;}.request-section-heading {gap:12px;}.request-section-heading h2 {font-size:20px;}.request-extra>summary {padding:20px;}.request-extra>.request-section {padding:20px;}.request-auto-title {align-items:stretch;flex-direction:column;gap:4px;}.revert-trigger {align-self:flex-start;}.review-environment {padding:16px;}}
+
+.request-progress-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px}
+.request-progress-heading h3{font-size:15px;margin:0}
+.request-progress-heading+.request-progress{margin:0 0 4px}
+.auto-refresh-status{display:flex;align-items:center;gap:7px;color:#54716a;font-size:12px;font-variant-numeric:tabular-nums;line-height:1.6;flex-wrap:wrap}
+.auto-refresh-status>svg,.auto-refresh-status .spinner{width:15px;height:15px;flex-shrink:0}
+.auto-refresh-status .spinner{border-color:currentColor;border-top-color:transparent}
+.auto-refresh-status time{color:#7a8799;margin-left:3px}
+.auto-refresh-status.is-loading{color:#315c9c}
+.auto-refresh-status.is-error{color:#a53f2c}
+.request-failure-note{border:1px solid #ecd6b4;border-left:4px solid #be862e;border-radius:12px;padding:24px;background:#fffcf6;display:grid;gap:12px;color:#5d4930}
+.request-failure-heading{display:flex;align-items:center;gap:10px}
+.request-failure-heading svg{flex-shrink:0;color:#a16c1d}
+.request-failure-heading h3{font-size:17px;line-height:1.5;margin:0;color:#644716}
+.request-failure-note p{margin:0}
+.request-failure-preserved{font-weight:600}
+.request-failure-next{border-top:1px solid #ecdfca;margin-top:4px;padding-top:16px;display:grid;gap:10px}
+.request-failure-next .secondary{justify-self:start;color:#73501e;border-color:#d9c29e;background:#fff}
+.request-failure-note small{font-size:12px;color:#7e6a4f}
+@media(max-width:700px){.request-failure-note{padding:18px}.request-progress-heading{align-items:flex-start;flex-direction:column}.auto-refresh-status{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.auto-refresh-status .spinner{animation:none!important}}

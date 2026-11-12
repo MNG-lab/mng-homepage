@@ -26,11 +26,11 @@ test('server returns 20 rows after search and status filtering, with global summ
  const detail=await get('/1');assert.equal(detail.request.id,1);assert.equal(detail.request.run.id,1);
  for(const query of ['?page_size=0','?page_size=4','?page_size=1000','?page=0','?page=-1','?page=1.5','?page=99999999999999999','?status=unknown','?q='+'a'.repeat(201)])assert.equal((await get(query)).status,400);
  // Auth-failed requests count with failures, but also have their own paged filter.
- config.DB.sqlite.prepare('INSERT INTO request_run_results VALUES (?,?,?,?,?,?)').run('1',1,1,'a'.repeat(40),'auth_required',1);
+ config.DB.sqlite.prepare('INSERT INTO request_run_results(run_id,attempt,issue,sha,reason,created_at) VALUES (?,?,?,?,?,?)').run('1',1,1,'a'.repeat(40),'auth_required',1);
  page=await get('?status=auth_required');assert.equal(page.requests[0].id,1);assert.equal(page.requests[0].auth.renewed,false);assert.equal(page.connectionRequired,true);
  assert.equal((await get('?status=failed')).pagination.total,42);
  // The settings recovery list uses three rows; the normal request list stays at 20.
- for(const id of [2,3,4])config.DB.sqlite.prepare('INSERT INTO request_run_results VALUES (?,?,?,?,?,?)').run(String(id),1,id,'a'.repeat(40),'auth_required',1);
+ for(const id of [2,3,4])config.DB.sqlite.prepare('INSERT INTO request_run_results(run_id,attempt,issue,sha,reason,created_at) VALUES (?,?,?,?,?,?)').run(String(id),1,id,'a'.repeat(40),'auth_required',1);
  page=await get('?status=auth_required&page_size=3');assert.deepEqual(page.requests.map(r=>r.id),[4,3,2]);assert.deepEqual(page.pagination,{page:1,pageSize:3,total:4,pages:2});
  page=await get('?status=auth_required&page_size=3&page=2');assert.deepEqual(page.requests.map(r=>r.id),[1]);assert.equal(page.connectionRequired,true);
  page=await get('?status=auth_required&page_size=3&page=99');assert.equal(page.pagination.page,2);
@@ -78,7 +78,7 @@ test('old requests beyond 1,000 runs remain queryable and retryable; direct atte
  const api=requestsAPI({github:async()=>gh});
  const detail=await (await api(new Request(origin+'/api/requests/1'),config,user)).json();assert.equal(detail.request.run.id,1);
  const retry=()=>api(new Request(origin+'/api/requests/1/retry',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({requestId:crypto.randomUUID()})}),config,user);
- config.DB.sqlite.prepare('INSERT INTO request_run_results VALUES (?,?,?,?,?,?)').run('1',1,1,'a'.repeat(40),'auth_required',1);
+ config.DB.sqlite.prepare('INSERT INTO request_run_results(run_id,attempt,issue,sha,reason,created_at) VALUES (?,?,?,?,?,?)').run('1',1,1,'a'.repeat(40),'auth_required',1);
  assert.equal((await retry()).status,409);assert.equal(dispatches,0);
  config.DB.sqlite.prepare('INSERT INTO codex_credential_state VALUES (1,?)').run(Date.now());
  assert.equal((await retry()).status,201);assert.equal(dispatches,1);
