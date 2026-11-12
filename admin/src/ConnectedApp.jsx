@@ -20,6 +20,7 @@ export default function ConnectedApp({user}) {
  const location=useLocation(),navigate=useNavigate();
  const [data,setData]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  const [catalog,setCatalog]=useState(null);
+ const readCache=useRef(new Map());
  const params=new URLSearchParams(location.search),query=params.get('q')||'',filter=params.get('status')||'all';
  const refreshSequence=useRef(0),activeRead=useRef(null);
  const detailId=location.pathname.match(/^\/requests\/(\d+)$/)?.[1];
@@ -32,7 +33,8 @@ export default function ConnectedApp({user}) {
  function switchTab(value){changeList({tab:value,status:'all',q:query,page:1});}
  const path=isHistory||isNew?null:detailId?`/api/requests/${detailId}`:isDashboard?'/api/requests?view=summary':isSettings?`/api/requests?status=auth_required&page_size=3&page=${recoveryPage}`:'/api/requests?view=catalog';
  const listView=useMemo(()=>catalog?paginateRequests(catalog.requests,{q:query,status:filter,scope:tab,page:Number.isSafeInteger(Number(listPage))&&Number(listPage)>0?Number(listPage):1}):null,[catalog,query,filter,tab,listPage]);
- const current=isRequestList?listView:data?.path===path?data.value:null,requests=current?.requests||[],selected=current?.request;
+ const displayedData=data?.path===path?data:isDashboard?readCache.current.get(path):null;
+ const current=isRequestList?listView:displayedData?.value,requests=current?.requests||[],selected=current?.request;
  const counts=current?.counts||{},attention=current?.attention||[],recent=current?.recent||[];
  const pageTitle=isDashboard?'대시보드':isNew?'새 수정 요청':isHistory?'홈페이지 버전':isSettings?'설정':detailId?'요청 상세':'요청 관리';
  function changeList(values,{replace=false}={}){
@@ -52,7 +54,8 @@ export default function ConnectedApp({user}) {
     if(seq!==refreshSequence.current)return null;
     if(isRequestList)setCatalog(value);
     else {
-     setData({path,value,updatedAt:Date.now()});
+     const snapshot={path,value,updatedAt:Date.now()};
+     setData(snapshot);if(isDashboard)readCache.current.set(path,snapshot);
      // Detail reads after approval, closing, retrying, or creation update the
      // cached list too, without another full GitHub catalogue request.
      if(value.request)setCatalog(previous=>previous?{requests:[value.request,...previous.requests.filter(r=>r.id!==value.request.id)].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id-a.id)}:previous);
@@ -101,7 +104,7 @@ export default function ConnectedApp({user}) {
     <form method="post" action="/auth/logout"><button className="text-button header-logout" type="submit">로그아웃</button></form>
    </div>
   </header>
-   <main className="connected-main"><div className="connected-heading"><div><h1>{pageTitle}</h1><p>{isDashboard?'확인할 작업과 최근 요청을 한눈에 살펴보세요.':isHistory?'현재 홈페이지를 확인하고, 필요한 이전 버전을 찾아보세요.':isSettings?'구성원과 서비스 연결을 관리하세요.':isNew?'바꾸고 싶은 내용을 알려 주세요.':detailId?'요청의 진행 상황을 확인하고 필요한 작업을 처리하세요.':'검토·재실행이 필요한 요청을 확인하고 처리하세요.'}</p></div>{!isNew&&!isHistory&&<button className="primary" onClick={()=>navigate('/requests/new')}>새 수정 요청</button>}</div>
+   <main className="connected-main"><div className="connected-heading"><div><h1>{pageTitle}</h1><p>{isDashboard?'확인할 작업과 최근 요청을 한눈에 살펴보세요.':isHistory?'현재 홈페이지를 확인하고, 필요한 이전 버전을 찾아보세요.':isSettings?'구성원과 서비스 연결을 관리하세요.':isNew?'바꾸고 싶은 내용을 알려 주세요.':detailId?'요청의 진행 상황을 확인하고 필요한 작업을 처리하세요.':'검토·재실행이 필요한 요청을 확인하고 처리하세요.'}</p></div>{!isNew&&!isHistory&&<div className="action-row">{isDashboard&&<RefreshButton onRefresh={refresh} loading={loading} description="대시보드"/>}<button className="primary" onClick={()=>navigate('/requests/new')}>새 수정 요청</button></div>}</div>
     {review&&<aside className="review-environment" aria-label="검토 환경 안내"><p><strong>검토용 화면</strong> · 제출과 변경 취소를 직접 눌러보세요. 실제 GitHub 요청·DB·운영 홈페이지에는 반영되지 않습니다.</p><div className="action-row"><Link to="/history?example=current">현재 버전</Link><Link to="/history?example=direct">직접 수정</Link><Link to="/history/201?example=protected#restore">되돌리기 제한</Link><Link to="/requests/101">변경 취소 제한</Link><Link to="/requests/new">새 작성 폼</Link><Link to="/requests/101">완료된 요청 예시</Link><a href="/review/templates" target="_blank" rel="noreferrer">GitHub 양식 비교 ↗</a></div></aside>}
     {!production&&<div className="inline-note">테스트 환경입니다. main 및 운영 홈페이지에는 반영되지 않습니다.</div>}
     {error&&!isHistory&&<p role="alert" className="error-note">{error} {location.pathname!=='/requests'&&<RefreshButton key={path} onRefresh={refresh} label="다시 불러오기" description={pageTitle}/>}</p>}{notice&&<p role="status" className="inline-note">{notice}</p>}
@@ -109,7 +112,7 @@ export default function ConnectedApp({user}) {
      <section className="stats" aria-label="작업 요약">{[['확인할 변경',counts.review||0,'변경 내용을 검토하고 반영하세요.','review'],['진행 중',counts.working||0,'요청한 작업이 진행되고 있어요.','working'],['확인이 필요한 실패',counts.failed||0,'실패 원인과 필요한 조치를 확인하세요.','failed']].map(([label,count,text,state])=><button className="stat-card" key={state} onClick={()=>navigate(`/requests?status=${state}`)}><span>{label}</span><div>{!current?'—':count}<small>건</small></div><p>{text}</p></button>)}</section>
      <section className="panel connected-panel"><h2>지금 확인할 작업</h2>{!current&&!error?<LoadingIndicator label="확인할 작업 불러오는 중"/>:attention.length?<RequestRows requests={attention}/>:<p className="connected-empty">확인을 기다리는 작업이 없습니다.</p>}</section>
      <section className="panel connected-panel"><div className="connected-heading"><h2>최근 작업</h2><Link className="text-button" to="/requests">요청 관리로 이동 →</Link></div>{!current&&!error?<LoadingIndicator label="최근 작업 불러오는 중"/>:recent.length?<RequestRows requests={recent}/>:<p className="connected-empty">첫 수정 요청을 작성해 보세요.</p>}</section>
-    </>:isHistory?<History user={user} refresh={refresh}/>:isSettings?<Settings user={user} requests={requests} refresh={refresh} pagination={current?.pagination} connectionRequired={current?.connectionRequired} onPageChange={changeRecovery} loading={loading||!current}/>:isNew?<NewRequest user={user} onSubmitted={result=>{navigate(`/requests/${result.issue}`);setNotice(result.warning||'요청을 접수했습니다. 작업 상태는 자동으로 갱신됩니다.');}} onCancel={()=>navigate('/requests')}/>:selected?<RequestDetail key={selected.id} request={selected} user={user} refresh={refresh} requestLoading={loading} requestError={error} requestUpdatedAt={data?.updatedAt} listSearch={location.search}/>:detailId?<section className="panel connected-panel"><>{loading?<LoadingIndicator label="요청 불러오는 중"/>:<h2>{error?'요청을 불러오지 못했어요':'요청을 찾을 수 없어요'}</h2>}</><Link to={`/requests${location.search}`}>요청 목록으로 돌아가기</Link></section>:<section className="panel connected-panel">
+    </>:isHistory?<History user={user} refresh={refresh} cache={readCache.current}/>:isSettings?<Settings cache={readCache.current} user={user} requests={requests} refresh={refresh} pagination={current?.pagination} connectionRequired={current?.connectionRequired} onPageChange={changeRecovery} loading={loading||!current}/>:isNew?<NewRequest user={user} onSubmitted={result=>{navigate(`/requests/${result.issue}`);setNotice(result.warning||'요청을 접수했습니다. 작업 상태는 자동으로 갱신됩니다.');}} onCancel={()=>navigate('/requests')}/>:selected?<RequestDetail key={selected.id} request={selected} user={user} refresh={refresh} requestLoading={loading} requestError={error} requestUpdatedAt={data?.updatedAt} listSearch={location.search}/>:detailId?<section className="panel connected-panel"><>{loading?<LoadingIndicator label="요청 불러오는 중"/>:<h2>{error?'요청을 불러오지 못했어요':'요청을 찾을 수 없어요'}</h2>}</><Link to={`/requests${location.search}`}>요청 목록으로 돌아가기</Link></section>:<section className="panel connected-panel">
      <div className="connected-heading"><h2>{tab==='active'?'처리할 요청':'지난 요청'}</h2><RefreshButton key={path} onRefresh={refresh} loading={loading}/></div>
      <div className="request-tabs" role="group" aria-label="요청 구분">{[['active','처리 중'],['past','지난 요청']].map(([value,label])=><button key={value} type="button" aria-pressed={tab===value} onClick={()=>switchTab(value)}>{label} {current?.scopeCounts&&<span>({current.scopeCounts[value]})</span>}</button>)}</div>
      <p className="request-tab-description">{tab==='active'?'자동 수정 중이거나 검토·재실행이 필요한 요청입니다.':'반영을 마쳤거나 종료한 요청입니다. 반영된 홈페이지는 버전 화면에서 확인할 수 있습니다.'}</p>

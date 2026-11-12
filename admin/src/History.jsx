@@ -25,7 +25,7 @@ function VersionHeader({revision:r,current=false,level=3,environment=false,listS
   </div>
  </header>;
 }
-export default function History({user,refresh}) {
+export default function History({user,refresh,cache}) {
  const navigate=useNavigate(),location=useLocation(),latestLocation=useRef(location);
  latestLocation.current=location;
  const id=location.pathname.match(/^\/history\/([1-9]\d*|commit-[a-f0-9]{40})$/)?.[1],page=new URLSearchParams(location.search).get('page')||'1';
@@ -35,7 +35,7 @@ export default function History({user,refresh}) {
  const listSearch=search.size?'?'+search.toString():'';
  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[confirm,setConfirm]=useState(false);
  const operation=useRef(crypto.randomUUID()),lastList=useRef(null);
- const list=useReadResource(id?null:`/api/history?page=${encodeURIComponent(page)}${reviewQuery?'&'+reviewQuery:''}`,{onLoad:value=>{if(String(value.pagination.page)!==page)changePage(value.pagination.page,{replace:true});}});
+ const list=useReadResource(id?null:`/api/history?page=${encodeURIComponent(page)}${reviewQuery?'&'+reviewQuery:''}`,{cache,onLoad:value=>{if(String(value.pagination.page)!==page)changePage(value.pagination.page,{replace:true});}});
  const detail=useReadResource(id?`/api/history/${id}${reviewQuery?'?'+reviewQuery:''}`:null);
  if(list.data)lastList.current=list.data;
  const data=list.data||lastList.current,plan=detail.data,listError=list.error,planError=detail.error;
@@ -53,8 +53,8 @@ export default function History({user,refresh}) {
  const activeError=error||(id?planError:listError),waiting=!list.data||String(list.data.pagination.page)!==page;
  function reload(){setConfirm(false);return id?detail.refresh():list.refresh();}
  return <>
- {activeError&&<p role="alert" className="error-note">{activeError} <RefreshButton key={`retry:${id||page}`} onRefresh={reload} label="다시 불러오기" description={id?'버전 정보':'홈페이지 버전 목록'}/></p>}
- <div className="version-toolbar"><p>홈페이지에 반영된 상태를 날짜별로 확인합니다. 진행 중인 작업은 <Link to="/requests">요청 관리</Link>에서 확인하세요.</p><RefreshButton key={id||page} onRefresh={reload} description={id?'버전 정보':'홈페이지 버전 목록'}/></div>
+ {activeError&&<p role="alert" className="error-note">{activeError} <RefreshButton key={`retry:${id||page}`} onRefresh={reload} loading={id?detail.loading:list.loading} label="다시 불러오기" description={id?'버전 정보':'홈페이지 버전 목록'}/></p>}
+ <div className="version-toolbar"><p>홈페이지에 반영된 상태를 날짜별로 확인합니다. 진행 중인 작업은 <Link to="/requests">요청 관리</Link>에서 확인하세요.</p><RefreshButton key={id||page} onRefresh={reload} loading={id?detail.loading:list.loading} description={id?'버전 정보':'홈페이지 버전 목록'}/></div>
  {id?<>
   <section className="panel connected-panel version-detail"><Link className="text-button" to={`/history${listSearch}`}>← 홈페이지 버전 목록</Link>{selected?<><VersionHeader revision={selected} current={selectedCurrent} level={2} listSearch={listSearch}/><p className="version-scope">반영 당시의 홈페이지 내용입니다. 공통 기능과 운영 설정은 최신 상태를 유지합니다.</p></>:!planError?<LoadingIndicator label="버전 정보 불러오는 중"/>:<h2>버전 정보를 불러오지 못했어요</h2>}
    {plan&&<div className="version-changes"><h3>이 버전에서 반영한 변경</h3><div className="version-page-tags">{plan.changedPages?.length?plan.changedPages.map(name=><span key={name}>{name}</span>):<span>홈페이지 변경</span>}</div>{plan.changesTruncated&&<p>변경 파일이 많아 일부 범위만 표시합니다. 전체 내용은 관련 요청에서 확인하세요.</p>}</div>}

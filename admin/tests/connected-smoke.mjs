@@ -204,6 +204,18 @@ try {
  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'version header mobile overflow');await page.screenshot({path:'/private/tmp/mng-version-design-mobile.png',fullPage:true});
  await page.setViewportSize({width:1440,height:1000});
  await exerciseRefresh({path:'/api/history?page=1',button:page.locator('.version-toolbar .refresh-button'),keep:async()=>{assert.equal(await page.locator('.version-card').count(),3);assert.equal(await page.getByRole('region',{name:'현재 홈페이지 버전'}).getByText('버전 124',{exact:true}).count(),1);},screenshot:'/private/tmp/mng-history-refresh-busy.png'});
+ // Re-entering history immediately shows the saved page and revalidates it.
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('heading',{name:'요청 관리',exact:true}).waitFor();
+ holdUIPath='/api/history?page=1';uiHeld=false;
+ await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await waitForHeld();
+ assert.equal(await page.locator('.version-card').count(),3);assert.equal(await page.locator('.version-toolbar .refresh-button').getAttribute('aria-busy'),'true');
+ assert.equal(await page.getByText('홈페이지 버전 불러오는 중',{exact:true}).count(),0);
+ historyRows=historyRows.map(r=>r.number===120?{...r,title:'홈페이지 버전 갱신 확인'}:r);
+ releaseUI();await page.locator('.version-card').getByRole('heading',{name:'홈페이지 버전 갱신 확인',exact:true}).waitFor();
+ // Read failures retain the cached page; retry clears the error and updates it.
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();uiFailures.set('/api/history?page=1',2);
+ await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await page.getByRole('alert').filter({hasText:'새로고침 테스트 조회 오류'}).waitFor();assert.equal(await page.locator('.version-card').count(),3);
+ await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();await page.getByRole('alert').waitFor({state:'hidden'});
  await page.getByRole('link',{name:'현재 버전 보기',exact:true}).click();await page.locator('.version-detail').getByText('버전 124',{exact:true}).waitFor();
  await exerciseRefresh({path:'/api/history/124',button:page.locator('.version-toolbar .refresh-button'),keep:async()=>{assert.equal(await page.locator('.version-detail').getByText('버전 124',{exact:true}).count(),1);assert.equal(await page.getByRole('button',{name:'이 버전으로 되돌리기 요청',exact:true}).isDisabled(),true);}});
  records[0].restoration.name=shortRestoreName;historyRows=null;
@@ -226,8 +238,10 @@ try {
  await page.getByRole('link',{name:'이 버전으로 되돌리기',exact:true}).click();await page.waitForURL('**/history/281?page=4#restore');await page.getByRole('button',{name:'이 버전으로 되돌리기 요청'}).click();assert.match(await page.locator('.confirmation').innerText(),/선택: 버전 281 ·/);await page.getByRole('button',{name:'되돌리기 요청 만들기'}).click();await page.waitForURL('**/requests/123');assert.equal(restores,2);
  await page.goto('http://127.0.0.1:4193/history?page=999');await page.waitForURL('**/history?page=4');await page.locator('.version-card').getByText('버전 281',{exact:true}).waitFor();
  await historyPager.getByRole('button',{name:'1페이지',exact:true}).click();await page.waitForURL('**/history');await page.locator('.version-card').getByText('버전 299',{exact:true}).waitFor();
+ await historyPager.getByRole('button',{name:'2페이지',exact:true}).click();await page.locator('.version-card').getByText('버전 293',{exact:true}).waitFor();
+ await historyPager.getByRole('button',{name:'1페이지',exact:true}).click();await page.locator('.version-card').getByText('버전 299',{exact:true}).waitFor();
  holdHistoryPage=2;heldHistory=false;await historyPager.getByRole('button',{name:'2페이지',exact:true}).click();
- for(let i=0;i<100&&!heldHistory;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldHistory,true);await page.getByText('이전 버전 불러오는 중',{exact:true}).waitFor();
+ for(let i=0;i<100&&!heldHistory;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldHistory,true);await page.locator('.version-card').getByText('버전 293',{exact:true}).waitFor();assert.equal(await page.locator('.version-card').count(),6);assert.equal(await page.locator('.version-toolbar .refresh-button').getAttribute('aria-busy'),'true');
  await page.goBack();await page.locator('.version-card').getByText('버전 299',{exact:true}).waitFor();releaseHistory();await new Promise(r=>setTimeout(r,100));assert.equal(new URL(page.url()).search,'');assert.equal(await page.locator('.version-card').getByText('버전 293',{exact:true}).count(),0);
  historyFailures=2;await historyPager.getByRole('button',{name:'2페이지',exact:true}).click();await page.getByRole('alert').filter({hasText:'버전 조회 오류'}).waitFor();await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();await page.locator('.version-card').getByText('버전 293',{exact:true}).waitFor();
  historyRows=historyRows.slice(0,8);await page.reload();await historyPager.getByRole('button',{name:'2페이지',exact:true}).waitFor();assert.equal(await page.locator('.version-card').count(),1);
@@ -263,6 +277,11 @@ try {
  await page.getByRole('button',{name:/^처리 중/}).click();await page.locator('button[aria-current="page"]').filter({hasText:/^1$/}).waitFor();await page.goBack();await page.locator('button[aria-current="page"]').filter({hasText:/^2$/}).waitFor();
  records=activeRecords;
  await page.goto('http://127.0.0.1:4193/dashboard');await page.locator('.stat-card').filter({hasText:'확인이 필요한 실패'}).getByText('42',{exact:false}).waitFor();assert.equal(await page.locator('.connected-list').first().locator('li').count(),5);
+ // Dashboard summaries survive other routes and refresh with the same feedback.
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('heading',{name:'요청 관리',exact:true}).waitFor();
+ holdUIPath='/api/requests?view=summary';uiHeld=false;await page.getByRole('button',{name:'대시보드',exact:true}).click();await waitForHeld();
+ assert.equal(await page.locator('.stat-card').filter({hasText:'확인이 필요한 실패'}).getByText('42',{exact:false}).count(),1);assert.equal(await page.locator('.refresh-button').getAttribute('aria-busy'),'true');
+ releaseUI();await page.getByRole('button',{name:'새로고침',exact:true}).waitFor();
  records=records.map((r,i)=>({...r,auth:i<25?{renewed:false}:null,run:{id:r.id,attempt:1,status:'completed',conclusion:'failure'}}));
  await page.goto('http://127.0.0.1:4193/settings?recovery_page=2#codex-connection');
  const recoveryPager=page.getByRole('navigation',{name:'인증 문제로 멈춘 요청 페이지'});
@@ -341,6 +360,11 @@ try {
  auditFailures=2;await auditPager.getByRole('button',{name:'2페이지',exact:true}).click();await auditPanel.getByRole('alert').filter({hasText:'관리 기록 조회 오류'}).waitFor();assert.equal(await auditPanel.getByText('아직 관리 기록이 없습니다.',{exact:true}).count(),0);
  await auditPanel.getByRole('button',{name:'관리 기록 다시 불러오기',exact:true}).click();await auditPager.locator('[aria-current="page"]').filter({hasText:/^2$/}).waitFor();assert.equal(await auditPanel.locator('li').count(),1);
  await exerciseRefresh({path:'/api/settings/audit?page=2',button:auditPanel.locator('.settings-intro .refresh-button'),keep:async()=>{assert.equal(await auditPanel.locator('li').count(),1);}});
+ // Settings keeps each audit page across navigation, without mixing pages.
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('heading',{name:'요청 관리',exact:true}).waitFor();
+ holdUIPath='/api/settings/audit?page=2';uiHeld=false;await page.goBack();await waitForHeld();
+ assert.equal(await auditPanel.locator('li').count(),1);assert.equal(await auditPanel.locator('.settings-intro .refresh-button').getAttribute('aria-busy'),'true');await auditPanel.getByText('member1@gmail.com',{exact:true}).waitFor();
+ releaseUI();await auditPanel.getByRole('button',{name:'새로고침',exact:true}).waitFor();
  records=beforeAuditRequests;auditRecords=makeAudit(5);await page.goto('http://127.0.0.1:4193/settings?audit_page=2');await page.waitForURL('**/settings');await auditPanel.locator('li').nth(4).waitFor();assert.equal(await auditPager.count(),0);
 
  // Settings confirmations and results stay beside their controls; writes still require confirmation.

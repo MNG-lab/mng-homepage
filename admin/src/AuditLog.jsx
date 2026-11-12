@@ -17,11 +17,11 @@ const actions={
 };
 const unknownAction={title:'관리 작업 기록',description:'이 기록의 자세한 내용을 표시할 수 없습니다.'};
 
-export default function AuditLog({refreshKey}) {
+export default function AuditLog({refreshKey,cache}) {
  const location=useLocation(),navigate=useNavigate(),latestLocation=useRef(location);
  latestLocation.current=location;
  const page=new URLSearchParams(location.search).get('audit_page')||'1';
- const {data,loading,error,refresh}=useReadResource(`/api/settings/audit?page=${encodeURIComponent(page)}`,{refreshKey,onLoad:value=>{if(String(value.pagination.page)!==page)changePage(value.pagination.page,{replace:true});}});
+ const {data,loading,error,refresh}=useReadResource(`/api/settings/audit?page=${encodeURIComponent(page)}`,{cache,refreshKey,onLoad:value=>{if(String(value.pagination.page)!==page)changePage(value.pagination.page,{replace:true});}});
  function changePage(value,{replace=false}={}) {
   const current=latestLocation.current,params=new URLSearchParams(current.search);
   if(value===1)params.delete('audit_page');else params.set('audit_page',String(value));
@@ -29,7 +29,7 @@ export default function AuditLog({refreshKey}) {
  }
  const records=data?.records||[];
  return <section className="panel connected-panel settings-panel" aria-labelledby="audit-heading">
-  <header className="settings-intro"><div className="settings-heading-row"><h2 id="audit-heading">관리 기록</h2><RefreshButton key={page} onRefresh={refresh} description="관리 기록"/></div><p>구성원, 권한, Codex 연결을 변경한 기록입니다.</p></header>
+  <header className="settings-intro"><div className="settings-heading-row"><h2 id="audit-heading">관리 기록</h2><RefreshButton key={page} onRefresh={refresh} loading={loading} description="관리 기록"/></div><p>구성원, 권한, Codex 연결을 변경한 기록입니다.</p></header>
   <div className="settings-block settings-audit">{!data&&!error?<LoadingIndicator label="관리 기록 불러오는 중"/>:null}{error&&<div className="settings-feedback is-error" role="alert"><p>{error}</p><div className="action-row"><RefreshButton key={page} onRefresh={refresh} label="관리 기록 다시 불러오기" description="관리 기록"/></div></div>}{data&&(records.length?<ul className="audit-list">{records.map(record=>{
    const action=Object.hasOwn(actions,record.action)?actions[record.action]:unknownAction;
    const timestamp=record.created_at+'Z';

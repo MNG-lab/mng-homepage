@@ -21,8 +21,7 @@ function DestinationIcon({ id }) {
 
 export default function SidebarQuickLinks() {
   return (
-    <section className="sidebar-quick-links" aria-labelledby="quick-links-heading">
-      <h2 id="quick-links-heading">바로가기</h2>
+    <div className="sidebar-quick-links">
       <nav className="quick-links-nav" aria-label="외부 사이트 바로가기">
         {links.map(link => (
           <a key={link.id} className="quick-link" href={link.href} target="_blank" rel="noopener noreferrer"
@@ -35,6 +34,6 @@ export default function SidebarQuickLinks() {
           </a>
         ))}
       </nav>
-    </section>
+    </div>
   );
 }

@@ -1120,7 +1120,7 @@ function RequestForm({ submit, cancel }) {
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthGate>{(user,mode) => mode === "github" ? <ConnectedApp user={user}/> : <App authenticatedUser={user} />}</AuthGate>
+      <AuthGate>{(user,mode) => mode === "github" ? <ConnectedApp key={`${user.email}:${user.role}`} user={user}/> : <App authenticatedUser={user} />}</AuthGate>
     </BrowserRouter>
   </React.StrictMode>,
 );

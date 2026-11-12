@@ -18,7 +18,7 @@ function ActionFeedback({scope,confirmation,feedback,busy,onConfirm,onCancel}) {
   {result&&<p role={result.error?'alert':'status'} className={`settings-feedback ${result.error?'is-error':'is-success'}`}>{result.message}</p>}
  </>;
 }
-export default function Settings({user,requests,refresh,pagination,connectionRequired,onPageChange,loading}) {
+export default function Settings({user,requests,refresh,pagination,connectionRequired,onPageChange,loading,cache}) {
  const [feedback,setFeedback]=useState(null),[busy,setBusy]=useState(false),[email,setEmail]=useState(''),[role,setRole]=useState('editor'),[target,setTarget]=useState(''),[confirmation,setConfirmation]=useState(null);
  const memberForm=useRef(null),memberEmail=useRef(null);
  const settings=useReadResource('/api/settings'),data=settings.data,error=settings.error;
@@ -62,7 +62,7 @@ export default function Settings({user,requests,refresh,pagination,connectionReq
    <div className="settings-block-heading settings-heading-row"><h3 id="transfer-action-heading">후임자의 수락을 기다리고 있습니다</h3><span className="state-pill review">수락 대기</span></div><dl className="settings-facts"><div><dt>후임 담당자</dt><dd>{data.transfer.to_email}</dd></div><div><dt>수락 기한</dt><dd>{date(data.transfer.expires_at)}까지</dd></div></dl><div className="settings-form-actions"><button className="secondary" disabled={busy} onClick={()=>action({scope:'transfer',path:'/api/settings/transfer/cancel',body:{},success:'최고 관리자 변경 요청을 취소했습니다.'})}>변경 요청 취소</button></div>
   </>:<><div className="settings-block-heading"><h3 id="transfer-action-heading">변경 요청 보내기</h3><p>로그인을 마친 구성원에게 최고 관리자 역할을 요청합니다.</p></div>{data&&!candidates.length&&<div className="settings-empty"><p>선택할 수 있는 구성원이 없습니다. 구성원을 등록하고 한 번 로그인하도록 안내해 주세요.</p><a className="text-button" href="#members-panel">구성원 관리로 이동 ↑</a></div>}<form className="connected-form" onSubmit={e=>{e.preventDefault();prepare({scope:'transfer',title:'최고 관리자 변경을 요청할까요?',text:`${target}님에게 수락 요청을 만듭니다.`,confirmLabel:'확인하고 요청',path:'/api/settings/transfer',body:{email:target},success:'변경 요청을 보냈습니다. 후임자가 설정 화면에서 수락하면 완료됩니다.'});}}><label>후임 담당자<select aria-label="후임 담당자" required disabled={busy||!data||!candidates.length} value={target} onChange={e=>setTarget(e.target.value)}><option value="">로그인을 완료한 구성원 선택</option>{candidates.map(m=><option key={m.email}>{m.email}</option>)}</select></label><div className="settings-form-actions"><button className="primary" disabled={busy||!target||!candidates.some(m=>m.email===target)}>최고 관리자 변경 요청</button></div></form></>}{response('transfer')}</section>
  </section>
- <AuditLog refreshKey={data}/>
+ <AuditLog refreshKey={data} cache={cache}/>
  </>}
  </>;
 }
