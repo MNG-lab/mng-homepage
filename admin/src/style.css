@@ -2053,3 +2053,9 @@ select {
 .request-failure-note small{font-size:12px;color:#7e6a4f}
 @media(max-width:700px){.request-failure-note{padding:18px}.request-progress-heading{align-items:flex-start;flex-direction:column}.auto-refresh-status{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.auto-refresh-status .spinner{animation:none!important}}
+
+.version-safety-note {color:#63748c;font-size:13px;line-height:1.8;}
+.restore-blocked {padding:22px;border:1px solid #ead4af;border-left:4px solid #ba8635;border-radius:12px;background:#fffbf4;color:#694d26;display:grid;gap:14px;}
+.restore-blocked h3 {margin:0;font-size:17px;}
+.restore-blocked p {margin:0;line-height:1.8;}
+.restore-blocked .secondary {justify-self:start;}

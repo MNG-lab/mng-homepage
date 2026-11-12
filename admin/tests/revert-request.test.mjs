@@ -14,7 +14,7 @@ function fixture(){
  const original={number:101,state:'closed',title:'Members 수정',labels:['admin-request'],body:'<!-- mng-admin:v1 -->\n### 어떻게 바꾸면 될까요?\n소개 수정',created_at:'2026-11-12T00:00:00Z'};
  const source={number:201,merged:true,mergeSha:merge,merged_at:'2026-11-12T00:00:00Z',merge_commit_sha:merge,body:'<!-- issue:101 -->',head:{ref:'admin/issue-101-11',sha:'b'.repeat(40)},state:'closed'};
  const issues=[original],pulls=[source];let creates=0,dispatches=0,failCreate=false;
- const gh={issue:async id=>issues.find(i=>i.number===id),pull:async id=>pulls.find(p=>p.number===id),pulls:async()=>pulls,list:async()=>issues,runs:async()=>[],latestRun:async()=>null,
+ const gh={revertEligibility:async()=>({allowed:true}),issue:async id=>issues.find(i=>i.number===id),pull:async id=>pulls.find(p=>p.number===id),pulls:async()=>pulls,list:async()=>issues,runs:async()=>[],latestRun:async()=>null,
  createRequest:async value=>{creates++;if(failCreate)throw Error('ambiguous timeout');const issue={number:300+creates,state:'open',title:value.title,labels:['rollback-request'],body:requestBody(value,config)};issues.push(issue);return issue;},dispatchRollback:async()=>{dispatches++;}};
  const handler=requestsAPI({github:async()=>gh}),post=(body,user=owner)=>handler(new Request(origin+'/api/requests',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)}),env,user);
  return {DB,env,gh,issues,pulls,source,post,count:()=>({creates,dispatches}),fail:()=>{failCreate=true;}};
@@ -37,6 +37,10 @@ test('two actors cannot create duplicate cancellation requests; catalog links th
  f.pulls.push({number:302,head:{ref:'codex/rollback-issue-301-12'},merged:true,state:'closed'});f.issues[1].state='closed';
  source=(await requestCatalog(f.gh,f.env,{issue:f.issues[0]}))[0];assert.deepEqual(source.reversal,{requestId:301,state:'done'});
  assert.equal((await f.post(input())).status,409);
+});
+test('mixed infrastructure edits are rejected before creating a cancellation issue',async()=>{
+ const f=fixture();f.gh.revertEligibility=async()=>({allowed:false,reason:'운영 기능 보호'});
+ assert.equal((await f.post(input())).status,409);assert.deepEqual(f.count(),{creates:0,dispatches:0});
 });
 test('closed unmerged cancellation can be requested again but uncertain creation cannot duplicate',async()=>{
  const f=fixture();await f.post(input());f.issues[1].state='closed';

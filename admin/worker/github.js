@@ -1,3 +1,5 @@
+import {rollbackScope,websiteRestore,websiteSignature,websiteEntries,foundationChanges} from '../shared/website-policy.js';
+import {websiteHistory} from './website-history.js';
 import {normalizeRequest,requestBody} from '../shared/request-form.js';
 import {ATTACHMENT_BRANCH} from '../shared/images.js';
 import {issueType,branchRequest,runIdentity,matchesRequestRun} from '../shared/github-sync.js';
@@ -14,7 +16,7 @@ export const TEST_BASE = 'codex/admin-sandbox';
 export const WORKFLOW_REF = 'codex/admin-portal';
 export const TEST_LABEL = 'admin-preview';
 const API = 'https://api.github.com';
-const siteFilesAllowed=files=>files.length>0&&files.length<100&&files.every(f=>[f.filename,f.previous_filename].filter(Boolean).every(path=>/^(src\/|public\/|index\.html$)/.test(path)));
+const siteFilesAllowed=files=>files.length<100&&rollbackScope(files).allowed;
 const permissions = {contents:'write',issues:'write',pull_requests:'write',actions:'write'};
 
 export class GitHubError extends Error {
@@ -42,14 +44,14 @@ export function describePulls(pulls) {
   function sourceName(p,seen=new Set()) {
     if(seen.has(p.number))return '이전 홈페이지';
     seen.add(p.number);
-    const match=p.body?.match(/<!-- restore:([1-9]\d*):[a-f0-9]{40} -->/);
+    const match=p.body?.match(/<!-- restore:([1-9]\d*|commit-[a-f0-9]{40}):[a-f0-9]{40} -->/);
     const source=match&&byId.get(Number(match[1]));
     return source?sourceName(source,seen):clean(p);
   }
   return pulls.map(p=>{
-    const match=p.body?.match(/<!-- restore:([1-9]\d*):[a-f0-9]{40} -->/);
+    const match=p.body?.match(/<!-- restore:([1-9]\d*|commit-[a-f0-9]{40}):[a-f0-9]{40} -->/);
     const target=match&&byId.get(Number(match[1]));
-    const restoration=match?{number:Number(match[1]),name:target?sourceName(target):'이전 홈페이지',mergedAt:target?.mergedAt||null}:null;
+    const restoration=match?{key:match[1],number:match[1].startsWith('commit-')?null:Number(match[1]),name:target?sourceName(target):match[1].startsWith('commit-')?clean(p).replace(/ 상태로 복원$/,''):'이전 홈페이지',mergedAt:target?.mergedAt||null}:null;
     return {...p,restoration,displayTitle:restoration?`${restoration.name} 상태로 복원`:clean(p)};
   });
 }
@@ -81,6 +83,18 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     const text=await response.text();
     if(method!=='GET')await invalidateCatalog(env.DB);
     return text?JSON.parse(text):null;
+  }
+  const treeReads=new Map();
+  async function tree(sha){
+    if(!/^[a-f0-9]{40}$/.test(sha))throw new GitHubError('버전 정보를 확인해 주세요.',400);
+    if(!treeReads.has(sha))treeReads.set(sha,(async()=>{const commit=await call(`/git/commits/${sha}`);return call(`/git/trees/${commit.tree.sha}?recursive=1`);})());
+    return treeReads.get(sha);
+  }
+  async function graphql(query,variables){
+    const response=await fetcher('https://api.github.com/graphql',{method:'POST',headers:headers(installation.token),body:JSON.stringify({query,variables}),signal:AbortSignal.timeout(15000),redirect:'manual'});
+    const result=await response.json();
+    if(!response.ok||result.errors||!result.data)throw new GitHubError('홈페이지 변경 기록을 불러오지 못했습니다. 다시 시도해 주세요.');
+    return result.data;
   }
   return {
     async list(options={}) {
@@ -137,9 +151,10 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     async current() {return (await call(`/git/ref/heads/${TEST_BASE}`)).object.sha;},
     async history() {
       const [pulls,current]=await allReads([this.pulls(),this.current()]);
-      return {current,revisions:pulls.filter(p=>p.merged).sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt)||b.number-a.number).map(p=>({...p,requestId:relatedRequest(p)}))};
+      return websiteHistory({db:env.DB,cache:config.cache,base:TEST_BASE,current,pulls,graphql,tree});
     },
     async versionChanges(id){
+      if(typeof id==='string'&&/^commit-[a-f0-9]{40}$/.test(id)){const commit=await call(`/commits/${id.slice(7)}`);return {pages:changedAreas(commit.files||[]),truncated:(commit.files||[]).length>=300};}
       const pr=await this.pull(id);
       if(!pr.merged_at)throw new GitHubError('반영된 버전만 확인할 수 있습니다.',400);
       const files=await call(`/pulls/${number(id)}/files?per_page=100`);
@@ -221,34 +236,43 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       if(issue.state!=='closed')await call(`/issues/${number(id)}`,'PATCH',{state:'closed',state_reason:'not_planned'});
       return {ok:true};
     },
+    async revertEligibility(id) {
+      const files=await call(`/pulls/${number(id)}/files?per_page=100`),scope=rollbackScope(files);
+      if(files.length>=100||!scope.allowed)return {...scope,allowed:false,reason:files.length>=100?'변경 범위가 커서 자동 취소할 수 없습니다. 원하는 내용을 새 수정 요청으로 남겨 주세요.':'홈페이지와 운영 기능이 함께 수정된 요청입니다. 운영 기능을 유지하려면 원하는 내용을 새 수정 요청으로 남겨 주세요.'};
+      const source=await this.pull(id),current=await this.current();
+      if(!source.merged_at||!source.merge_commit_sha)throw new GitHubError('반영된 요청만 취소할 수 있습니다.',409);
+      const [now,then]=await Promise.all([tree(current),tree(source.merge_commit_sha)]);
+      websiteEntries(now);websiteEntries(then);
+      const blocked=foundationChanges(now,then);
+      return {...scope,blocked,allowed:!blocked.length,reason:blocked.length?'이후에 홈페이지의 공통 기능이 업데이트되어 이 변경을 자동으로 취소할 수 없습니다. 원하는 내용을 새 수정 요청으로 남겨 주세요.':null};
+    },
     async restorePlan(id,expectedBase) {
-      const source=await this.pull(id);
-      if(!source.merged_at||!source.merge_commit_sha)throw new GitHubError('반영된 변경만 복원 지점으로 선택할 수 있습니다.',400);
-      const current=await this.current();
+      const direct=typeof id==='string'&&/^commit-[a-f0-9]{40}$/.test(id);
+      const source=direct?await call(`/commits/${id.slice(7)}`):await this.pull(id);
+      if(!direct&&(!source.merged_at||!source.merge_commit_sha))throw new GitHubError('반영된 변경만 복원 지점으로 선택할 수 있습니다.',400);
+      const target=direct?id.slice(7):source.merge_commit_sha,current=await this.current();
       if(expectedBase&&current!==expectedBase)throw new GitHubError('새 변경이 반영되었습니다. 이력을 새로고침해 주세요.',409);
-      const comparison=await call(`/compare/${source.merge_commit_sha}...${current}`);
+      const comparison=await call(`/compare/${target}...${current}`);
       if(!['ahead','identical'].includes(comparison.status))throw new GitHubError('현재 이력에 속하지 않는 복원 지점입니다.',409);
-      const [baseCommit,targetCommit]=await Promise.all([call(`/git/commits/${current}`),call(`/git/commits/${source.merge_commit_sha}`)]);
-      const [baseTree,targetTree]=await Promise.all([call(`/git/trees/${baseCommit.tree.sha}`),call(`/git/trees/${targetCommit.tree.sha}`)]);
-      const site=new Set(['src','public','index.html']);
-      const entries=[...baseTree.tree.filter(e=>!site.has(e.path)),...targetTree.tree.filter(e=>site.has(e.path))].map(({path,mode,type,sha})=>({path,mode,type,sha}));
-      if(baseTree.truncated||targetTree.truncated)throw new GitHubError('복원 파일 정보를 모두 읽지 못했습니다.',409);
-      const changes=[...site].filter(path=>baseTree.tree.find(e=>e.path===path)?.sha!==targetTree.tree.find(e=>e.path===path)?.sha);
-      return {source:id,current,target:source.merge_commit_sha,entries,changes,title:source.title};
+      const [baseTree,targetTree]=await Promise.all([tree(current),tree(target)]);
+      const plan=websiteRestore(baseTree,targetTree);
+      return {source:id,current,target,baseTree:baseTree.sha,...plan,currentContent:websiteSignature(baseTree)===websiteSignature(targetTree),title:direct?source.commit.message.split('\n')[0]:source.title,
+        revision:direct?{key:id,kind:'direct',title:source.commit.message.split('\n')[0],url:source.html_url,mergeSha:target,mergedAt:source.commit.committer.date,merged:true}:null};
     },
     async restore(id,expectedBase,requestId,onIssue) {
       const plan=await this.restorePlan(id,expectedBase);
+      if(!plan.restoreSafety.allowed)throw new GitHubError(plan.restoreSafety.reason,409);
       if(!plan.changes.length)throw new GitHubError('현재 홈페이지가 이미 선택한 시점과 같습니다.',409);
-      const source=(await this.pulls()).find(p=>p.number===id);
+      const source=plan.revision||(await this.pulls()).find(p=>p.number===id);
       const name=(source?.restoration?.name||source?.displayTitle||plan.title.replace(/^\[Admin(?: Preview)?\] /,'')).slice(0,75);
       const title=`${name} 상태로 복원`;
-      const issue=await this.createRequest({requestId,title,page:'Home',description:`‘${name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`});
+      const issue=await this.createRequest({requestId,title,page:'Home',description:`‘${name}’ 반영 직후의 홈페이지 문구·페이지·스타일·이미지로 되돌립니다. 공통 기능과 운영 설정은 유지하며 변경 이력은 남습니다.`});
       await onIssue(issue.number);
-      const tree=await call('/git/trees','POST',{tree:plan.entries});
-      const commit=await call('/git/commits','POST',{message:`Restore website snapshot from PR #${id}`,tree:tree.sha,parents:[plan.current]});
+      const tree=await call('/git/trees','POST',{base_tree:plan.baseTree,tree:plan.entries});
+      const commit=await call('/git/commits','POST',{message:`Restore website snapshot from ${String(id).startsWith('commit-')?String(id).slice(7):'PR #'+id}`,tree:tree.sha,parents:[plan.current]});
       const branch=`${config.prefix}${issue.number}-${Date.now()}`;
       await call('/git/refs','POST',{ref:`refs/heads/${branch}`,sha:commit.sha});
-      const pr=await call('/pulls','POST',{title:`${config.title}${title}`,head:branch,base:TEST_BASE,body:`${config.marker}\n<!-- issue:${issue.number} -->\n<!-- restore:${id}:${plan.current} -->\n\n‘${name}’ 반영 직후 홈페이지 전체 상태로 복원합니다. src/, public/, index.html만 복원하며 요청과 이력은 보존합니다.`});
+      const pr=await call('/pulls','POST',{title:`${config.title}${title}`,head:branch,base:TEST_BASE,body:`${config.marker}\n<!-- issue:${issue.number} -->\n<!-- restore:${id}:${plan.current} -->\n\n‘${name}’ 반영 직후의 홈페이지 문구·페이지·스타일·이미지로 되돌립니다. 어드민·공통 기능·워크플로우·설정은 유지합니다.`});
       return {issue:issue.number,pull:pr.number};
     },
     async updateCodex(auth) {
@@ -278,18 +302,27 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       // Reject infrastructure changes, including PRs created outside the admin UI.
       const files=await call(`/pulls/${number(id)}/files?per_page=100`);
       if(!siteFilesAllowed(files))throw new GitHubError('홈페이지 범위를 벗어나는 변경은 반영할 수 없습니다.',409);
-      const restore=pr.body?.match(/<!-- restore:([1-9]\d*):([a-f0-9]{40}) -->/);
+      const restore=pr.body?.match(/<!-- restore:((?:[1-9]\d*|commit-[a-f0-9]{40})):([a-f0-9]{40}) -->/);
       let result;
       if(restore) {
-        const plan=await this.restorePlan(Number(restore[1]),restore[2]);
-        const tree=await call('/git/trees','POST',{tree:plan.entries});
+        const plan=await this.restorePlan(restore[1].startsWith('commit-')?restore[1]:Number(restore[1]),restore[2]);
+        if(!plan.restoreSafety.allowed)throw new GitHubError(plan.restoreSafety.reason,409);
+        const tree=await call('/git/trees','POST',{base_tree:plan.baseTree,tree:plan.entries});
         const head=await call(`/git/commits/${expectedHead}`);
         if(head.tree.sha!==tree.sha)throw new GitHubError('복원 내용이 변경되었습니다. 다시 준비해 주세요.',409);
         const merged=await call('/git/commits','POST',{message:`Merge restore PR #${id}`,tree:tree.sha,parents:[plan.current,expectedHead]});
         // Non-forced fast-forward rejects a concurrent deployment after the base check.
         await call(`/git/refs/heads/${TEST_BASE}`,'PATCH',{sha:merged.sha,force:false});
         result={merged:true,sha:merged.sha};
-      } else result=await call(`/pulls/${number(id)}/merge`,'PUT',{sha:expectedHead,merge_method:'merge'});
+      } else {
+        if(branchRequest(pr.head.ref)?.kind==='revert'){
+          const current=await this.current(),comparison=await call(`/compare/${current}...${expectedHead}`);
+          const [now,ancestor,head]=await Promise.all([tree(current),tree(comparison.merge_base_commit.sha),tree(expectedHead)]);
+          websiteEntries(head);
+          if(foundationChanges(now,ancestor).length)throw new GitHubError('공통 기능이 업데이트되었습니다. 최신 상태에서 되돌리기를 다시 준비해 주세요.',409);
+        }
+        result=await call(`/pulls/${number(id)}/merge`,'PUT',{sha:expectedHead,merge_method:'merge'});
+      }
       if(result.merged) {
         const issue=relatedRequest(pr);
         try {await this.issue(issue);await call(`/issues/${issue}`,'PATCH',{state:'closed',state_reason:'completed'});}catch{result.warning='변경은 반영됐지만 원본 요청 종료에 실패했습니다. 요청 목록에서 종료해 주세요.';}

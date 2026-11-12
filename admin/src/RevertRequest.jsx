@@ -8,6 +8,7 @@ export default function RevertRequest({request:r,user}) {
  const [open,setOpen]=useState(false),[reason,setReason]=useState(''),[expected,setExpected]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  if(!r.pull?.merged||isRevert(r)||isRestoration(r))return null;
  if(r.reversal)return <section className="panel connected-panel revert-request"><div><h2>{r.reversal.state==='done'?'이 변경은 취소되었습니다':'변경 취소 요청이 있습니다'}</h2><p>{r.reversal.state==='done'?'변경 취소의 반영 결과를 확인할 수 있습니다.':'이미 접수한 요청에서 진행 상황과 변경 내용을 확인하세요.'}</p></div><Link className="secondary" to={`/requests/${r.reversal.requestId}`}>변경 취소 요청 #{r.reversal.requestId} 보기 →</Link></section>;
+ if(r.revertSafety?.allowed===false)return <section className="panel connected-panel revert-request"><h2>이 변경 취소</h2><p>{r.revertSafety.reason}</p><Link className="secondary" to="/requests/new">새 수정 요청 작성</Link></section>;
  if(user.role==='editor'||!r.pull.mergeSha)return null;
  async function submit(event){
   event.preventDefault();if(busy)return;setBusy(true);setError('');

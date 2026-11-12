@@ -40,25 +40,27 @@ export function requestsAPI({github=createGitHub}={}) {
     const id=Number(requestDetail[1]);
     const issue=await gh.issue(id);
     const run=await gh.latestRun(id,{type:issueType(issue,deployment(env))});
-    return reply({request:(await requestCatalog(gh,env,{issue,run}))[0]});
+    const record=(await requestCatalog(gh,env,{issue,run}))[0];
+    if(record.pull?.merged&&record.kind!=='revert'&&!record.restoration)record.revertSafety=await gh.revertEligibility(record.pull.number);
+    return reply({request:record});
    }
    if(url.pathname==='/api/history'&&request.method==='GET'){const page=historyPage(url.searchParams);return reply(paginateHistory(await gh.history(),page));}
    const detail=url.pathname.match(/^\/api\/pulls\/([1-9]\d*)$/);
    if(detail&&request.method==='GET')return reply(await gh.detail(Number(detail[1])));
-   const plan=url.pathname.match(/^\/api\/history\/([1-9]\d*)$/);
+   const plan=url.pathname.match(/^\/api\/history\/([1-9]\d*|commit-[a-f0-9]{40})$/);
    if(plan&&request.method==='GET') {
-    const id=Number(plan[1]);
+    const id=plan[1].startsWith('commit-')?plan[1]:Number(plan[1]);
     const [value,change,pulls]=await allReads([gh.restorePlan(id),gh.versionChanges(id),gh.pulls()]);
-    const revision=pulls.find(p=>p.number===id&&p.merged);
+    const revision=value.revision||pulls.find(p=>p.number===id&&p.merged);
     if(!revision)throw new GitHubError('반영된 버전을 찾을 수 없습니다.',404);
-    return reply({source:value.source,current:value.current,target:value.target,changes:value.changes,changedPages:change.pages,changesTruncated:change.truncated,revision:{...revision,requestId:relatedRequest(revision)}});
+    return reply({source:value.source,current:value.current,target:value.target,changes:value.changes,currentContent:value.currentContent,restoreSafety:value.restoreSafety,changedPages:change.pages,changesTruncated:change.truncated,revision:{...revision,requestId:relatedRequest(revision)}});
    }
    const close=url.pathname.match(/^\/api\/requests\/([1-9]\d*)\/close$/);
    if(close&&request.method==='POST') {
     if(user.role==='editor')return reply({error:'관리자만 요청을 종료할 수 있습니다.'},403);
     return reply(await gh.close(Number(close[1])));
    }
-   const restore=url.pathname.match(/^\/api\/history\/([1-9]\d*)\/restore$/);
+   const restore=url.pathname.match(/^\/api\/history\/([1-9]\d*|commit-[a-f0-9]{40})\/restore$/);
    const retry=url.pathname.match(/^\/api\/requests\/([1-9]\d*)\/retry$/);
    if((restore||retry)&&request.method==='POST') {
     if(user.role==='editor')return reply({error:'관리자만 실행할 수 있습니다.'},403);
@@ -78,7 +80,7 @@ export function requestsAPI({github=createGitHub}={}) {
     };
     let result;
     try {
-     if(restore){await claim(`restore:${restore[1]}:${body.base}`);result=await gh.restore(Number(restore[1]),body.base,body.requestId,async issue=>{await env.DB.prepare('UPDATE operations SET issue=? WHERE id=?').bind(issue,body.requestId).run();});}
+     if(restore){await claim(`restore:${restore[1]}:${body.base}`);result=await gh.restore(restore[1].startsWith('commit-')?restore[1]:Number(restore[1]),body.base,body.requestId,async issue=>{await env.DB.prepare('UPDATE operations SET issue=? WHERE id=?').bind(issue,body.requestId).run();});}
      else {await gh.retry(Number(retry[1]),claim,run=>assertRetryCredential(env,Number(retry[1]),run));result={issue:Number(retry[1])};}
     } catch(e) {
      if(e instanceof GitHubError&&[400,403,404,409].includes(e.status))await env.DB.prepare('DELETE FROM operations WHERE id=? AND NOT EXISTS(SELECT 1 FROM operation_claims WHERE operation=?)').bind(body.requestId,body.requestId).run();

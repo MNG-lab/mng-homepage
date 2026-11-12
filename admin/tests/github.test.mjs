@@ -25,7 +25,7 @@ test('installation token is restricted to one repo; requests never add productio
   const body=options.body?JSON.parse(options.body):null;calls.push({url,body,method:options.method});
   if(url.includes('/access_tokens')) return Response.json({token:'mock'});
   if(url.endsWith('/issues/123')) return Response.json(issue);
-  if(url.endsWith('/pulls/123/files?per_page=100'))return Response.json([{filename:'src/App.jsx'}]);
+  if(url.endsWith('/pulls/123/files?per_page=100'))return Response.json([{filename:'src/pages/HomePage.jsx'}]);
   if(url.endsWith('/pulls/123')) return Response.json(pr);
   if(url.includes('/actions/runs?')) return Response.json({workflow_runs:[{id:1,path:'.github/workflows/ci-quality.yml',head_sha:sha,pull_requests:[{number:123}],status:'completed',conclusion:'success'}]});
   if(url.endsWith('/dispatches')) return new Response(null,{status:204});

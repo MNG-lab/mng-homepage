@@ -1,3 +1,4 @@
+import {latestWebsiteCommit,assertRollbackTarget,assertRollbackResult} from './rollback-policy.mjs';
 import {execFileSync} from 'node:child_process';
 import {writeFileSync,appendFileSync} from 'node:fs';
 import {requestFailure} from '../shared/request-failure.js';
@@ -20,7 +21,7 @@ try {
   let sha,reference;
   const comments=[];for(let page=1;;page++){const rows=api(`issues/${id}/comments?per_page=100&page=${page}`);comments.push(...rows);if(rows.length<100)break;}
   const pinned=comments.find(comment=>comment.user?.login===bot&&/^<!-- mng-rollback-target:[a-f\d]{40} -->/.test(comment.body||''))?.body.match(/^<!-- mng-rollback-target:([a-f\d]{40}) -->/)[1];
-  if(request.type==='latest'){sha=base;reference=`직전 변경 ${sha.slice(0,7)}`;}
+  if(request.type==='latest'){sha=latestWebsiteCommit(base);reference=`직전 홈페이지 변경 ${sha.slice(0,7)}`;}
   else if(request.type==='pr'){
     const number=request.target.replace(/^#/,'');const pr=api(`pulls/${number}`);
     if(!pr.merged_at||!pr.merge_commit_sha||pr.base?.ref!=='main'||pr.base?.repo?.full_name!==repo)throw Error('main에 반영된 PR을 지정해 주세요.');
@@ -29,6 +30,7 @@ try {
   if(pinned){sha=pinned;reference=`취소 대상 커밋 ${sha.slice(0,7)}`;}
   if(!/^[a-f\d]{40}$/.test(sha))throw Error('취소할 커밋을 확인하지 못했습니다.');
   try{git('merge-base','--is-ancestor',sha,base);}catch{throw Error('현재 main 이력에 포함된 변경만 취소할 수 있습니다.');}
+  assertRollbackTarget(sha,base);
   if(!pinned)gh('issue','comment',id,'--repo',repo,'--body',`<!-- mng-rollback-target:${sha} -->\n이번 요청의 취소 대상 커밋: ${sha}\n재실행해도 이 변경을 대상으로 합니다.`);
   const parents=git('rev-list','--parents','-n','1',sha).split(' ').length-1;
   const branch=`codex/rollback-issue-${id}-${process.env.GITHUB_RUN_ID}`;
@@ -37,6 +39,8 @@ try {
   if(published){
     if(!/^[a-f\d]{40}$/.test(published))throw Error('기존 작업 브랜치를 확인하지 못했습니다.');
     git('fetch','origin',published);
+    const parent=git('rev-list','--parents','-n','1',published).split(' ')[1];
+    assertRollbackResult(parent,published);
     const message=git('show','-s','--format=%B',published);
     if(!message.includes(`MNG-Rollback-Target: ${sha}`)||!message.includes(`request #${id}`))throw Error('기존 브랜치가 다른 작업의 결과입니다. 개발 담당자가 확인해 주세요.');
   } else {
@@ -49,6 +53,7 @@ try {
     throw error;
   }
   if(!git('status','--porcelain'))throw Object.assign(Error(requestFailure('rollback_no_changes').title),{failureCode:'rollback_no_changes'});
+  assertRollbackResult(base,git('write-tree'));
   const botId=JSON.parse(gh('api',`users/${bot}`)).id;
   const env={...process.env,GIT_AUTHOR_NAME:bot,GIT_AUTHOR_EMAIL:`${botId}+${bot}@users.noreply.github.com`,GIT_COMMITTER_NAME:bot,GIT_COMMITTER_EMAIL:`${botId}+${bot}@users.noreply.github.com`};
   run('git',['commit','-m',`revert: ${reference} (request #${id})\n\nMNG-Rollback-Target: ${sha}`],{env});

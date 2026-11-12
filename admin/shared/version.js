@@ -16,6 +16,8 @@ export const relatedRequest=revision=>branchRequest(revision.head?.ref)?.issue||
 
 // GitHub PR numbers are immutable identifiers, not deployment sequence numbers.
 export const versionLabel=number=>Number.isSafeInteger(number)&&number>0?`버전 ${number}`:'';
+export const revisionKey=revision=>revision.key||String(revision.number);
+export const revisionLabel=revision=>revision.kind==='direct'?'직접 수정':revision.kind==='snapshot'?'현재 상태':versionLabel(revision.number);
 export const appliedVersion=request=>versionLabel(request.pull?.merged?request.pull.number:null);
 export function versionReference(target){
  const label=versionLabel(target?.number),name=target?.name;

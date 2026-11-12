@@ -1,3 +1,4 @@
+import {websiteRestore,websiteSignature} from '../shared/website-policy.js';
 // Local UX review only. No credentials, remote API calls, or persistent database.
 import {createServer} from 'node:http';
 import {readFileSync,existsSync} from 'node:fs';
@@ -43,6 +44,7 @@ if(conflictScenario){
 }
 const gh={
  async list(){return [...issues.values()];},async pulls(){return [...pulls.values()];},async runs(){return [...runs.values()];},
+ async revertEligibility(id){return {allowed:id!==201,reason:id===201?'홈페이지와 운영 기능이 함께 수정된 요청입니다. 운영 기능을 유지하려면 원하는 내용을 새 수정 요청으로 남겨 주세요.':null};},
  async issue(id){const issue=issues.get(id);if(!issue)throw new GitHubError('요청을 찾을 수 없습니다.',404);return issue;},
  async pull(id){const pull=pulls.get(id);if(!pull)throw new GitHubError('변경을 찾을 수 없습니다.',404);return pull;},
  async latestRun(id){return runs.get(id)||null;},
@@ -63,7 +65,28 @@ const gh={
  async restorePlan(id){const p=await this.pull(id);return {source:id,current:sha('merge202'),target:p.mergeSha,changes:2};},
  async versionChanges(){return {pages:['Home','Members'],truncated:false};}
 };
-const handler=requestsAPI({github:async()=>gh});
+function versionExample(example='current'){
+ const current=sha('admin-only-update'),direct={key:'commit-'+sha('direct-edit'),kind:'direct',title:'Home 소개 문구 직접 수정',url:'/review/external?kind=commit',mergeSha:sha('direct-edit'),mergedAt:stamp(),merged:true};
+ const revisions=[...pulls.values()].filter(p=>p.merged).reverse().map(p=>({...p,key:String(p.number),requestId:branchRequest(p.head.ref)?.issue}));
+ const currentRevision=example==='direct'?direct:revisions.find(p=>p.number===202);
+ const entry=(path,value)=>({path,sha:sha(value),type:'blob',mode:'100644'});
+ const snapshot=(id,isCurrent=false)=>({sha:sha('tree-'+id),tree:[entry('admin/worker/index.js',isCurrent?'latest-admin':'old-admin'),entry('.github/workflows/codex-comment.yml',isCurrent?'latest-workflow':'old-workflow'),entry('src/App.jsx',example==='protected'&&id===201?'old-core':'new-core'),entry('src/content/home-content.js',id===201?'old-home':id==='direct'?'direct-home':'current-home')]});
+ const now=snapshot(example==='direct'?'direct':202,true);
+ return {...gh,
+  async history(){return {current,currentRevision,revisions:example==='direct'?[direct,...revisions]:revisions};},
+  async restorePlan(id,expectedBase){
+   if(expectedBase&&expectedBase!==current)throw new GitHubError('새 변경이 반영되었습니다.',409);
+   const revision=typeof id==='string'?direct:revisions.find(p=>p.number===id);
+   if(!revision)throw new GitHubError('버전을 찾을 수 없습니다.',404);
+   const target=snapshot(typeof id==='string'?'direct':id);
+   return {source:id,current,target:revision.mergeSha,revision,currentContent:websiteSignature(now)===websiteSignature(target),...websiteRestore(now,target)};
+  },
+  async restore(id,base,requestId,onIssue){
+   const plan=await this.restorePlan(id,base);if(!plan.restoreSafety.allowed)throw new GitHubError(plan.restoreSafety.reason,409);if(!plan.changes.length)throw new GitHubError('지금 홈페이지와 같은 내용입니다.',409);
+   const issue=await this.createRequest({requestId,title:plan.revision.title+' 상태로 복원',page:'Home',description:'검토용 홈페이지 복원'});await onIssue(issue.number);const number=next++,pull=makePull(number,issue);pull.restoration={number:typeof id==='number'?id:null,key:String(id),name:plan.revision.title};pull.body+=`\n<!-- restore:${id}:${base} -->`;pulls.set(number,pull);return {issue:issue.number,pull:number};
+  }
+ };
+}
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.ico':'image/x-icon'};
 const server=createServer(async(req,res)=>{
  const send=(status,body,type='text/html; charset=utf-8')=>{res.writeHead(status,{'Content-Type':type,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(body);};
@@ -85,7 +108,7 @@ const server=createServer(async(req,res)=>{
    let bytes=0;const chunks=[];for await(const chunk of req){bytes+=chunk.length;if(bytes>11*1024*1024)return send(413,'Too large');chunks.push(chunk);}
    const headers=new Headers(req.headers);if(headers.has('Origin'))headers.set('Origin',origin);
    const request=new Request(origin+url.pathname+url.search,{method:req.method,headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})});
-   const response=await handler(request,env,user);return send(response.status,Buffer.from(await response.arrayBuffer()),response.headers.get('Content-Type'));
+   const response=await requestsAPI({github:async()=>versionExample(url.searchParams.get('example')||'current')})(request,env,user);return send(response.status,Buffer.from(await response.arrayBuffer()),response.headers.get('Content-Type'));
   }
   const file=resolve(assets,'.'+decodeURIComponent(url.pathname));
   if(file!==assets&&!file.startsWith(assets+'/'))return send(403,'Invalid path');

@@ -12,7 +12,7 @@ GitHub에서 요청하려면 아래 버튼을 사용하세요.
 [![수정 요청하기](https://img.shields.io/badge/%EC%88%98%EC%A0%95%20%EC%9A%94%EC%B2%AD%ED%95%98%EA%B8%B0-0A66C2?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)
 [![직전 변경 되돌리기](https://img.shields.io/badge/%EC%A7%81%EC%A0%84%20%EB%B3%80%EA%B2%BD%20%EB%90%98%EB%8F%8C%EB%A6%AC%EA%B8%B0-FF8A00?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-simple-request.yml)
 
-**직전 변경 되돌리기**는 방금 반영한 변경에 문제가 있을 때 사용합니다. 실행 시 `main`의 최신 커밋 1건을 취소하는 PR을 만들며, 검토 후 승인해야 홈페이지에 반영됩니다. 특정 요청을 고르려면 아래 어드민의 **이 변경 취소**를 사용하세요.
+**직전 변경 되돌리기**는 방금 반영한 홈페이지 변경에 문제가 있을 때 사용합니다. 마지막 홈페이지 변경 1건을 취소하는 PR을 만들며, 검토 후 승인해야 홈페이지에 반영됩니다. 어드민·운영 설정만 바꾼 작업은 건너뛰고, 공통 기능에 영향을 주는 변경은 자동 취소하지 않습니다. 특정 요청을 고르려면 아래 어드민의 **이 변경 취소**를 사용하세요.
 
 [어드민](https://admin.mng-lab.workers.dev)의 **새 수정 요청**에서 페이지와 바꿀 내용을 입력하세요. 제목은 자동으로 제안되며 직접 고칠 수 있습니다. 사진 선택·끌어넣기·붙여넣기를 지원하고, 정확한 문구나 변경 제외 범위가 있으면 추가 정보에 적습니다.
 

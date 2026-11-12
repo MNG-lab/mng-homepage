@@ -9,6 +9,8 @@ export async function validateSourceRevert(gh,env,body) {
  if(!selected?.merged||selected.restoration||selected.body?.includes('<!-- restore:')||Number(body.rollbackTarget.replace(/^#/,''))!==selected.number)throw new GitHubError('취소할 변경이 달라졌습니다. 원래 요청을 다시 열어 주세요.',409);
  const fresh=await gh.pull(selected.number);
  if(!fresh.merged_at||!fresh.merge_commit_sha||fresh.merge_commit_sha!==body.sourceMergeSha)throw new GitHubError('반영된 버전을 다시 확인해 주세요.',409);
+ const safety=await gh.revertEligibility(selected.number);
+ if(!safety.allowed)throw new GitHubError(safety.reason,409);
  const reversal=findReversal(await gh.list({force:true}),pulls,{...selected,mergeSha:fresh.merge_commit_sha});
  if(reversal?.state==='done')throw new GitHubError('이미 취소된 변경입니다. 변경 취소 요청의 결과를 확인해 주세요.',409);
  return {reversal,pulls,resource:`request-revert:${selected.number}:${fresh.merge_commit_sha}`};

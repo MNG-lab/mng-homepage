@@ -97,7 +97,7 @@ test('rollback results require their own signed workflow and exact run attempt',
  let dispatches=0;
  const retry=requestsAPI({github:async()=>({retry:async(id,claim,check)=>{await check(failed);await claim('retry:5:123:1');dispatches++;}})});
  const retryRequest=()=>post('/api/requests/5/retry',{requestId:crypto.randomUUID()});
- for(const code of ['rollback_conflict','rollback_no_changes']){
+ for(const code of ['rollback_conflict','rollback_no_changes','rollback_protected']){
   env.DB.sqlite.prepare('UPDATE request_run_results SET failure_code=?').run(code);
   const response=await retry(retryRequest(),env,owner);assert.equal(response.status,409);assert.ok((await response.json()).error);
  }
@@ -107,4 +107,14 @@ test('rollback results require their own signed workflow and exact run attempt',
  env.DB.sqlite.prepare("INSERT INTO request_run_results(run_id,attempt,issue,sha,reason,created_at) VALUES ('123',1,5,?,'failed',?)").run(sha,Date.now());
  assert.equal((await retry(retryRequest(),env,owner)).status,201,'verified transient failure remains retryable');
  assert.equal(dispatches,1);
+});
+
+test('protected rollback result is saved by the signed callback and cannot be retried',async()=>{
+ const {env:base}=setup(),env={...base,ADMIN_ENV:'production',GITHUB_WORKFLOW_REF:'main',GITHUB_TEST_BASE:'main'};
+ const signed={...claims,sub:'repo:MNG-lab/mng-homepage:ref:refs/heads/main',ref:'refs/heads/main',workflow_ref:'MNG-lab/mng-homepage/.github/workflows/rollback-from-issue.yml@refs/heads/main'};delete signed.job_workflow_ref;delete signed.job_workflow_sha;
+ const actual={...ghRun,head_branch:'main',path:'.github/workflows/rollback-from-issue.yml',display_title:'Rollback request #5'};
+ const handle=requestResultAPI({github:async()=>({issue:async()=>({number:5}),run:async()=>actual}),verifyRunner:async()=>signed});
+ const result=await handle(post('/api/internal/request-result',{issue:5,reason:'failed',failureCode:'rollback_protected'}),env);
+ assert.equal(result.status,200);
+ assert.deepEqual((await recoveryMetadata(env))(5,{...run,workflow:'rollback'}).failure,{code:'rollback_protected',retryable:false});
 });
