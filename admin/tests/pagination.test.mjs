@@ -16,7 +16,7 @@ test('server returns 20 rows after search and status filtering, with global summ
  const runs=issues.filter(i=>i.number<=42).map(i=>({id:i.number,title:`Admin preview #${i.number}`,attempt:1,status:'completed',conclusion:'failure',createdAt:'2025-01-02T00:00:00Z'}));
  const gh={list:async()=>issues,pulls:async()=>[],runs:async()=>runs,issue:async id=>issue(id),latestRun:async id=>runs.find(r=>r.id===id)};
  const api=requestsAPI({github:async()=>gh});
- const get=async query=>{const response=await api(new Request(origin+'/api/requests'+query),config,user);return {status:response.status,...await response.json()};};
+ const get=async query=>{const response=await api(new Request(origin+'/api/requests'+query+(query.includes('?')?'&':'?')+'fresh=1'),config,user);return {status:response.status,...await response.json()};};
  let page=await get('?page=2');assert.equal(page.requests.length,20);assert.equal(page.requests[0].id,27);assert.deepEqual(page.pagination,{page:2,pageSize:20,total:47,pages:3});
  page=await get('?status=failed&q=Members&page=3');assert.equal(page.requests.length,2);assert.deepEqual(page.requests.map(r=>r.id),[2,1]);assert.equal(page.pagination.total,42);
  page=await get('?status=working&q='+encodeURIComponent('검색 본문'));assert.equal(page.requests.length,5);assert.equal(page.pagination.total,5);
@@ -133,7 +133,7 @@ test('history API pages previous versions six at a time and keeps the current re
  const selected=revision(53,current),previous=Array.from({length:19},(_,i)=>revision(100-i));
  let revisions=[...previous.slice(0,4),selected,...previous.slice(4)],reads=0;
  const handle=requestsAPI({github:async()=>({history:async()=>{reads++;return {current,revisions};}})}),config=env(database());
- const get=async page=>{const response=await handle(new Request(origin+'/api/history'+(page===undefined?'':'?page='+page)),config,user);return {status:response.status,...await response.json()};};
+ const get=async page=>{const response=await handle(new Request(origin+'/api/history?fresh=1'+(page===undefined?'':'&page='+page)),config,user);return {status:response.status,...await response.json()};};
  const ids=[];
  for(let page=1;page<=4;page++){
   const data=await get(page);assert.equal(data.currentRevision.number,53);assert.equal(data.totalVersions,20);assert.deepEqual(data.pagination,{page,pageSize:6,total:19,pages:4});

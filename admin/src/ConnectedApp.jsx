@@ -15,6 +15,7 @@ import RequestDetail from './RequestDetail.jsx';
 import NewRequest from './NewRequest.jsx';
 import AccountAvatar from './AccountAvatar.jsx';
 import SidebarQuickLinks from './SidebarQuickLinks.jsx';
+import {readWithRefresh} from './readWithRefresh.js';
 function RequestRows({requests,search='',manage=false}) {return <ul className={`connected-list ${manage?'managed-requests':''}`}>{requests.map(r=>{const state=requestState(r);return <li key={r.id}><Link to={`/requests/${r.id}${search}`}><div><span className={`request-kind ${isRestoration(r)?'restore':''}`}>{isRevert(r)?'특정 변경 취소':isRestoration(r)?'이전 버전으로 되돌리기':'홈페이지 수정'}</span><strong>{requestTitle(r)}</strong><small>요청 #{r.id} · {date(r.createdAt)} 접수</small>{appliedVersion(r)&&<span className="request-result-version">반영 <b>{appliedVersion(r)}</b></span>}</div><div className="request-row-state"><span className={`state-pill ${state}`}>{requestLabel(r)}</span>{manage&&<span className="request-row-action">{state==='review'?'변경 확인 →':state==='failed'?(r.failure?.retryable===false?'안내 확인 →':'재실행 확인 →'):state==='auth_required'?'연결 상태 확인 →':'요청 보기 →'}</span>}</div></Link>{manage&&appliedVersion(r)&&<Link className="request-version-link" to={`/history/${r.pull.number}`}>{appliedVersion(r)} 보기 →</Link>}</li>;})}</ul>;}
 export default function ConnectedApp({user}) {
  const location=useLocation(),navigate=useNavigate();
@@ -50,21 +51,21 @@ export default function ConnectedApp({user}) {
   const seq=++refreshSequence.current,read={path};setLoading(true);
   read.promise=(async()=>{
    try{
-    const value=await api(path);
-    if(seq!==refreshSequence.current)return null;
-    if(isRequestList)setCatalog(value);
-    else {
-     const snapshot={path,value,updatedAt:Date.now()};
-     setData(snapshot);if(isDashboard)readCache.current.set(path,snapshot);
-     // Detail reads after approval, closing, retrying, or creation update the
-     // cached list too, without another full GitHub catalogue request.
-     if(value.request)setCatalog(previous=>previous?{requests:[value.request,...previous.requests.filter(r=>r.id!==value.request.id)].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id-a.id)}:previous);
-    }
-    setError('');
-    if(value.pagination&&String(value.pagination.page)!==(isSettings?recoveryPage:listPage)){
-     if(isSettings)changeRecovery(value.pagination.page);else changeList({page:value.pagination.page},{replace:true});
-    }
-    return true;
+    const value=await readWithRefresh(path,{read:api,isCurrent:()=>seq===refreshSequence.current,publish:value=>{
+     if(isRequestList)setCatalog(value);
+     else {
+      const snapshot={path,value,updatedAt:value.sync?.updatedAt||Date.now()};
+      setData(snapshot);if(isDashboard)readCache.current.set(path,snapshot);
+      // Detail reads after approval, closing, retrying, or creation update the
+      // cached list too, without another full GitHub catalogue request.
+      if(value.request)setCatalog(previous=>previous?{requests:[value.request,...previous.requests.filter(r=>r.id!==value.request.id)].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id-a.id)}:previous);
+     }
+     setError('');
+     if(value.sync?.state!=='cached'&&value.pagination&&String(value.pagination.page)!==(isSettings?recoveryPage:listPage)){
+      if(isSettings)changeRecovery(value.pagination.page);else changeList({page:value.pagination.page},{replace:true});
+     }
+    }});
+    return value?true:null;
    }catch(e){if(seq===refreshSequence.current){setError(e.status===404&&detailId?'':e.message);if(e.status===404){setData({path,value:{}});if(detailId)setCatalog(previous=>previous?{requests:previous.requests.filter(r=>r.id!==Number(detailId))}:previous);}return false;}return null;}
    finally{if(seq===refreshSequence.current)setLoading(false);if(activeRead.current===read)activeRead.current=null;}
   })();
@@ -83,8 +84,8 @@ export default function ConnectedApp({user}) {
   return()=>{++refreshSequence.current;activeRead.current=null;clearInterval(timer);document.removeEventListener('visibilitychange',update);};
  },[path]);
  useEffect(()=>{
-  if(isRequestList&&listView&&String(listView.pagination.page)!==listPage)changeList({page:listView.pagination.page},{replace:true});
- },[isRequestList,listView,listPage]);
+  if(isRequestList&&!loading&&listView&&String(listView.pagination.page)!==listPage)changeList({page:listView.pagination.page},{replace:true});
+ },[isRequestList,loading,listView,listPage]);
  useEffect(()=>{document.title=`${pageTitle} · MNG 홈페이지 관리 어드민`;setNotice('');},[location.pathname,pageTitle]);
  return <div className="app-shell">
   <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리 어드민</small></span></Link><div className="workspace-label">WORKSPACE <span>{review?'화면 검토':production?'운영':'연동 테스트'}</span></div>

@@ -27,7 +27,7 @@
     "admin:dev": "vite --config admin/vite.config.js",
     "admin:build": "vite build --config admin/vite.config.js",
     "admin:preview": "vite preview --config admin/vite.config.js",
-    "admin:test": "node --test admin/tests/model.test.mjs admin/tests/auth.test.mjs admin/tests/github.test.mjs admin/tests/github-auth.test.mjs admin/tests/history-cache.test.mjs admin/tests/requests.test.mjs admin/tests/management.test.mjs admin/tests/restore.test.mjs admin/tests/operations.test.mjs admin/tests/polish.test.mjs admin/tests/preview.test.mjs admin/tests/device-auth-proof.test.mjs admin/tests/device-login.test.mjs admin/tests/request-recovery.test.mjs admin/tests/pagination.test.mjs && npm run admin:build && node admin/tests/smoke.mjs",
+    "admin:test": "node --test admin/tests/model.test.mjs admin/tests/auth.test.mjs admin/tests/github.test.mjs admin/tests/github-auth.test.mjs admin/tests/history-cache.test.mjs admin/tests/list-snapshot.test.mjs admin/tests/read-with-refresh.test.mjs admin/tests/requests.test.mjs admin/tests/management.test.mjs admin/tests/restore.test.mjs admin/tests/operations.test.mjs admin/tests/polish.test.mjs admin/tests/preview.test.mjs admin/tests/device-auth-proof.test.mjs admin/tests/device-login.test.mjs admin/tests/request-recovery.test.mjs admin/tests/pagination.test.mjs && npm run admin:build && node admin/tests/smoke.mjs",
     "admin:build:production": "VITE_ADMIN_AUTH=required VITE_ADMIN_ENV=production vite build --config admin/vite.config.js",
     "admin:build:auth": "VITE_ADMIN_AUTH=required vite build --config admin/vite.config.js",
     "admin:test:connected": "npm run admin:build:auth && node admin/tests/connected-smoke.mjs && node admin/tests/session-smoke.mjs",

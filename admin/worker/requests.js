@@ -10,6 +10,7 @@ import {historyPage,paginateHistory} from './history-list.js';
 import {relatedRequest} from '../shared/version.js';
 import {assertRetryCredential} from './request-recovery.js';
 import {createGitHub,GitHubError} from './github.js';
+import {listSnapshot} from './list-snapshot.js';
 const reply=(data,status=200)=>Response.json(data,{status});
 export function requestsAPI({github=createGitHub}={}) {
  return async function(request,env,user) {
@@ -18,6 +19,19 @@ export function requestsAPI({github=createGitHub}={}) {
   if(!user || !['owner','admin','editor'].includes(user.role)) return reply({error:'권한이 없습니다.'},403);
   if(!['GET','HEAD'].includes(request.method) && request.headers.get('Origin')!==env.APP_ORIGIN) return reply({error:'잘못된 요청 출처입니다.'},403);
   try {
+   // Only list endpoints can use display snapshots. Validate filters before
+   // reading a snapshot, and create GitHub credentials only for a live read.
+   if(request.method==='GET'&&(url.pathname==='/api/requests'||url.pathname==='/api/history')){
+    const history=url.pathname==='/api/history';
+    const query=history?historyPage(url.searchParams):listQuery(url.searchParams);
+    const {value,sync}=await listSnapshot(env,history?'history':'requests',{
+     // Opt in: tabs running the previous frontend still receive live results.
+     fresh:url.searchParams.get('cached')!=='1'||url.searchParams.get('fresh')==='1',
+     load:async()=>{const gh=await github(env);return history?gh.history():requestCatalog(gh,env);}
+    });
+    const data=history?paginateHistory(value,query):url.searchParams.get('view')==='catalog'?{requests:value}:url.searchParams.get('view')==='summary'?requestSummary(value):paginateRequests(value,query);
+    return reply({...data,sync});
+   }
    const gh=await github(env);
    const removal=url.pathname.match(/^\/api\/attachments\/([a-f\d-]{36})\/remove$/);
    if(removal&&request.method==='POST'){
@@ -29,12 +43,6 @@ export function requestsAPI({github=createGitHub}={}) {
    }
    const upload=url.pathname.match(/^\/api\/attachments\/([a-f\d-]{36})$/);
    if(upload&&request.method==='POST')return reply(await uploadAttachment(request,env,user,gh,upload[1]),201);
-   if(url.pathname==='/api/requests' && request.method==='GET') {
-    const query=listQuery(url.searchParams);
-    const requests=await requestCatalog(gh,env);
-    if(url.searchParams.get('view')==='catalog')return reply({requests});
-    return reply(url.searchParams.get('view')==='summary'?requestSummary(requests):paginateRequests(requests,query));
-   }
    const requestDetail=url.pathname.match(/^\/api\/requests\/([1-9]\d*)$/);
    if(requestDetail&&request.method==='GET'){
     const id=Number(requestDetail[1]);
@@ -44,7 +52,6 @@ export function requestsAPI({github=createGitHub}={}) {
     if(record.pull?.merged&&record.kind!=='revert'&&!record.restoration)record.revertSafety=await gh.revertEligibility(record.pull.number);
     return reply({request:record});
    }
-   if(url.pathname==='/api/history'&&request.method==='GET'){const page=historyPage(url.searchParams);return reply(paginateHistory(await gh.history(),page));}
    const detail=url.pathname.match(/^\/api\/pulls\/([1-9]\d*)$/);
    if(detail&&request.method==='GET')return reply(await gh.detail(Number(detail[1])));
    const plan=url.pathname.match(/^\/api\/history\/([1-9]\d*|commit-[a-f0-9]{40})$/);

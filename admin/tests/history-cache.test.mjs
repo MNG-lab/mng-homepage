@@ -4,6 +4,20 @@ import {websiteHistory} from '../worker/website-history.js';
 import {websitePaths} from '../shared/website-policy.js';
 import {database} from './d1.mjs';
 
+test('history feeds run three at a time and settle in-flight writers before reporting failure',async()=>{
+ const db=database();let active=0,peak=0,calls=0,fail=false;
+ const options={db,cache:'parallel:',base:'main',current:'a'.repeat(40),pulls:[],tree:async()=>({tree:[]}),graphql:async(q,v)=>{
+  calls++;active++;peak=Math.max(peak,active);
+  try{await new Promise(resolve=>setTimeout(resolve,10));if(fail&&v.path===websitePaths[0])throw Error('temporary');return {repository:{object:{history:{nodes:[],pageInfo:{hasNextPage:false}}}}};}
+  finally{active--;}
+ }};
+ await websiteHistory(options);assert.equal(peak,3);assert.equal(active,0);assert.equal(calls,websitePaths.length);
+ fail=true;calls=0;
+ await assert.rejects(websiteHistory({...options,refresh:true}),/temporary/);
+ assert.equal(calls,3,'no next batch is started after a failure');assert.equal(active,0);
+ assert.equal(db.sqlite.prepare('SELECT count(*) n FROM github_catalog_sync WHERE lease IS NOT NULL').get().n,0,'all cache leases are released');db.sqlite.close();
+});
+
 test('completed history snapshots skip repeated work and track HEAD, PR edits and direct changes',async()=>{
  const db=database(),a='a'.repeat(40),b='b'.repeat(40),c='c'.repeat(40),d='d'.repeat(40);
  const pr={number:85,title:'Home 이미지',url:'https://example.test/85',mergedAt:'2026-11-11T12:00:00Z',mergeCommit:{oid:b},baseRefName:'main',baseRepository:{nameWithOwner:'MNG-lab/mng-homepage'},headRefName:'codex/issue-83-1'};

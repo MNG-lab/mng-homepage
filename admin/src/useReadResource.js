@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {api} from './api.js';
+import {readWithRefresh} from './readWithRefresh.js';
 
 // Reads keep their last result. Only the current resource can publish a new one.
 export default function useReadResource(path,{scopeKey=path,cache,refreshKey,interval=0,shouldPoll=()=>true,onLoad=()=>{}}={}) {
@@ -15,13 +16,13 @@ export default function useReadResource(path,{scopeKey=path,cache,refreshKey,int
   setPending({path,scopeKey});
   read.promise=(async()=>{
    try{
-    const value=await api(path);
-    if(!isCurrent())return null;
-    const snapshot={path,scopeKey,value,updatedAt:Date.now()};
-    // Optional, session-owned snapshots are only for display; every visit revalidates.
-    if(cache){cache.delete(cacheKey);cache.set(cacheKey,snapshot);if(cache.size>40)cache.delete(cache.keys().next().value);}
-    lastValue.current=snapshot;setResult(snapshot);setFailure(null);latest.current.onLoad(value);
-    return true;
+    const value=await readWithRefresh(path,{read:api,isCurrent,publish:value=>{
+     const snapshot={path,scopeKey,value,updatedAt:value.sync?.updatedAt||Date.now()};
+     // Optional, session-owned snapshots are only for display; every visit revalidates.
+     if(cache){cache.delete(cacheKey);cache.set(cacheKey,snapshot);if(cache.size>40)cache.delete(cache.keys().next().value);}
+     lastValue.current=snapshot;setResult(snapshot);setFailure(null);if(value.sync?.state!=='cached')latest.current.onLoad(value);
+    }});
+    return value?true:null;
    }catch(e){if(!isCurrent())return null;if(cache&&[403,404].includes(e.status)){cache.delete(cacheKey);setResult(null);lastValue.current=null;}setFailure({path,scopeKey,message:e.message});return false;}
    finally{if(isCurrent())setPending(null);if(active.current===read)active.current=null;}
   })();

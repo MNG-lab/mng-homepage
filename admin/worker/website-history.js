@@ -1,5 +1,5 @@
 import {websitePaths,websiteSignature} from '../shared/website-policy.js';
-import {readCatalog} from './github-catalog.js';
+import {readCatalog,allReads} from './github-catalog.js';
 import {relatedRequest} from '../shared/version.js';
 import {numberWebsiteVersions} from './website-versions.js';
 
@@ -24,8 +24,9 @@ export async function websiteHistory({db,cache,base,current,pulls,graphql,tree,r
 }
 async function buildWebsiteHistory({db,cache,base,current,pulls,graphql,tree,refresh=false}){
  const events=[];
- // Sequential feeds bound GitHub subrequests; readCatalog resumes large imports.
- for(const path of websitePaths){
+ // At most three independent path feeds run together. Pages within a feed
+ // remain sequential; settle all writers before returning or reporting failure.
+ async function readPath(path){
   const kind=cache+'website-v1:'+path,cursors=new Map();
   const rows=await readCatalog(db,kind,async(page,since)=>{
    if(page===1&&db&&!refresh){
@@ -44,7 +45,11 @@ async function buildWebsiteHistory({db,cache,base,current,pulls,graphql,tree,ref
    // Prefix SHA ids so SQLite numeric affinity cannot round all-numeric hashes.
    return {items:history.nodes.map(n=>({...n,id:"commit:"+n.oid})),done:!history.pageInfo.hasNextPage};
   },{force:refresh});
-  events.push(...rows);
+  return rows;
+ }
+ for(let i=0;i<websitePaths.length;i+=3){
+  const batches=await allReads(websitePaths.slice(i,i+3).map(readPath));
+  events.push(...batches.flat());
  }
  const revisions=new Map(),byNumber=new Map(pulls.map(p=>[p.number,p]));
  for(const event of events){
