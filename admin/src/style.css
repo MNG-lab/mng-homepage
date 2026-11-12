@@ -1655,12 +1655,30 @@ select {
 .connected-description {white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;}
 @media(max-width:700px){.connected-main{padding:20px 14px}.connected-list button{display:grid;gap:8px}.connected-panel{padding:20px}.auth-session{flex-wrap:wrap}}
 
-.connected-top-actions {display:flex;align-items:center;gap:20px;}
-.connected-top-actions form {margin:0;}
+.connected-topbar {min-height:80px;height:auto;gap:24px;padding-block:14px;}
+.topbar-page-title {flex-shrink:0;font-size:13px;color:#65738a;}
+.connected-top-actions {display:flex;align-items:center;gap:20px;min-width:0;}
+.header-account {display:flex;align-items:center;gap:12px;min-width:0;}
+.header-account-avatar {display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:50%;background:#edf2f9;color:#536e94;box-shadow:inset 0 0 0 1px #e1e8f2;}
+.header-account-avatar svg {width:23px;height:23px;}
+.header-account-info {display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;}
+.header-account-email {display:block;max-width:300px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;line-height:1.5;color:#33435a;}
+.header-account .role-badge {padding:1px 7px;border-radius:5px;font-size:11px;font-weight:600;line-height:1.6;}
+.connected-top-actions form {margin:0;padding-left:16px;border-left:1px solid #e1e7ef;flex-shrink:0;}
+.header-logout {min-height:40px;padding:8px 4px;white-space:nowrap;color:#65738a;}
+.header-logout:hover {color:#244f8c;}
 .connected-empty {color:#7d899a;padding:12px 0;}
 .connected-main .stats {margin:0;}
 .connected-main .stat-card {text-align:left;}
-@media(max-width:700px){.connected-top-actions{gap:10px}.connected-top-actions .demo-pill{display:none}}
+@media(max-width:760px){
+ .connected-topbar {min-height:76px;padding-block:12px;}
+ .connected-topbar .topbar-page-title {display:none;}
+ .connected-top-actions {width:100%;gap:12px;justify-content:space-between;}
+ .header-account {gap:10px;}
+ .header-account-avatar {width:36px;height:36px;}
+ .header-account-email {font-size:12px;}
+ .connected-top-actions form {padding-left:12px;}
+}
 
 /* Connected MVP views */
 .connected-list a {display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 0;color:inherit;text-decoration:none;}

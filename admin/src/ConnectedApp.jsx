@@ -71,9 +71,21 @@ export default function ConnectedApp({user}) {
  return <div className="app-shell">
   <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리 어드민</small></span></Link><div className="workspace-label">WORKSPACE <span>{review?'화면 검토':production?'운영':'연동 테스트'}</span></div>
    <nav aria-label="주 메뉴">{[['/dashboard','대시보드'],['/requests','요청 관리'],['/history','홈페이지 버전'],['/settings','설정']].map(([path,label])=><button key={path} className={`nav-item ${location.pathname===path||location.pathname.startsWith(path+'/')?'active':''}`} onClick={()=>navigate(path)}>{label}</button>)}</nav>
-   <div className="sidebar-bottom"><div className="help-card"><strong>{review?'지금은 화면 검토 중입니다':production?'승인하면 홈페이지에 반영됩니다':'운영 홈페이지와 분리돼요'}</strong><p>{review?'제출·변경 취소를 눌러도 실제 GitHub와 홈페이지는 바뀌지 않습니다.':production?'변경된 홈페이지 미리보기를 확인한 뒤 승인해 주세요.':'테스트 환경에서 수정 요청과 이전 버전으로 되돌리기를 확인하세요.'}</p></div><div className="profile"><div><strong>{user.role==='owner'?'최고 관리자':user.role==='admin'?'관리자':'편집자'}</strong><small>{user.email}</small></div></div></div>
+   <div className="sidebar-bottom"><div className="help-card"><strong>{review?'지금은 화면 검토 중입니다':production?'승인하면 홈페이지에 반영됩니다':'운영 홈페이지와 분리돼요'}</strong><p>{review?'제출·변경 취소를 눌러도 실제 GitHub와 홈페이지는 바뀌지 않습니다.':production?'변경된 홈페이지 미리보기를 확인한 뒤 승인해 주세요.':'테스트 환경에서 수정 요청과 이전 버전으로 되돌리기를 확인하세요.'}</p></div></div>
   </aside>
-  <div className="main-wrap"><header className="topbar"><span>{pageTitle}</span><div className="connected-top-actions"><span className="demo-pill">{review?'검토용 화면':production?'운영 홈페이지':'GitHub 연동 테스트'}</span><form method="post" action="/auth/logout"><button className="text-button" type="submit">로그아웃</button></form></div></header>
+  <div className="main-wrap"><header className="topbar connected-topbar">
+   <span className="topbar-page-title">{pageTitle}</span>
+   <div className="connected-top-actions">
+    <div className="header-account" role="group" aria-label="현재 로그인한 사용자">
+     <span className="header-account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1a7 7 0 0 1 14 0v1"/></svg></span>
+     <div className="header-account-info">
+      <span className="header-account-email" title={user.email}>{user.email}</span>
+      <span className={`role-badge role-badge-${user.role}`}>{user.role==='owner'?'최고 관리자':user.role==='admin'?'관리자':'편집자'}</span>
+     </div>
+    </div>
+    <form method="post" action="/auth/logout"><button className="text-button header-logout" type="submit">로그아웃</button></form>
+   </div>
+  </header>
    <main className="connected-main"><div className="connected-heading"><div><h1>{pageTitle}</h1><p>{isDashboard?'확인할 작업과 최근 요청을 한눈에 살펴보세요.':isHistory?'현재 홈페이지를 확인하고, 필요한 이전 버전을 찾아보세요.':isSettings?'구성원과 서비스 연결을 관리하세요.':isNew?'바꾸고 싶은 내용을 알려 주세요.':detailId?'요청의 진행 상황을 확인하고 필요한 작업을 처리하세요.':'검토·재실행이 필요한 요청을 확인하고 처리하세요.'}</p></div>{!isNew&&!isHistory&&<button className="primary" onClick={()=>navigate('/requests/new')}>새 수정 요청</button>}</div>
     {review&&<aside className="review-environment" aria-label="검토 환경 안내"><p><strong>검토용 화면</strong> · 제출과 변경 취소를 직접 눌러보세요. 실제 GitHub 요청·DB·운영 홈페이지에는 반영되지 않습니다.</p><div className="action-row"><Link to="/requests/new">새 작성 폼</Link><Link to="/requests/101">완료된 요청 예시</Link><a href="/review/templates" target="_blank" rel="noreferrer">GitHub 양식 비교 ↗</a></div></aside>}
     {!production&&<div className="inline-note">테스트 환경입니다. main 및 운영 홈페이지에는 반영되지 않습니다.</div>}
