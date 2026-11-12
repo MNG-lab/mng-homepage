@@ -119,7 +119,7 @@ try {
  await page.getByRole('button',{name:/^지난 요청/}).click();await page.getByText('아직 지난 요청이 없습니다.',{exact:true}).waitFor();releaseRequestRead();await new Promise(r=>setTimeout(r,100));assert.equal(await refreshControl.innerText(),'새로고침');assert.equal(await refreshStatus.innerText(),'');
  records=[];await page.goto('http://127.0.0.1:4193/requests');await page.getByText('지금 처리할 요청이 없습니다. 완료된 작업은 지난 요청에서 확인하세요.').waitFor();
  await page.getByRole('button',{name:'새 수정 요청',exact:true}).click();await page.getByLabel('요청 제목',{exact:true}).fill('Connected test');await page.getByLabel('어떻게 바꾸면 될까요?',{exact:true}).fill('Update Members test content');holdWritePath='/api/requests';await page.getByRole('button',{name:'수정 요청 보내기',exact:true}).click();
- const submitPending=page.getByRole('button',{name:'접수 중…',exact:true});await submitPending.waitFor();assert.equal(await submitPending.getAttribute('aria-busy'),'true');assert.equal(await submitPending.isDisabled(),true);assert.equal(await submitPending.locator('.spinner').count(),1);assert.equal(submissions,0);
+ const submitPending=page.getByRole('button',{name:'요청 접수 중…',exact:true});await submitPending.waitFor();assert.equal(await submitPending.getAttribute('aria-busy'),'true');assert.equal(await submitPending.isDisabled(),true);assert.equal(await submitPending.locator('.spinner').count(),1);assert.equal(submissions,0);
  for(let i=0;i<100&&!writeHeld;i++)await new Promise(r=>setTimeout(r,20));assert.equal(writeHeld,true);releaseWrite();
  await page.waitForURL('**/requests/123');await page.getByRole('heading',{name:'Connected test',exact:true}).waitFor();assert.equal(submissions,1);
  await page.reload();await page.getByRole('heading',{name:'Connected test',exact:true}).waitFor();

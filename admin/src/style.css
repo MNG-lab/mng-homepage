@@ -1932,3 +1932,43 @@ select {
 
 .refresh-button{max-width:100%;white-space:normal}
 .refresh-labels{word-break:keep-all;overflow-wrap:anywhere}
+
+/* Request composer: context, attachments, and references are separate tasks. */
+.request-compose { display: grid; gap: 24px; max-width: 1040px; }
+.request-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 24px; }
+.request-mode { display: flex; gap: 8px; border-bottom: 1px solid var(--line, #dce5ef); padding-bottom: 12px; }
+.request-mode button { background: transparent; color: #637590; border: 1px solid transparent; border-radius: 9px; padding: 12px 20px; font-weight: 700; }
+.request-mode button[aria-pressed="true"] { color: #28599a; background: #edf3fc; border-color: #cedcf1; }
+.request-section { display: grid; gap: 22px; }
+.request-section h2 { margin: 0 0 8px; }
+.request-section p { margin: 0; }
+.request-field { display: grid; gap: 9px; min-width: 0; font-weight: 650; }
+.request-field input, .request-field textarea, .request-field select, .attachment-grid input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #d7dfeb; border-radius: 8px; background: #fff; font: inherit; font-weight: 400; }
+.request-field textarea { resize: vertical; font-weight: 400; line-height: 1.7; }
+.request-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.optional-label { font-size: 13px; font-weight: 400; color: #78869b; margin-left: 8px; }
+.attachment-dropzone { padding: 28px 20px; background: #f8fafc; border: 1px dashed #b9c9df; border-radius: 12px; text-align: center; display: grid; justify-items: center; gap: 12px; }
+.attachment-dropzone.dragging { background: #eaf2ff; border-color: #315d9f; }
+.attachment-dropzone small, .request-help { color: #697b93; line-height: 1.7; }
+.request-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.attachment-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
+.attachment-grid li { border: 1px solid #dce5ef; border-radius: 12px; overflow: hidden; min-width: 0; }
+.attachment-grid li > a { display: block; background: #f5f7fb; }
+.attachment-grid img { display: block; width: 100%; height: 180px; object-fit: contain; }
+.attachment-grid li > div { padding: 16px; display: grid; gap: 10px; }
+.attachment-grid strong { overflow-wrap: anywhere; }
+.attachment-grid small { color: #697b93; }
+.attachment-grid label { display: grid; gap: 8px; font-size: 13px; }
+.attachment-grid input { width: 100%; min-width: 0; box-sizing: border-box; }
+.attachment-grid .text-button { justify-self: start; }
+.request-submit-panel { display: grid; gap: 20px; }
+.request-submit-panel > p { margin: 0; color: #697b93; line-height: 1.7; font-size: 14px; }
+.request-submit-panel .action-row { justify-content: flex-end; margin: 0; }
+.request-content { display: grid; gap: 20px; margin: 24px 0; }
+.request-content h3 { margin: 0 0 8px; font-size: 14px; color: #687b95; }
+.request-content-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.request-content-text a { color: #315d9f; text-decoration: underline; }
+.request-image-gallery { list-style: none; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; padding: 0; margin: 0; }
+.request-image-gallery a { display: grid; gap: 10px; border: 1px solid #dce5ef; border-radius: 10px; padding: 12px; color: #315d9f; }
+.request-image-gallery img { display: block; height: 150px; width: 100%; object-fit: contain; background: #f8fafc; }
+@media(max-width:650px) { .request-field-grid, .attachment-grid { grid-template-columns: 1fr; } .request-image-gallery { grid-template-columns: repeat(2,minmax(0,1fr)); } .request-submit-panel .action-row { justify-content: stretch; } .request-mode button { flex: 1; padding: 12px; } }

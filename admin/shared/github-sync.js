@@ -5,7 +5,7 @@ export function issueType(issue,config) {
  if(config.mode==='preview')return labels.has(config.label)&&issue.body?.startsWith(config.marker+'\n')?{source:'admin',kind:'change'}:null;
  if(labels.has('admin-preview')||issue.body?.startsWith('<!-- mng-admin-preview:'))return null;
  if(labels.has('admin-request')&&issue.body?.startsWith(config.marker+'\n'))return {source:'admin',kind:'change'};
- if(labels.has('rollback-request')||labels.has('rollback-simple-request'))return {source:'github',kind:'revert'};
+ if(labels.has('rollback-request')||labels.has('rollback-simple-request'))return {source:issue.body?.startsWith(config.marker+'\n')?'admin':'github',kind:'revert'};
  return labels.has('codex-auto')?{source:'github',kind:'change'}:null;
 }
 export function branchRequest(ref) {
@@ -27,7 +27,7 @@ export function runIdentity(run,config) {
    if(pr)return {pullNumber:Number(pr[1]),workflow:'codex',source:'github'};
   }
  }
- if(config.mode==='production'&&path==='.github/workflows/rollback-from-issue.yml'&&run.event==='issues'){
+ if(config.mode==='production'&&path==='.github/workflows/rollback-from-issue.yml'&&['issues','workflow_dispatch'].includes(run.event)){
   const m=title.match(/^Rollback request #([1-9]\d*)$/);if(m)return {issue:Number(m[1]),workflow:'rollback',source:'github'};
  }
  return null;

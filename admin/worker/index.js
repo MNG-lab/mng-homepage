@@ -75,7 +75,7 @@ function secure(response) {
   result.headers.set('Referrer-Policy', 'no-referrer');
   result.headers.set('X-Content-Type-Options', 'nosniff');
   result.headers.set('X-Frame-Options', 'DENY');
-  result.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+  result.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://raw.githubusercontent.com https://github.com https://user-images.githubusercontent.com https://private-user-images.githubusercontent.com https://github-production-user-asset-6210df.s3.amazonaws.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   return result;
 }
 

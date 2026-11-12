@@ -1,310 +1,51 @@
 name: Rollback from issue
-run-name: 'Rollback request #${{ github.event.issue.number }}'
-
+run-name: 'Rollback request #${{ inputs.issue || github.event.issue.number }}'
 on:
   issues:
     types: [opened]
-
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Open rollback request issue number
+        required: true
+        type: string
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
+  contents: read
 concurrency:
-  group: rollback-${{ github.repository }}-${{ github.event.issue.number }}
-  cancel-in-progress: true
-
+  group: rollback-${{ github.repository }}-${{ inputs.issue || github.event.issue.number }}
+  cancel-in-progress: false
 jobs:
   rollback:
-    if: >
-      github.event.issue.user.type != 'Bot' &&
-      (
-        contains(join(github.event.issue.labels.*.name, ','), 'rollback-request') ||
-        contains(join(github.event.issue.labels.*.name, ','), 'rollback-simple-request')
-      ) &&
-      (github.event.issue.author_association == 'COLLABORATOR' ||
-       github.event.issue.author_association == 'CONTRIBUTOR' ||
-       github.event.issue.author_association == 'MEMBER' ||
-       github.event.issue.author_association == 'OWNER')
+    if: >-
+      github.repository == 'MNG-lab/mng-homepage' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.issue.user.type != 'Bot' &&
+        (contains(github.event.issue.labels.*.name, 'rollback-request') || contains(github.event.issue.labels.*.name, 'rollback-simple-request')) &&
+        contains(fromJSON('["COLLABORATOR","CONTRIBUTOR","MEMBER","OWNER"]'), github.event.issue.author_association)))
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3.3.0
+      - uses: actions/create-github-app-token@v3.3.0
+        id: app
         with:
           app-id: ${{ secrets.MNG_AI_CODE_BOT_APP_ID }}
           private-key: ${{ secrets.MNG_AI_CODE_BOT_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-
-      - name: Checkout default branch
-        uses: actions/checkout@v7.0.1
+          owner: MNG-lab
+          repositories: mng-homepage
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+      - uses: actions/checkout@v7.0.1
         with:
+          ref: main
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Setup tools
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y gh jq
-
-      - name: Resolve app bot identity
-        id: app-bot
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Create rollback review PR
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          APP_SLUG="${{ steps.app-token.outputs.app-slug }}"
-          BOT_LOGIN="${APP_SLUG}[bot]"
-          BOT_USER_ID="$(gh api "/users/${BOT_LOGIN}" --jq '.id')"
-
-          echo "login=${BOT_LOGIN}" >> "$GITHUB_OUTPUT"
-          echo "email=${BOT_USER_ID}+${BOT_LOGIN}@users.noreply.github.com" >> "$GITHUB_OUTPUT"
-
-      - name: Assign issue to app bot
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          if ! gh issue edit "$ISSUE_NUMBER" --add-assignee "${{ steps.app-bot.outputs.login }}"; then
-            echo "::warning::Failed to assign issue #${ISSUE_NUMBER} to ${{ steps.app-bot.outputs.login }}."
-          fi
-
-      - name: Parse rollback request
-        id: parse
-        run: |
-          set -euo pipefail
-          BODY_FILE="/tmp/rollback-issue-body.md"
-          jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" > "$BODY_FILE"
-          LABELS_CSV="$(jq -r '[.issue.labels[].name] | join(",")' "$GITHUB_EVENT_PATH")"
-          IS_SIMPLE="false"
-          if echo "$LABELS_CSV" | grep -Eq '(^|,)rollback-simple-request(,|$)'; then
-            IS_SIMPLE="true"
-          fi
-
-          extract_section() {
-            local heading="$1"
-            awk -v heading="$heading" '
-              $0 == "### " heading {capture=1; next}
-              capture && /^### / {exit}
-              capture {print}
-            ' "$BODY_FILE" | sed 's/\r$//' | sed '/^$/d'
-          }
-
-          if [[ "$IS_SIMPLE" == "true" ]]; then
-            REQUEST_MODE="simple"
-            TYPE="previous-main"
-            TARGET="HEAD"
-          else
-            REQUEST_MODE="developer"
-            TYPE="$(extract_section "롤백 유형" | head -n1 | tr '[:upper:]' '[:lower:]' | xargs)"
-            TARGET="$(extract_section "롤백 대상" | head -n1 | xargs)"
-          fi
-
-          REASON="$(extract_section "롤백 사유")"
-
-          if [[ "$REQUEST_MODE" == "developer" && ( -z "$TYPE" || -z "$TARGET" ) ]]; then
-            echo "Failed to parse rollback type/target from issue form."
-            exit 1
-          fi
-
-          if [[ -z "$REASON" || "$REASON" == "_No response_" ]]; then
-            REASON="사유 미입력"
-          fi
-
-          echo "request_mode=$REQUEST_MODE" >> "$GITHUB_OUTPUT"
-          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
-          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
-          {
-            echo "reason<<EOF"
-            echo "$REASON"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Resolve rollback target
-        id: target
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          TYPE="${{ steps.parse.outputs.type }}"
-          TARGET="${{ steps.parse.outputs.target }}"
-
-          if [[ "$TYPE" == "previous-main" ]]; then
-            SHA="$(git rev-parse HEAD)"
-            SHORT_SHA="$(git rev-parse --short HEAD)"
-
-            echo "mode=latest-main" >> "$GITHUB_OUTPUT"
-            echo "source_ref=main latest commit (${SHORT_SHA})" >> "$GITHUB_OUTPUT"
-            echo "commit_sha=$SHA" >> "$GITHUB_OUTPUT"
-          elif [[ "$TYPE" == "pr" ]]; then
-            PR_NUMBER="$(echo "$TARGET" | tr -cd '0-9')"
-            if [[ -z "$PR_NUMBER" ]]; then
-              echo "Invalid PR target: $TARGET"
-              exit 1
-            fi
-
-            MERGE_SHA="$(gh pr view "$PR_NUMBER" --json mergeCommit --jq '.mergeCommit.oid // empty')"
-            if [[ -z "$MERGE_SHA" ]]; then
-              echo "PR #$PR_NUMBER does not have a merge commit."
-              exit 1
-            fi
-
-            echo "mode=pr" >> "$GITHUB_OUTPUT"
-            echo "source_ref=PR #$PR_NUMBER" >> "$GITHUB_OUTPUT"
-            echo "commit_sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
-          elif [[ "$TYPE" == "commit" ]]; then
-            SHA="$(echo "$TARGET" | tr '[:upper:]' '[:lower:]')"
-            if ! [[ "$SHA" =~ ^[0-9a-f]{7,40}$ ]]; then
-              echo "Invalid commit SHA: $TARGET"
-              exit 1
-            fi
-
-            if ! git cat-file -e "$SHA^{commit}" 2>/dev/null; then
-              echo "Commit does not exist in this repository: $SHA"
-              exit 1
-            fi
-
-            echo "mode=commit" >> "$GITHUB_OUTPUT"
-            echo "source_ref=commit $SHA" >> "$GITHUB_OUTPUT"
-            echo "commit_sha=$SHA" >> "$GITHUB_OUTPUT"
-          else
-            echo "Unknown rollback type: $TYPE"
-            exit 1
-          fi
-
-      - name: Prepare rollback branch
-        id: branch
-        run: |
-          set -euo pipefail
-          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          ROLLBACK_BRANCH="codex/rollback-issue-${ISSUE_NUMBER}-${GITHUB_RUN_ID}"
-
-          git checkout "$DEFAULT_BRANCH"
-          git pull --ff-only origin "$DEFAULT_BRANCH"
-          git checkout -b "$ROLLBACK_BRANCH"
-
-          git config user.name "${{ steps.app-bot.outputs.login }}"
-          git config user.email "${{ steps.app-bot.outputs.email }}"
-
-          echo "name=$ROLLBACK_BRANCH" >> "$GITHUB_OUTPUT"
-
-      - name: Revert target
-        id: revert
-        run: |
-          set -euo pipefail
-          MODE="${{ steps.target.outputs.mode }}"
-          SHA="${{ steps.target.outputs.commit_sha }}"
-
-          set +e
-          if [[ "$MODE" == "pr" ]]; then
-            git revert -m 1 --no-edit "$SHA"
-          elif [[ "$MODE" == "latest-main" ]]; then
-            PARENT_COUNT="$(git rev-list --parents -n 1 "$SHA" | awk '{print NF-1}')"
-            if [[ "$PARENT_COUNT" -ge 2 ]]; then
-              git revert -m 1 --no-edit "$SHA"
-            else
-              git revert --no-edit "$SHA"
-            fi
-          else
-            git revert --no-edit "$SHA"
-          fi
-          EXIT_CODE=$?
-          set -e
-
-          if [[ $EXIT_CODE -ne 0 ]]; then
-            git revert --abort >/dev/null 2>&1 || true
-            echo "status=failed" >> "$GITHUB_OUTPUT"
-            {
-              echo "error<<EOF"
-              echo "git revert failed (mode=$MODE, target=$SHA). 충돌 또는 이미 롤백된 커밋일 수 있습니다."
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "status=success" >> "$GITHUB_OUTPUT"
-
-      - name: Verify the rollback request is still open
-        if: steps.revert.outputs.status == 'success'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          REQUEST_ISSUE: ${{ github.event.issue.number }}
-        run: |
-          test "$(gh issue view "$REQUEST_ISSUE" --json state --jq .state)" = "OPEN"
-
-      - name: Push rollback branch
-        if: steps.revert.outputs.status == 'success'
-        run: |
-          set -euo pipefail
-          git push -u origin "${{ steps.branch.outputs.name }}"
-
-      - name: Create rollback PR
-        id: create-pr
-        if: steps.revert.outputs.status == 'success'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
-          SOURCE_REF="${{ steps.target.outputs.source_ref }}"
-          BRANCH_NAME="${{ steps.branch.outputs.name }}"
-          REASON="${{ steps.parse.outputs.reason }}"
-          REQUEST_MODE="${{ steps.parse.outputs.request_mode }}"
-
-          if [[ "$REQUEST_MODE" == "simple" ]]; then
-            PR_TITLE="[Rollback][Simple] #${ISSUE_NUMBER} main 직전 상태로 복구"
-          else
-            PR_TITLE="[Rollback][Dev] #${ISSUE_NUMBER} ${SOURCE_REF} 되돌리기"
-          fi
-
-          PR_BODY=$'자동 롤백 요청 이슈 #'"${ISSUE_NUMBER}"$' 처리 결과입니다.\n\n- Request mode: '"${REQUEST_MODE}"$'\n- Rollback target: '"${SOURCE_REF}"$'\n- Revert commit: ${{ steps.target.outputs.commit_sha }}\n\n### 사유\n'"${REASON}"
-
-          PR_URL="$(gh pr create \
-            --base "$DEFAULT_BRANCH" \
-            --head "$BRANCH_NAME" \
-            --title "$PR_TITLE" \
-            --body "$PR_BODY")"
-
-          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
-
-      - name: Comment success on issue
-        if: steps.revert.outputs.status == 'success' && steps.create-pr.outputs.url != ''
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          gh issue comment "$ISSUE_NUMBER" --body "✅ 롤백 PR 생성 완료: ${{ steps.create-pr.outputs.url }}"
-
-      - name: Comment failure on issue
-        if: steps.revert.outputs.status != 'success'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          SOURCE_REF="${{ steps.target.outputs.source_ref }}"
-          ERROR_TEXT="${{ steps.revert.outputs.error }}"
-          BODY=$'❌ 롤백 자동화 실패\n\n- Target: '"${SOURCE_REF}"$'\n- Error: '"${ERROR_TEXT}"$'\n\n수동 롤백 또는 대상 재확인 후 다시 요청해주세요.'
-          gh issue comment "$ISSUE_NUMBER" --body "$BODY"
-
-      - name: Mark workflow failed when rollback fails
-        if: steps.revert.outputs.status != 'success'
-        run: |
-          echo "Rollback failed"
-          exit 1
-
-      - name: Comment failure on issue (fallback)
-        if: failure() && steps.revert.outputs.status == ''
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          ISSUE_NUMBER="${{ github.event.issue.number }}"
-          gh issue comment "$ISSUE_NUMBER" --body "❌ 롤백 요청 파싱 또는 대상 확인 단계에서 실패했습니다. 템플릿 항목을 다시 확인해 주세요."
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          BOT_SLUG: ${{ steps.app.outputs.app-slug }}
+          REQUEST_ISSUE: ${{ inputs.issue || github.event.issue.number }}
+        run: node admin/scripts/rollback-job.mjs
