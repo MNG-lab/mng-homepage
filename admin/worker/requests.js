@@ -51,8 +51,9 @@ export function requestsAPI({github=createGitHub}={}) {
    if(plan&&request.method==='GET') {
     const id=plan[1].startsWith('commit-')?plan[1]:Number(plan[1]);
     const [value,change,pulls]=await allReads([gh.restorePlan(id),gh.versionChanges(id),gh.pulls()]);
-    const revision=value.revision||pulls.find(p=>p.number===id&&p.merged);
+    let revision=value.revision||pulls.find(p=>p.number===id&&p.merged);
     if(!revision)throw new GitHubError('반영된 버전을 찾을 수 없습니다.',404);
+    if(gh.versionedRevision)revision=await gh.versionedRevision(revision);
     return reply({source:value.source,current:value.current,target:value.target,changes:value.changes,currentContent:value.currentContent,restoreSafety:value.restoreSafety,changedPages:change.pages,changesTruncated:change.truncated,revision:{...revision,requestId:relatedRequest(revision)}});
    }
    const close=url.pathname.match(/^\/api\/requests\/([1-9]\d*)\/close$/);

@@ -14,12 +14,17 @@ export function changedAreas(files){
 }
 export const relatedRequest=revision=>branchRequest(revision.head?.ref)?.issue||null;
 
-// GitHub PR numbers are immutable identifiers, not deployment sequence numbers.
+// Display numbers come from the durable website ledger; GitHub IDs stay in URLs.
 export const versionLabel=number=>Number.isSafeInteger(number)&&number>0?`버전 ${number}`:'';
 export const revisionKey=revision=>revision.key||String(revision.number);
-export const revisionLabel=revision=>revision.kind==='direct'?'직접 수정':revision.kind==='snapshot'?'현재 상태':versionLabel(revision.number);
-export const appliedVersion=request=>versionLabel(request.pull?.merged?request.pull.number:null);
+export const revisionLabel=revision=>versionLabel(revision.version)||'버전 확인 중';
+export function revisionMethod(revision){
+ if(revision.restoration)return '되돌리기';
+ const request=branchRequest(revision.head?.ref);
+ return request?.kind==='revert'?'변경 취소':request?'AI 수정':'직접 수정';
+}
+export const appliedVersion=request=>versionLabel(request.pull?.merged?request.pull.version:null);
 export function versionReference(target){
- const label=versionLabel(target?.number),name=target?.name;
+ const label=versionLabel(target?.version),name=target?.name;
  return label?(name?`${label} ‘${name}’`:label):name?`‘${name}’ 버전`:'이전 버전';
 }

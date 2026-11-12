@@ -1,5 +1,6 @@
 import {rollbackScope,websiteRestore,websiteSignature,websiteEntries,foundationChanges} from '../shared/website-policy.js';
 import {websiteHistory} from './website-history.js';
+import {attachVersions} from './website-versions.js';
 import {normalizeRequest,requestBody} from '../shared/request-form.js';
 import {ATTACHMENT_BRANCH} from '../shared/images.js';
 import {issueType,branchRequest,runIdentity,matchesRequestRun} from '../shared/github-sync.js';
@@ -85,6 +86,7 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     return text?JSON.parse(text):null;
   }
   const treeReads=new Map();
+  let historyRead;
   async function tree(sha){
     if(!/^[a-f0-9]{40}$/.test(sha))throw new GitHubError('버전 정보를 확인해 주세요.',400);
     if(!treeReads.has(sha))treeReads.set(sha,(async()=>{const commit=await call(`/git/commits/${sha}`);return call(`/git/trees/${commit.tree.sha}?recursive=1`);})());
@@ -149,9 +151,17 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     },
     async pull(id) {const pr=await call(`/pulls/${number(id)}`);assertManagedPull(pr,undefined,config);return pr;},
     async current() {return (await call(`/git/ref/heads/${TEST_BASE}`)).object.sha;},
-    async history() {
-      const [pulls,current]=await allReads([this.pulls(),this.current()]);
-      return websiteHistory({db:env.DB,cache:config.cache,base:TEST_BASE,current,pulls,graphql,tree});
+    async history(knownPulls) {
+      if(!historyRead)historyRead=(async()=>{const [pulls,current]=await allReads([knownPulls||this.pulls(),this.current()]);return websiteHistory({db:env.DB,cache:config.cache,base:TEST_BASE,current,pulls,graphql,tree});})();
+      return historyRead;
+    },
+    async versionedPulls() {
+      const pulls=await this.pulls();
+      if(!pulls.some(p=>p.merged))return pulls;
+      return attachVersions(pulls,(await this.history(pulls)).revisions);
+    },
+    async versionedRevision(revision) {
+      return attachVersions([revision],(await this.history()).revisions)[0];
     },
     async versionChanges(id){
       if(typeof id==='string'&&/^commit-[a-f0-9]{40}$/.test(id)){const commit=await call(`/commits/${id.slice(7)}`);return {pages:changedAreas(commit.files||[]),truncated:(commit.files||[]).length>=300};}

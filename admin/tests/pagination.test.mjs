@@ -110,9 +110,9 @@ test('request groups separate actionable work from completed and closed requests
 
 test('version search matches applied and restore-target identifiers exactly before pagination and status filtering',async()=>{
  const {paginateRequests}=await import('../worker/request-list.js');
- const rows=Array.from({length:22},(_,i)=>({id:300+i,title:'이전 내용으로 되돌리기',state:'closed',pull:{number:400+i,merged:true,restoration:{number:53,name:'Members 소개 수정'}}}));
- rows.push({id:10,title:'Members',state:'closed',pull:{number:53,merged:true}});
- rows.push({id:11,title:'Members',state:'closed',pull:{number:530,merged:true}});
+ const rows=Array.from({length:22},(_,i)=>({id:300+i,title:'이전 내용으로 되돌리기',state:'closed',pull:{number:900+i,version:400+i,merged:true,restoration:{number:853,version:53,name:'Members 소개 수정'}}}));
+ rows.push({id:10,title:'Members',state:'closed',pull:{number:853,version:53,merged:true}});
+ rows.push({id:11,title:'Members',state:'closed',pull:{number:1530,version:530,merged:true}});
  rows.push({id:12,title:'Draft',state:'open',pull:{number:531,merged:false,state:'open'}});
  rows.push({id:13,title:'Closed',state:'closed',pull:{number:532,merged:false,state:'closed'}});
  for(const q of ['버전 53','버전53','v53','V53','v. 53','v.53']){

@@ -1,9 +1,8 @@
-import {isRevert} from '../shared/github-sync.js';
 import {production,review} from './environment.js';
 import React,{useEffect,useState,useRef} from 'react';
 import {Link,useNavigate,useLocation} from 'react-router-dom';
 import {api} from './api.js';
-import {relatedRequest,versionLabel,revisionKey,revisionLabel} from '../shared/version.js';
+import {relatedRequest,versionLabel,revisionKey,revisionLabel,revisionMethod} from '../shared/version.js';
 import LoadingIndicator from './LoadingIndicator.jsx';
 import Pagination from './Pagination.jsx';
 import RefreshButton from './RefreshButton.jsx';
@@ -19,8 +18,8 @@ function VersionHeader({revision:r,current=false,level=3,environment=false,listS
   <Heading className="version-title">{versionTitle(r)}</Heading>
   <div className="version-meta">
    <span className="version-number" aria-label={`반영된 ${revisionLabel(r)}`}>{revisionLabel(r)}</span>
-   <span className="version-kind">{r.kind==='direct'?'GitHub':r.restoration?'되돌리기':isRevert({pull:r})?'변경 취소':'수정'}</span>
-   {r.restoration&&<span className="version-target">대상 <Link to={`/history/${r.restoration.key||r.restoration.number}${listSearch}`} aria-label={`되돌린 대상 ${versionLabel(r.restoration.number)} 상세 보기`}>{versionLabel(r.restoration.number)||'직접 수정'}</Link></span>}
+   <span className="version-kind">{revisionMethod(r)}</span>
+   {r.restoration&&<span className="version-target">대상 <Link to={`/history/${r.restoration.key||r.restoration.number}${listSearch}`} aria-label={`되돌린 대상 ${versionLabel(r.restoration.version)||'버전'} 상세 보기`}>{versionLabel(r.restoration.version)||'버전 보기'}</Link></span>}
    <time dateTime={r.mergedAt||undefined}>{versionDate(r.mergedAt)} 반영</time>
    {requestId(r)&&<Link className="version-request" to={`/requests/${requestId(r)}?tab=past`}>요청 #{requestId(r)}</Link>}
   </div>

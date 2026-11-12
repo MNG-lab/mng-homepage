@@ -28,11 +28,13 @@ try {
   await button.click();await button.locator('.refresh-labels .is-visible').filter({hasText:/완료$/}).waitFor();
  }
 
- function historyRevisions(){const rows=historyRows||records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,requestId:r.id,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}));for(const r of rows)knownRevisions.set(r.number,r);return rows;}
+ function historyRevisions(){const rows=(historyRows||records.filter(r=>r.pull?.merged).map(r=>({...r.pull,mergeSha:sha,requestId:r.id,mergedAt:'2026-11-10T02:00:00Z',title:r.title,displayTitle:'이름으로 알아보는 복원 지점'}))).map(r=>({...r,version:r.version||r.number,head:r.head||{ref:`admin-preview/issue-${r.number}-1`},...(r.restoration?{restoration:{...r.restoration,version:r.restoration.version||r.restoration.number}}:{})}));for(const r of rows)knownRevisions.set(r.number,r);return rows;}
  let members=[{email:'owner@example.test',role:'owner',joined:1,active:1}],transfer=null,failMemberSave=false;const settingsWrites=[];
  let auditRecords=[],auditFailures=0,holdAuditPage=null,releaseAudit,heldAudit=false;
  await page.route('**/api/**',async route=>{
   const req=route.request(),url=new URL(req.url()),path=url.pathname;const body=req.method()==='POST'?req.postDataJSON():null;
+  // Legacy fixture IDs deliberately retain their expected display numbers. Production numbers come from the ledger.
+  for(const r of records){if(r.pull?.merged)r.pull.version=r.pull.version||r.pull.number;for(const target of [r.restoration,r.pull?.restoration])if(target)target.version=target.version||target.number;}
   const readKey=path+url.search;
   if(req.method()==='GET'){
    uiReads.set(readKey,(uiReads.get(readKey)||0)+1);
@@ -148,7 +150,7 @@ try {
  await page.getByRole('button',{name:'새로고침',exact:true}).click();await page.getByRole('region',{name:'현재 홈페이지 버전'}).getByRole('heading',{name:'어드민 연결 검증용 파일 추가 (테스트 전용)',exact:true}).waitFor();
  const restoredRow=page.locator('.version-card').filter({has:page.locator('.version-number').getByText('버전 122',{exact:true})});
  await restoredRow.getByRole('heading',{name:'롤백 체험 — 임시 변경 B',exact:true}).waitFor();await restoredRow.locator('.version-kind').getByText('되돌리기',{exact:true}).waitFor();assert.equal(await restoredRow.getByRole('link',{name:'되돌린 대상 버전 121 상세 보기'}).getAttribute('href'),'/history/121');
- await page.locator('.version-card').filter({has:page.locator('.version-number').getByText('버전 121',{exact:true})}).locator('.version-kind').getByText('수정',{exact:true}).waitFor();
+ await page.locator('.version-card').filter({has:page.locator('.version-number').getByText('버전 121',{exact:true})}).locator('.version-kind').getByText('AI 수정',{exact:true}).waitFor();
  await page.screenshot({path:'/private/tmp/mng-version-design-desktop.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'version header mobile overflow');await page.screenshot({path:'/private/tmp/mng-version-design-mobile.png',fullPage:true});
  await page.setViewportSize({width:1440,height:1000});

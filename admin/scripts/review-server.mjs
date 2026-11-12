@@ -1,4 +1,6 @@
 import {websiteRestore,websiteSignature} from '../shared/website-policy.js';
+import {numberWebsiteVersions,attachVersions} from '../worker/website-versions.js';
+import {revisionKey} from '../shared/version.js';
 // Local UX review only. No credentials, remote API calls, or persistent database.
 import {createServer} from 'node:http';
 import {readFileSync,existsSync} from 'node:fs';
@@ -30,7 +32,8 @@ function makePull(number,issue,{merged=false,kind='change'}={}){
 for(const [id,page,title,description] of [[101,'Members','Members 소개 문구 수정','연구원 소개를 새로운 문구로 변경했습니다.'],[102,'Home','Home 연구 이미지 추가','소개문 아래에 연구 이미지 한 장을 추가했습니다.']]){
  const input=normalizeRequest({requestId:crypto.randomUUID(),title,page,description});
  const issue={number:id,title,body:requestBody(input,config),labels:[{name:'admin-request'}],state:'closed',created_at:stamp(),html_url:`/review/external?kind=issue&id=${id}`};
- issues.set(id,issue);pulls.set(id+100,makePull(id+100,issue,{merged:true}));
+ const mergedAt=new Date(Date.now()-(103-id)*3600000).toISOString();
+ issues.set(id,issue);pulls.set(id+100,{...makePull(id+100,issue,{merged:true}),mergedAt,merged_at:mergedAt});
 }
 // Optional failure fixture: uses the real request UI, result metadata and retry guard.
 // A separate port keeps the user's existing form review and in-memory data intact.
@@ -65,20 +68,28 @@ const gh={
  async restorePlan(id){const p=await this.pull(id);return {source:id,current:sha('merge202'),target:p.mergeSha,changes:2};},
  async versionChanges(){return {pages:['Home','Members'],truncated:false};}
 };
+const directRevision={key:'commit-'+sha('direct-edit'),kind:'direct',title:'Home 소개 문구 직접 수정',url:'/review/external?kind=commit',mergeSha:sha('direct-edit'),mergedAt:stamp(),merged:true};
 function versionExample(example='current'){
- const current=sha('admin-only-update'),direct={key:'commit-'+sha('direct-edit'),kind:'direct',title:'Home 소개 문구 직접 수정',url:'/review/external?kind=commit',mergeSha:sha('direct-edit'),mergedAt:stamp(),merged:true};
- const revisions=[...pulls.values()].filter(p=>p.merged).reverse().map(p=>({...p,key:String(p.number),requestId:branchRequest(p.head.ref)?.issue}));
- const currentRevision=example==='direct'?direct:revisions.find(p=>p.number===202);
+ const revisions=[...pulls.values()].filter(p=>p.merged).map(p=>({...p,key:String(p.number),requestId:branchRequest(p.head.ref)?.issue}));
+ const all=[...revisions,directRevision];let read;
+ const versions=()=>read||=(numberWebsiteVersions(DB,'local-review:website',all));
  const entry=(path,value)=>({path,sha:sha(value),type:'blob',mode:'100644'});
- const snapshot=(id,isCurrent=false)=>({sha:sha('tree-'+id),tree:[entry('admin/worker/index.js',isCurrent?'latest-admin':'old-admin'),entry('.github/workflows/codex-comment.yml',isCurrent?'latest-workflow':'old-workflow'),entry('src/App.jsx',example==='protected'&&id===201?'old-core':'new-core'),entry('src/content/home-content.js',id===201?'old-home':id==='direct'?'direct-home':'current-home')]});
- const now=snapshot(example==='direct'?'direct':202,true);
+ const contentId=(revision,seen=new Set())=>{
+  const key=revisionKey(revision);if(seen.has(key))return key;seen.add(key);
+  const target=revision.restoration&&all.find(r=>revisionKey(r)===String(revision.restoration.key||revision.restoration.number));
+  return target?contentId(target,seen):key;
+ };
+ const snapshot=(id,isCurrent=false)=>({sha:sha('tree-'+id),tree:[entry('admin/worker/index.js',isCurrent?'latest-admin':'old-admin'),entry('.github/workflows/codex-comment.yml',isCurrent?'latest-workflow':'old-workflow'),entry('src/App.jsx',example==='protected'&&!isCurrent&&id==='201'?'old-core':'new-core'),entry('src/content/home-content.js',id)]});
  return {...gh,
-  async history(){return {current,currentRevision,revisions:example==='direct'?[direct,...revisions]:revisions};},
+  async versionedPulls(){return attachVersions([...pulls.values()],await versions());},
+  async versionedRevision(revision){return attachVersions([revision],await versions())[0];},
+  async history(){const numbered=await versions(),currentRevision=numbered[0];return {current:sha('admin-update-after-'+currentRevision.mergeSha),currentRevision,revisions:numbered};},
   async restorePlan(id,expectedBase){
+   const history=await this.history(),{current,currentRevision}=history;
    if(expectedBase&&expectedBase!==current)throw new GitHubError('새 변경이 반영되었습니다.',409);
-   const revision=typeof id==='string'?direct:revisions.find(p=>p.number===id);
+   const revision=history.revisions.find(p=>revisionKey(p)===String(id));
    if(!revision)throw new GitHubError('버전을 찾을 수 없습니다.',404);
-   const target=snapshot(typeof id==='string'?'direct':id);
+   const now=snapshot(contentId(currentRevision),true),target=snapshot(contentId(revision));
    return {source:id,current,target:revision.mergeSha,revision,currentContent:websiteSignature(now)===websiteSignature(target),...websiteRestore(now,target)};
   },
   async restore(id,base,requestId,onIssue){

@@ -20,7 +20,7 @@ export function requestSummary(requests){
  return {counts,recent:requests.slice(0,5),attention:requests.filter(r=>['review','failed','auth_required'].includes(requestState(r))).slice(0,5)};
 }
 export async function requestCatalog(gh,env,{issue:single,run:singleRun}={}){
- const [issues,pulls,runs,recovery]=await allReads([single?[single]:gh.list(),gh.pulls(),single?[]:gh.runs(),recoveryMetadata(env)]);
+ const [issues,pulls,runs,recovery]=await allReads([single?[single]:gh.list(),gh.versionedPulls?gh.versionedPulls():gh.pulls(),single?[]:gh.runs(),recoveryMetadata(env)]);
  const allIssues=single&&selectRequestPull(pulls,single.number)?.merged&&gh.list?await gh.list():issues;
  const reversalFor=reversalLookup(allIssues,pulls);
  const associated=run=>run.issue||(run.pullNumber?relatedRequest(pulls.find(p=>p.number===run.pullNumber)||{}):Number(run.title?.match(/#([1-9]\d*)$/)?.[1]));

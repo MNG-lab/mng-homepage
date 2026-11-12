@@ -44,11 +44,16 @@ test('history identifies content independently of main HEAD and includes direct 
  const record=(oid,date,pull)=>({oid,messageHeadline:'Home 직접 수정',committedDate:date,url:'https://github.com/MNG-lab/mng-homepage/commit/'+oid,associatedPullRequests:{pageInfo:{hasNextPage:false},nodes:pull?[pull]:[]}});
  const nodes=[record('a'.repeat(40),'2026-11-11T12:00:00Z',pr)],trees=new Map([['c'.repeat(40),snapshot('same','new-core','new-admin')],['b'.repeat(40),snapshot('same','old-core','old-admin')]]);let calls=0;
  const options={db,cache:'test:',base:'main',current:'c'.repeat(40),pulls:[],graphql:async(q,vars)=>{calls++;assert.equal(vars.since,null,'old commits merged today must not be missed');return {repository:{object:{history:{nodes:vars.path==='src/content'?nodes:[],pageInfo:{hasNextPage:false}}}}};},tree:async sha=>trees.get(sha)};
- let history=await websiteHistory(options);assert.equal(history.currentRevision.number,85);assert.equal(history.currentRevision.requestId,83);assert.equal(history.revisions.length,1);
+ let history=await websiteHistory(options);assert.equal(history.currentRevision.number,85);assert.equal(history.currentRevision.version,1);assert.equal(history.currentRevision.requestId,83);assert.equal(history.revisions.length,1);
  const previous=calls;await websiteHistory(options);assert.equal(calls,previous,'reuse read cache');
  db.sqlite.prepare('UPDATE github_catalog_sync SET checked_at=0').run();await websiteHistory(options);assert.equal(calls,previous,'a completed unchanged HEAD does not reimport its full history');
  nodes.unshift(record('d'.repeat(40),'2026-11-12T12:00:00Z'));trees.set('d'.repeat(40),snapshot('direct'));trees.set('c'.repeat(40),snapshot('direct'));
- history=await websiteHistory(options);assert.equal(history.currentRevision.kind,'direct');assert.equal(history.currentRevision.number,undefined);assert.equal(history.revisions.length,2);
+ history=await websiteHistory(options);assert.equal(history.currentRevision.kind,'direct');assert.equal(history.currentRevision.version,2);assert.equal(history.currentRevision.number,undefined);assert.equal(history.revisions.length,2);
+ nodes.at(-1).associatedPullRequests.nodes[0]={...pr,mergedAt:null,mergeCommit:null};
+ const known={number:85,title:pr.title,merged:true,mergedAt:pr.mergedAt,mergeSha:pr.mergeCommit.oid,head:{ref:pr.headRefName}};
+ history=await websiteHistory({...options,db:database(),pulls:[known]});
+ assert.equal(history.revisions.find(r=>r.number===85).version,1,'known merged PR metadata repairs an older cached association');
+ assert.equal(history.revisions.length,2);
 });
 test('history follows cursor pages and retains commits beyond the first hundred',async()=>{
  const rows=Array.from({length:101},(_,i)=>({oid:String(i+1).padStart(40,'0'),messageHeadline:'수정 '+i,committedDate:new Date(1700000000000+i*1000).toISOString(),url:'https://example.test',associatedPullRequests:{pageInfo:{hasNextPage:false},nodes:[]}}));

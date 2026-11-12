@@ -1,6 +1,7 @@
 import {websitePaths,websiteSignature} from '../shared/website-policy.js';
 import {readCatalog} from './github-catalog.js';
 import {relatedRequest} from '../shared/version.js';
+import {numberWebsiteVersions} from './website-versions.js';
 
 const query=`query WebsiteHistory($ref:String!,$path:String!,$after:String,$since:GitTimestamp){repository(owner:"MNG-lab",name:"mng-homepage"){object(expression:$ref){... on Commit{history(first:100,path:$path,after:$after,since:$since){pageInfo{hasNextPage endCursor} nodes{oid messageHeadline committedDate url associatedPullRequests(first:10){pageInfo{hasNextPage} nodes{number title url mergedAt baseRefName baseRepository{nameWithOwner} headRefName mergeCommit{oid}}}}}}}}}`;
 // Cursor checkpoints use the existing read-cache tables. No credentials or new DB.
@@ -30,18 +31,22 @@ export async function websiteHistory({db,cache,base,current,pulls,graphql,tree,r
  }
  const revisions=new Map(),byNumber=new Map(pulls.map(p=>[p.number,p]));
  for(const event of events){
-  const matching=event.associatedPullRequests.nodes.filter(p=>p.mergedAt&&p.mergeCommit?.oid&&p.baseRefName===base&&p.baseRepository?.nameWithOwner==='MNG-lab/mng-homepage').sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt));
+  const matching=event.associatedPullRequests.nodes.map(p=>{
+   const known=byNumber.get(p.number);
+   return known?.merged?{...p,title:known.title,mergedAt:known.mergedAt,mergeCommit:{oid:known.mergeSha},headRefName:known.head?.ref||p.headRefName}:p;
+  }).filter(p=>p.mergedAt&&p.mergeCommit?.oid&&p.baseRefName===base&&p.baseRepository?.nameWithOwner==='MNG-lab/mng-homepage').sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt));
   const pull=matching[0],known=pull&&byNumber.get(pull.number);
   const revision=pull?{...known,number:pull.number,key:String(pull.number),title:pull.title,url:pull.url,merged:true,mergeSha:pull.mergeCommit.oid,mergedAt:pull.mergedAt,head:{ref:pull.headRefName},requestId:relatedRequest({head:{ref:pull.headRefName}})}:
    {key:'commit-'+event.oid,kind:'direct',title:event.messageHeadline,url:event.url,mergeSha:event.oid,mergedAt:event.committedDate,merged:true};
   revisions.set(revision.key,revision);
  }
  const ordered=[...revisions.values()].sort((a,b)=>b.mergedAt.localeCompare(a.mergedAt)||b.mergeSha.localeCompare(a.mergeSha));
+ const numbered=await numberWebsiteVersions(db,`MNG-lab/mng-homepage:${base}`,ordered);
  const snapshot=await tree(current),signature=websiteSignature(snapshot);
- const latest=ordered[0];
+ const latest=numbered[0];
  const same=latest&&websiteSignature(await tree(latest.mergeSha))===signature;
  if(latest&&!same&&!refresh)return websiteHistory({db,cache,base,current,pulls,graphql,tree,refresh:true});
  // A later content state without a matching request is still a normal version.
  const currentRevision=same?latest:latest?{key:'commit-'+current,kind:'snapshot',title:'현재 홈페이지',url:`https://github.com/MNG-lab/mng-homepage/commit/${current}`,mergeSha:current,merged:true,mergedAt:latest.mergedAt}:null;
- return {current,currentRevision,revisions:currentRevision&&!same?[currentRevision,...ordered]:ordered};
+ return {current,currentRevision:same?numbered.find(r=>r.mergeSha===currentRevision.mergeSha):currentRevision,revisions:currentRevision&&!same?[currentRevision,...numbered]:numbered};
 }

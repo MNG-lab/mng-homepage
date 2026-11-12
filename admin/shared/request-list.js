@@ -6,7 +6,7 @@ export function paginateRequests(requests,{q='',status='all',scope='all',page=1,
  const needle=q.trim().toLocaleLowerCase('ko-KR');
  const versionNumber=needle.match(/^(?:v\.?\s*|버전\s*)([1-9]\d*)$/)?.[1];
  const matching=requests.filter(r=>{
-  const target=r.restoration||r.pull?.restoration,versions=[appliedVersion(r),versionLabel(target?.number)].filter(Boolean);
+  const target=r.restoration||r.pull?.restoration,versions=[appliedVersion(r),versionLabel(target?.version)].filter(Boolean);
   if(versionNumber)return versions.includes(versionLabel(Number(versionNumber)));
   return `요청 #${r.id} ${r.title} ${description(r.description)} ${versions.join(' ')} ${target?versionReference(target):''}`.toLocaleLowerCase('ko-KR').includes(needle);
  });
