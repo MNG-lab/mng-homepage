@@ -142,14 +142,6 @@ function validateResearch() {
 
 function validateHome() {
   assert(isObject(homeContent), "homeContent must be an object");
-  assertImageSource(homeContent.about?.image?.src, "homeContent.about.image.src");
-  assertLocalized(homeContent.about?.image?.alt, "homeContent.about.image.alt");
-  for (const dimension of ["width", "height"]) {
-    assert(
-      Number.isInteger(homeContent.about?.image?.[dimension]) && homeContent.about.image[dimension] > 0,
-      `homeContent.about.image.${dimension} must be a positive integer`
-    );
-  }
   assert(Array.isArray(homeContent.hero?.slides) && homeContent.hero.slides.length > 0, "homeContent.hero.slides must be non-empty array");
   assert(
     Number.isFinite(Number(homeContent.metrics?.establishedYear)),

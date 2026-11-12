@@ -7,7 +7,6 @@ import { publicationsData } from "../content/publications-data";
 import { researchAreas } from "../content/research-data";
 import { useLanguage } from "../context/LanguageContext";
 import { useViewport } from "../hooks/useViewport";
-import { resolveContentImageSrc } from "../utils/resolve-content-image-src";
 
 const AUTO_ROTATE_MS = 5000;
 const HOME_NEWS_LIMIT = 4;
@@ -475,15 +474,6 @@ export default function HomePage() {
           <article style={cardStyle}>
             <p style={styles.paragraph}>{t(homeContent.about.paragraphs[0])}</p>
             <p style={{ ...styles.paragraph, ...styles.muted }}>{t(homeContent.about.paragraphs[1])}</p>
-            <img
-              src={resolveContentImageSrc(homeContent.about.image.src)}
-              alt={t(homeContent.about.image.alt)}
-              width={homeContent.about.image.width}
-              height={homeContent.about.image.height}
-              loading="lazy"
-              decoding="async"
-              style={{ display: "block", width: "100%", height: "auto" }}
-            />
             <div style={styles.ctaRow}>
               <Link
                 to={`${ROUTES.home}#news`}

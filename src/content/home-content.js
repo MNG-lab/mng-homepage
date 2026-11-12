@@ -75,15 +75,6 @@ export const homeContent = {
   about: {
     title: { ko: "Welcome to MNG Lab", en: "Welcome to MNG Lab" },
     pill: { ko: "소개", en: "About" },
-    image: {
-      src: "media/home/mng-lab-research-overview.png",
-      alt: {
-        ko: "일차 섬모의 구조와 마우스 발생, 대사, 기도 및 암에서의 역할을 보여주는 연구 개요도",
-        en: "Research overview showing primary cilium structure and its roles in mouse development, metabolism, airways, and cancer",
-      },
-      width: 3000,
-      height: 2100,
-    },
     paragraphs: [
       {
         ko: "MNG Lab(Metabolic and Genetic disorders Lab)은 세포가 생물학적 균형을 유지하는 방식과, 이 균형이 무너질 때 희귀 유전질환·비만·대사질환·노화 관련 질환 진행으로 이어지는 과정을 연구합니다.",
