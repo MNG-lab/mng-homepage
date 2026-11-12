@@ -67,9 +67,12 @@ test('roles are resolved on each request, revoked memberships and expired or tam
 test('logout requires same-origin POST and preview denies all mutation APIs',async()=>{
  const h=createHandler();
  assert.equal((await h(req('/auth/logout'),env)).status,403);
- assert.equal((await h(req('/auth/logout',{method:'POST',headers:{Origin:'https://evil.test'}}),env)).status,403);
+ for(const origin of [undefined,'null','https://evil.test']){
+  assert.equal((await h(req('/auth/logout',{method:'POST',headers:origin?{Origin:origin}:{}}),env)).status,403);
+ }
  const r=await h(req('/auth/logout',{method:'POST',headers:{Origin:env.APP_ORIGIN}}),env);
  assert.match(r.headers.get('set-cookie'),/Max-Age=0/);
+ assert.equal((await h(req('/login'),env)).headers.get('Referrer-Policy'),'same-origin');
  const jwt=await token({email:'owner@gmail.com',sub:'google-sub'});
  assert.equal((await h(req('/api/requests',{method:'POST',headers:{Cookie:`__Host-mng_session=${jwt}`}}),env)).status,404);
 });

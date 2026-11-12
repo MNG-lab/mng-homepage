@@ -2,12 +2,24 @@ import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {loginPage} from '../worker/login-page.js';
+import {createHandler} from '../worker/index.js';
 const server=spawn('npm',['run','admin:preview','--','--port','4194'],{stdio:'ignore'});
 let browser;
 try {
  for(let i=0;i<80;i++){try{if((await fetch('http://127.0.0.1:4194')).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
  browser=await chromium.launch({headless:true});
  const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ // Vite does not serve the Worker's security headers. Include the real policy
+ // so native form submissions exercise the same Origin behavior as production.
+ const security=await createHandler()(new Request('https://admin.example.test/login'),{
+  APP_ORIGIN:'https://admin.example.test',GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',SESSION_SECRET:'a'.repeat(64),
+  REQUEST_LIMITER:{limit:async()=>({success:true})},
+ });
+ assert.equal(security.status,200);
+ await page.route('**/dashboard',async route=>{
+  const response=await route.fetch();
+  await route.fulfill({response,headers:{...response.headers(),'Referrer-Policy':security.headers.get('Referrer-Policy')}});
+ });
  await page.clock.install({time:new Date('2026-11-11T00:00:00Z')});
  let refreshes=0,reads=0,failInitial=false,refreshStatus=200,hold=false,release,logoutCalls=0;
  const identity={user:{email:'owner@example.test',role:'editor'},mode:'github'};
@@ -23,7 +35,7 @@ try {
   if(path==='/api/history')return route.fulfill({json:{current:'a'.repeat(40),revisions:[]}});
   return route.fulfill({status:404,json:{error:'Unexpected test route'}});
  });
- await page.route('**/auth/logout',async route=>{logoutCalls++;assert.equal(route.request().method(),'POST');return route.fulfill({status:303,headers:{Location:'/login'},body:''});});
+ await page.route('**/auth/logout',async route=>{logoutCalls++;assert.equal(route.request().method(),'POST');assert.equal(route.request().headers().origin,'http://127.0.0.1:4194','logout must retain the real Origin under production security headers');return route.fulfill({status:303,headers:{Location:'/login'},body:''});});
  await page.route('**/login',route=>route.fulfill({contentType:'text/html',body:'<h1>로그인</h1>'}));
  async function renewed(action,status=200){const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/session/refresh');await action();assert.equal((await response).status(),status);}
  await renewed(()=>page.goto('http://127.0.0.1:4194/dashboard'));

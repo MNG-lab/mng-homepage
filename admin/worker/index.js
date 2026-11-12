@@ -73,7 +73,9 @@ function redirect(path, headers={}) {
 function secure(response) {
   const result = new Response(response.body, response);
   result.headers.set('Cache-Control', 'no-store');
-  result.headers.set('Referrer-Policy', 'no-referrer');
+  // Keep the real Origin on same-origin form POSTs (logout), while withholding
+  // referrer information from external destinations. no-referrer sends null.
+  result.headers.set('Referrer-Policy', 'same-origin');
   result.headers.set('X-Content-Type-Options', 'nosniff');
   result.headers.set('X-Frame-Options', 'DENY');
   result.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://raw.githubusercontent.com https://github.com https://user-images.githubusercontent.com https://private-user-images.githubusercontent.com https://github-production-user-asset-6210df.s3.amazonaws.com https://*.googleusercontent.com https://*.ggpht.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
