@@ -22,9 +22,9 @@ try{
  });
  await page.clock.install();
  await page.goto('http://127.0.0.1:4198/requests/103');
- await page.getByRole('heading',{name:'이 변경만 자동으로 취소할 수 없어요',exact:true}).waitFor();
+ await page.getByRole('heading',{name:'수정 내용이 충돌해 반영하지 못했어요',exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).count(),0);
- assert.equal(await page.getByText('이 요청으로 홈페이지가 변경되지는 않았습니다.',{exact:true}).count(),1);
+ assert.equal(await page.getByText('현재 홈페이지는 그대로예요.',{exact:true}).count(),1);
  assert.equal(await page.getByRole('link',{name:'새 수정 요청 작성',exact:true}).getAttribute('href'),'/requests/new');
  assert.equal(await page.getByText(/작업의 퍼센트/).count(),0);
  const indicator=page.locator('.auto-refresh-status'),time=indicator.locator('time');await time.waitFor();
@@ -40,7 +40,7 @@ try{
  failures=2;await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
  await indicator.filter({hasText:'상태 확인 중'}).waitFor();await page.clock.runFor(1000);
  await indicator.filter({hasText:'업데이트 지연'}).waitFor();
- assert.equal(await page.getByRole('heading',{name:'이 변경만 자동으로 취소할 수 없어요',exact:true}).count(),1);
+ assert.equal(await page.getByRole('heading',{name:'수정 내용이 충돌해 반영하지 못했어요',exact:true}).count(),1);
  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await indicator.filter({hasText:'자동 업데이트'}).waitFor();
  for(const [code,title] of [['rollback_no_changes','이미 취소되었거나, 취소할 내용이 없어요'],['rollback_unverified','작업이 멈춘 원인을 확인하지 못했어요']]){
   record.failure={code,retryable:false};await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await page.getByRole('heading',{name:title,exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).count(),0);
@@ -49,14 +49,14 @@ try{
  // A polling result must invalidate an already open retry confirmation too.
  await page.getByRole('button',{name:'이 요청 다시 실행',exact:true}).click();
  record.failure={code:'rollback_conflict',retryable:false};await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
- await page.getByRole('heading',{name:'이 변경만 자동으로 취소할 수 없어요',exact:true}).waitFor();
+ await page.getByRole('heading',{name:'수정 내용이 충돌해 반영하지 못했어요',exact:true}).waitFor();
  assert.equal(await page.getByRole('dialog').getByRole('button',{name:'확인하고 진행',exact:true}).isDisabled(),true);
  await page.getByRole('dialog').getByRole('button',{name:'취소',exact:true}).click();
  await page.setViewportSize({width:390,height:844});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.screenshot({path:'/private/tmp/mng-conflict-mobile.png',fullPage:true});
  await page.getByRole('button',{name:'요청 닫기',exact:true}).click();
- const dialog=page.getByRole('dialog');assert.match(await dialog.innerText(),/현재 홈페이지와 이미 반영된 내용은 그대로/);
+ const dialog=page.getByRole('dialog');assert.match(await dialog.innerText(),/GitHub 이슈를 닫고 ‘지난 요청’으로/);
  await dialog.getByRole('button',{name:'요청 닫기',exact:true}).click();
  await page.locator('.state-pill.closed').waitFor();assert.equal(closes,1);
  assert.deepEqual(errors,[]);console.log('Request conflict, retry, automatic polling, errors and close UI passed.');

@@ -10,6 +10,7 @@ import {GitHubError} from '../worker/github.js';
 import {normalizeRequest,requestBody,simpleFieldLabels} from '../shared/request-form.js';
 import {deployment} from '../shared/deployment.js';
 import {parseRollback} from '../shared/rollback.js';
+import {requestFailure} from '../shared/request-failure.js';
 import {branchRequest} from '../shared/github-sync.js';
 const root=fileURLToPath(new URL('../../',import.meta.url)),assets=resolve(root,'dist-admin-review');
 const port=Number(process.env.MNG_REVIEW_PORT||4196),origin=`http://127.0.0.1:${port}`;
@@ -32,7 +33,8 @@ for(const [id,page,title,description] of [[101,'Members','Members 소개 문구 
 }
 // Optional failure fixture: uses the real request UI, result metadata and retry guard.
 // A separate port keeps the user's existing form review and in-memory data intact.
-const conflictMessage='이 변경만 자동으로 취소할 수 없어요. 이후 작업에서 같은 내용을 수정해, 어떤 내용을 남길지 확인이 필요합니다.';
+const conflictFailure=requestFailure('rollback_conflict');
+const conflictMessage=[conflictFailure.title,conflictFailure.description,conflictFailure.unchangedMessage,'',conflictFailure.next].join('\n');
 if(conflictScenario){
  const input=normalizeRequest({requestId:crypto.randomUUID(),kind:'rollback',title:'요청 #101 변경 취소',rollbackType:'pr',rollbackTarget:'201',sourceRequest:101,sourceMergeSha:sha('merge201'),reason:'소개 문구를 이전 내용으로 되돌려 주세요.',expectedResult:'나중에 추가한 연구 내용은 유지해 주세요.'});
  issues.set(103,{number:103,title:input.title,body:requestBody(input,config),labels:[{name:'rollback-request'}],state:'open',created_at:stamp(),html_url:'/review/conflict/issue'});

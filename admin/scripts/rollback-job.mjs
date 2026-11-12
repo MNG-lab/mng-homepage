@@ -63,7 +63,7 @@ try {
 }catch(error){
   const failure=requestFailure(error.failureCode);
   if(failure&&process.env.GITHUB_OUTPUT)appendFileSync(process.env.GITHUB_OUTPUT,`failure_code=${error.failureCode}\n`);
-  const message=failure?`${failure.title}\n\n${failure.description}\n이 요청으로 홈페이지가 변경되지는 않았습니다.\n\n${failure.next}\n같은 요청을 다시 실행해도 해결되지 않습니다.`:`변경 취소 작업을 완료하지 못했습니다. 실행 기록에서 원인을 확인해 주세요.\n\n${error.message.slice(0,1000)}`;
+  const message=failure?`${failure.title}\n\n${failure.description}\n${failure.unchangedMessage||'이 요청으로 홈페이지가 변경되지는 않았습니다.'}\n\n${failure.next}${failure.retryNote===null?'':'\n같은 요청을 다시 실행해도 해결되지 않습니다.'}`:`변경 취소 작업을 완료하지 못했습니다. 실행 기록에서 원인을 확인해 주세요.\n\n${error.message.slice(0,1000)}`;
   try{gh('issue','comment',id,'--repo',repo,'--body',message);}catch{}
   throw error;
 }

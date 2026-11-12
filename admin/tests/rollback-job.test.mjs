@@ -67,7 +67,7 @@ test('actual Git conflict and empty revert report different non-retryable result
    assert.equal(f.git('ls-remote','--heads','origin','refs/heads/codex/rollback-issue-91-100'),'');
    assert.equal(f.git('ls-files','--unmerged'),'');assert.equal(f.read().created,0);
    assert.equal(readFileSync(f.output,'utf8'),`failure_code=${code}\n`);
-   assert.match(f.read().comments.at(-1).body,/홈페이지가 변경되지는 않았습니다/);
+   assert.match(f.read().comments.at(-1).body,/홈페이지가 변경되지는 않았습니다|현재 홈페이지는 그대로예요/);
   }finally{rmSync(f.root,{recursive:true,force:true});}
  }
 });
