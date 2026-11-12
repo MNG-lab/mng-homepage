@@ -11,6 +11,7 @@ try {
  let records=[],submissions=0,approvals=0,restores=0,readFailures=1,delayedNewList=0;const sha='a'.repeat(40);let role='owner';let sameSnapshot=false;let previewState='building';let historyCurrent=sha;let deviceFlow=null;let deviceStarts=0,holdDeviceRead=false,heldDeviceRead,releaseDeviceRead,holdLogin=false,releaseLogin,retries=0;
  let requestListReads=0,requestFailures=0,holdRequestRead=false,heldRequestRead=false,releaseRequestRead;
  let historyRows=null,historyFailures=0,holdHistoryPage=null,releaseHistory,heldHistory=false;
+ let approvalFailures=0,approvalResponseHead=sha;
  const knownRevisions=new Map();
  const uiReads=new Map(),uiFailures=new Map();let holdUIPath=null,uiHeld=false,releaseUI,holdWritePath=null,writeHeld=false,releaseWrite;
  async function waitForHeld(){for(let i=0;i<100&&!uiHeld;i++)await new Promise(r=>setTimeout(r,20));assert.equal(uiHeld,true);}
@@ -63,8 +64,8 @@ try {
    return route.fulfill({json});
   }
   if(/^\/api\/requests\/\d+$/.test(path)){const record=records.find(r=>r.id===Number(path.split('/').at(-1)));return route.fulfill({status:record?200:404,json:record?{request:record}:{error:'요청이 없습니다.'}});}
-  if(path==='/api/pulls/124')return route.fulfill({json:{head:sha,preview:{head:sha,state:previewState,url:previewState==='ready'?'https://fc3ef735.mng-homepage.pages.dev':null},files:[{path:'src/App.jsx',additions:1,deletions:1,patch:'-old\n+new'}],ci:{status:'completed',conclusion:'success',url:'https://github.com/MNG-lab/mng-homepage/actions'}}});
-  if(path==='/api/pulls/124/approve'){approvals++;assert.equal(body.head,sha);records[0].pull.merged=true;records[0].pull.state='closed';records[0].state='closed';return route.fulfill({json:{merged:true}});}
+  if(path==='/api/pulls/124')return route.fulfill({json:{head:approvalResponseHead,preview:{head:approvalResponseHead,state:previewState,url:previewState==='ready'?'https://fc3ef735.mng-homepage.pages.dev':null},files:[{path:'src/App.jsx',additions:1,deletions:1,patch:'-old\n+new'}],ci:{status:'completed',conclusion:'success',url:'https://github.com/MNG-lab/mng-homepage/actions'}}});
+  if(path==='/api/pulls/124/approve'){if(approvalFailures-->0)return route.fulfill({status:503,json:{error:'반영 중 일시 오류'}});approvals++;assert.equal(body.head,sha);records[0].pull.merged=true;records[0].pull.state='closed';records[0].state='closed';return route.fulfill({json:{merged:true}});}
   if(path==='/api/history'){
    if(historyFailures-->0)return route.fulfill({status:503,json:{error:'버전 조회 오류'}});
    const value=paginateHistory({current:historyCurrent,revisions:historyRevisions()},historyPage(url.searchParams));
@@ -131,7 +132,28 @@ try {
  previewState='failed';await page.getByRole('button',{name:'배포 상태 새로고침',exact:true}).click();await page.getByText('미리보기 배포 실패',{exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'변경된 홈페이지 미리보기 ↗',exact:true}).count(),0);
  previewState='ready';await page.getByRole('button',{name:'배포 상태 새로고침',exact:true}).click();await page.getByText('미리보기 준비 완료',{exact:true}).waitFor();const previewLink=page.getByRole('link',{name:'변경된 홈페이지 미리보기 ↗',exact:true});assert.equal(await previewLink.getAttribute('href'),'https://fc3ef735.mng-homepage.pages.dev');assert.equal(await previewLink.getAttribute('target'),'_blank');
  await exerciseRefresh({path:'/api/pulls/124',button:page.locator('.preview-panel .refresh-button'),poll:true,keep:async()=>{assert.equal(await page.locator('.file-diff').count(),1);assert.equal(await page.getByRole('button',{name:process.env.ADMIN_TEST_ENV==='production'?'이 변경을 홈페이지에 반영':'이 변경을 테스트 브랜치에 반영',exact:true}).isDisabled(),true);},onError:async()=>assert.equal(await page.getByRole('link',{name:'변경된 홈페이지 미리보기 ↗',exact:true}).count(),0)});
- await page.getByRole('button',{name:process.env.ADMIN_TEST_ENV==='production'?'이 변경을 홈페이지에 반영':'이 변경을 테스트 브랜치에 반영',exact:true}).click();assert.equal(approvals,0);await page.getByRole('button',{name:'확인하고 진행',exact:true}).click();await page.getByText('수정 반영 완료',{exact:true}).first().waitFor();assert.equal(approvals,1);await page.getByText('이 요청은 버전 124로 반영되었습니다.',{exact:true}).waitFor();
+ const approveButton=page.getByRole('button',{name:process.env.ADMIN_TEST_ENV==='production'?'이 변경을 홈페이지에 반영':'이 변경을 테스트 브랜치에 반영',exact:true});
+ assert.equal(await page.locator('.sidebar .help-card').count(),0,'approval guidance is shown at the action, not in the sidebar');
+ await approveButton.click();assert.equal(approvals,0);
+ const approvalDialog=page.getByRole('dialog',{name:'홈페이지에 반영할까요?',exact:true});
+ await approvalDialog.waitFor();assert.equal(await approvalDialog.evaluate(el=>el.matches(':modal')),true);
+ assert.equal(await approvalDialog.getByRole('link',{name:'변경된 홈페이지 미리보기 ↗'}).getAttribute('href'),'https://fc3ef735.mng-homepage.pages.dev');
+ assert.equal(await approvalDialog.getByRole('button',{name:'취소',exact:true}).evaluate(el=>el===document.activeElement),true,'initial focus must not approve on Enter');
+ for(let i=0;i<4;i++){await page.keyboard.press('Tab');assert.equal(await approvalDialog.evaluate(el=>el.contains(document.activeElement)||document.activeElement===document.body),true,'Tab may reach browser chrome, but never background controls');}
+ await page.setViewportSize({width:390,height:844});
+ assert.equal(await approvalDialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}),true);
+ await page.screenshot({path:'/private/tmp/mng-approval-dialog-mobile.png'});await page.setViewportSize({width:1440,height:1000});
+ await page.keyboard.press('Escape');await approvalDialog.waitFor({state:'detached'});assert.equal(approvals,0);assert.equal(await approveButton.evaluate(el=>el===document.activeElement),true);
+ // A polling update must not silently approve a different revision.
+ await approveButton.click();approvalResponseHead='b'.repeat(40);
+ const revised=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/pulls/124');await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await revised;
+ await approvalDialog.getByRole('alert').filter({hasText:'변경 내용이 업데이트'}).waitFor();assert.equal(await approvalDialog.getByRole('button',{name:'홈페이지에 반영',exact:true}).isDisabled(),true);
+ await approvalDialog.getByRole('button',{name:'취소',exact:true}).click();approvalResponseHead=sha;await page.locator('.preview-panel .refresh-button').click();await approveButton.waitFor();
+ await approveButton.click();approvalFailures=1;await approvalDialog.getByRole('button',{name:'홈페이지에 반영',exact:true}).click();await approvalDialog.getByRole('alert').filter({hasText:'반영 중 일시 오류'}).waitFor();assert.equal(approvals,0);
+ holdWritePath='/api/pulls/124/approve';writeHeld=false;await approvalDialog.getByRole('button',{name:'홈페이지에 반영',exact:true}).click();
+ const applying=approvalDialog.getByRole('button',{name:'반영 중…',exact:true});await applying.waitFor();assert.equal(await applying.isDisabled(),true);await page.keyboard.press('Escape');assert.equal(await approvalDialog.isVisible(),true);
+ for(let i=0;i<100&&!writeHeld;i++)await new Promise(r=>setTimeout(r,20));assert.equal(writeHeld,true);releaseWrite();
+ await approvalDialog.waitFor({state:'detached'});await page.getByText('수정 반영 완료',{exact:true}).first().waitFor();assert.equal(approvals,1);await page.getByText('이 요청은 버전 124로 반영되었습니다.',{exact:true}).waitFor();
  await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await page.getByText('현재 버전',{exact:true}).waitFor();await page.getByRole('region',{name:'현재 홈페이지 버전'}).getByText('버전 124',{exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'이 버전으로 되돌리기',exact:true}).count(),0);await page.getByRole('link',{name:'현재 버전 보기',exact:true}).click();await page.getByRole('heading',{name:'이 버전에서 반영한 변경',exact:true}).waitFor();assert.equal(restores,0);
  await page.getByRole('link',{name:'요청 #123',exact:true}).click();await page.waitForURL('**/requests/123?tab=past');await page.getByRole('link',{name:'버전 124 보기',exact:true}).waitFor();
  await page.getByRole('link',{name:'목록으로 돌아가기',exact:true}).click();await page.waitForURL('**/requests?tab=past');await page.getByRole('link',{name:'버전 124 보기 →',exact:true}).waitFor();

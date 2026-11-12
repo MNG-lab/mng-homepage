@@ -84,7 +84,6 @@ export default function ConnectedApp({user}) {
  return <div className="app-shell">
   <aside className="sidebar"><Link className="brand" to="/dashboard"><img className="brand-symbol brand-avatar" src={organizationAvatar} alt="" width="40" height="40"/><span>MNG Lab<small>홈페이지 관리 어드민</small></span></Link><div className="workspace-label">WORKSPACE <span>{review?'화면 검토':production?'운영':'연동 테스트'}</span></div>
    <nav aria-label="주 메뉴">{[['/dashboard','대시보드'],['/requests','요청 관리'],['/history','홈페이지 버전'],['/settings','설정']].map(([path,label])=><button key={path} className={`nav-item ${location.pathname===path||location.pathname.startsWith(path+'/')?'active':''}`} onClick={()=>navigate(path)}>{label}</button>)}</nav>
-   <div className="sidebar-bottom"><div className="help-card"><strong>{review?'지금은 화면 검토 중입니다':production?'승인하면 홈페이지에 반영됩니다':'운영 홈페이지와 분리돼요'}</strong><p>{review?'제출·변경 취소를 눌러도 실제 GitHub와 홈페이지는 바뀌지 않습니다.':production?'변경된 홈페이지 미리보기를 확인한 뒤 승인해 주세요.':'테스트 환경에서 수정 요청과 이전 버전으로 되돌리기를 확인하세요.'}</p></div></div>
   </aside>
   <div className="main-wrap"><header className="topbar connected-topbar">
    <span className="topbar-page-title">{pageTitle}</span>
