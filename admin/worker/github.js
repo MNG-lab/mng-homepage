@@ -10,7 +10,7 @@ import {readCatalog,saveCatalog,invalidateCatalog,allReads} from './github-catal
 import {previewStatus} from './preview.js';
 import nacl from 'tweetnacl';
 import {blake2b} from '@noble/hashes/blake2.js';
-import {SignJWT, importPKCS8} from 'jose';
+import {installationAuth} from './github-auth.js';
 
 export const REPOSITORY = 'MNG-lab/mng-homepage';
 export const TEST_BASE = 'codex/admin-sandbox';
@@ -68,18 +68,11 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
   const config=assertDeploymentConfig(env);
   const TEST_BASE=config.base,WORKFLOW_REF=config.ref;
   if (!/^\d+$/.test(env.GITHUB_APP_ID || '') || !/^\d+$/.test(env.GITHUB_INSTALLATION_ID || '') || !env.GITHUB_APP_PRIVATE_KEY) throw new GitHubError('GitHub App 연결이 필요합니다.',503);
-  const privateKey=await importPKCS8(env.GITHUB_APP_PRIVATE_KEY,'RS256');
-  const now=Math.floor(Date.now()/1000);
-  const jwt=await new SignJWT({}).setProtectedHeader({alg:'RS256'}).setIssuer(env.GITHUB_APP_ID).setIssuedAt(now-60).setExpirationTime(now+540).sign(privateKey);
-  const headers=(token)=>({'Authorization':`Bearer ${token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'mng-admin','Content-Type':'application/json'});
-  const r=await fetcher(`${API}/app/installations/${env.GITHUB_INSTALLATION_ID}/access_tokens`,{method:'POST',headers:headers(jwt),body:JSON.stringify({repositories:['mng-homepage'],permissions:options.secrets?{secrets:'write'}:permissions}),redirect:'manual',signal:AbortSignal.timeout(10000)});
-  if(!r.ok) throw new GitHubError('GitHub App 인증에 실패했습니다.');
-  const installation=await r.json();
-  if(!installation.token) throw new GitHubError('GitHub 인증 응답이 올바르지 않습니다.');
+  const authenticatedFetch=await installationAuth(env,fetcher,options.secrets?{secrets:'write'}:permissions);
   async function call(path, method='GET', body) {
     // Internal, relative repository paths only. Never accept arbitrary URLs.
     if (!path.startsWith('/') || path.split('/').some(segment=>segment==='..'||segment==='.') || path.includes('://')) throw new GitHubError('잘못된 GitHub 경로입니다.',400);
-    const response=await fetcher(`${API}/repos/${REPOSITORY}${path}`,{method,headers:headers(installation.token),body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',signal:AbortSignal.timeout(15000)});
+    const response=await authenticatedFetch(`${API}/repos/${REPOSITORY}${path}`,{method,body:body===undefined?undefined:JSON.stringify(body),redirect:'manual',signal:AbortSignal.timeout(15000)},method==='GET');
     if (!response.ok) throw new GitHubError(response.status===409 || response.status===422 ? 'GitHub 상태가 변경되었습니다. 새로고침 후 확인해 주세요.' : 'GitHub 요청을 완료하지 못했습니다.',response.status===404?404:response.status===409||response.status===422?409:502);
     const text=await response.text();
     if(method!=='GET')await invalidateCatalog(env.DB);
@@ -93,7 +86,7 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
     return treeReads.get(sha);
   }
   async function graphql(query,variables){
-    const response=await fetcher('https://api.github.com/graphql',{method:'POST',headers:headers(installation.token),body:JSON.stringify({query,variables}),signal:AbortSignal.timeout(15000),redirect:'manual'});
+    const response=await authenticatedFetch('https://api.github.com/graphql',{method:'POST',body:JSON.stringify({query,variables}),signal:AbortSignal.timeout(15000),redirect:'manual'},true);
     const result=await response.json();
     if(!response.ok||result.errors||!result.data)throw new GitHubError('홈페이지 변경 기록을 불러오지 못했습니다. 다시 시도해 주세요.');
     return result.data;

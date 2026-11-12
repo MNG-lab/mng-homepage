@@ -47,7 +47,7 @@ test('history identifies content independently of main HEAD and includes direct 
  let history=await websiteHistory(options);assert.equal(history.currentRevision.number,85);assert.equal(history.currentRevision.version,1);assert.equal(history.currentRevision.requestId,83);assert.equal(history.revisions.length,1);
  const previous=calls;await websiteHistory(options);assert.equal(calls,previous,'reuse read cache');
  db.sqlite.prepare('UPDATE github_catalog_sync SET checked_at=0').run();await websiteHistory(options);assert.equal(calls,previous,'a completed unchanged HEAD does not reimport its full history');
- nodes.unshift(record('d'.repeat(40),'2026-11-12T12:00:00Z'));trees.set('d'.repeat(40),snapshot('direct'));trees.set('c'.repeat(40),snapshot('direct'));
+ nodes.unshift(record('d'.repeat(40),'2026-11-12T12:00:00Z'));trees.set('d'.repeat(40),snapshot('direct'));options.current='d'.repeat(40);
  history=await websiteHistory(options);assert.equal(history.currentRevision.kind,'direct');assert.equal(history.currentRevision.version,2);assert.equal(history.currentRevision.number,undefined);assert.equal(history.revisions.length,2);
  nodes.at(-1).associatedPullRequests.nodes[0]={...pr,mergedAt:null,mergeCommit:null};
  const known={number:85,title:pr.title,merged:true,mergedAt:pr.mergedAt,mergeSha:pr.mergeCommit.oid,head:{ref:pr.headRefName}};

@@ -6,6 +6,23 @@ import {numberWebsiteVersions} from './website-versions.js';
 const query=`query WebsiteHistory($ref:String!,$path:String!,$after:String,$since:GitTimestamp){repository(owner:"MNG-lab",name:"mng-homepage"){object(expression:$ref){... on Commit{history(first:100,path:$path,after:$after,since:$since){pageInfo{hasNextPage endCursor} nodes{oid messageHeadline committedDate url associatedPullRequests(first:10){pageInfo{hasNextPage} nodes{number title url mergedAt baseRefName baseRepository{nameWithOwner} headRefName mergeCommit{oid}}}}}}}}}`;
 // Cursor checkpoints use the existing read-cache tables. No credentials or new DB.
 export async function websiteHistory({db,cache,base,current,pulls,graphql,tree,refresh=false}){
+ // HEAD is read live by the caller. A changed PR (including an edited title or
+ // restoration target) also changes the key; approval/restore checks do not use this snapshot.
+ const input=JSON.stringify([2,base,current,websitePaths,[...pulls].sort((a,b)=>a.number-b.number)]);
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(input));
+ const key=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
+ const kind=cache+'website-history-v2:'+base;
+ if(db&&!refresh){
+  const saved=await db.prepare('SELECT payload FROM github_catalog WHERE kind=? AND id=0').bind(kind).first();
+  if(saved){const snapshot=JSON.parse(saved.payload);if(snapshot.key===key)return snapshot.value;}
+ }
+ const value=await buildWebsiteHistory({db,cache,base,current,pulls,graphql,tree,refresh});
+ // Keep only the last completed snapshot. Unresolved history must be retried.
+ const payload=JSON.stringify({key,value});
+ if(db&&value.currentRevision?.kind!=='snapshot'&&new TextEncoder().encode(payload).byteLength<=512000)await db.prepare('INSERT OR REPLACE INTO github_catalog(kind,id,payload) VALUES (?,0,?)').bind(kind,payload).run();
+ return value;
+}
+async function buildWebsiteHistory({db,cache,base,current,pulls,graphql,tree,refresh=false}){
  const events=[];
  // Sequential feeds bound GitHub subrequests; readCatalog resumes large imports.
  for(const path of websitePaths){
@@ -45,7 +62,7 @@ export async function websiteHistory({db,cache,base,current,pulls,graphql,tree,r
  const snapshot=await tree(current),signature=websiteSignature(snapshot);
  const latest=numbered[0];
  const same=latest&&websiteSignature(await tree(latest.mergeSha))===signature;
- if(latest&&!same&&!refresh)return websiteHistory({db,cache,base,current,pulls,graphql,tree,refresh:true});
+ if(latest&&!same&&!refresh)return buildWebsiteHistory({db,cache,base,current,pulls,graphql,tree,refresh:true});
  // A later content state without a matching request is still a normal version.
  const currentRevision=same?latest:latest?{key:'commit-'+current,kind:'snapshot',title:'현재 홈페이지',url:`https://github.com/MNG-lab/mng-homepage/commit/${current}`,mergeSha:current,merged:true,mergedAt:latest.mergedAt}:null;
  return {current,currentRevision:same?numbered.find(r=>r.mergeSha===currentRevision.mergeSha):currentRevision,revisions:currentRevision&&!same?[currentRevision,...numbered]:numbered};
