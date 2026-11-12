@@ -1,6 +1,6 @@
 import {normalizeRequest,requestBody} from '../shared/request-form.js';
 import {ATTACHMENT_BRANCH} from '../shared/images.js';
-import {issueType,branchRequest,runIdentity} from '../shared/github-sync.js';
+import {issueType,branchRequest,runIdentity,matchesRequestRun} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
 import {changedAreas,relatedRequest} from '../shared/version.js';
 import {readCatalog,saveCatalog,invalidateCatalog,allReads} from './github-catalog.js';
@@ -60,7 +60,7 @@ export function selectQualityRun(runs,pr,id,allowMergedFallback=false) {
  )).sort((a,b)=>b.id-a.id)[0];
 }
 function isRequestRun(r,c=deployment()){return !!runIdentity(r,c);}
-function runSummary(r,c=deployment()){return {id:r.id,attempt:r.run_attempt,createdAt:r.created_at,title:r.display_title,status:r.status,conclusion:r.conclusion,url:r.html_url,...runIdentity(r,c)};}
+function runSummary(r,c=deployment()){return {id:r.id,attempt:r.run_attempt,event:r.event,createdAt:r.created_at,title:r.display_title,status:r.status,conclusion:r.conclusion,url:r.html_url,...runIdentity(r,c)};}
 export async function createGitHub(env, fetcher=fetch, options={}) {
   const config=assertDeploymentConfig(env);
   const TEST_BASE=config.base,WORKFLOW_REF=config.ref;
@@ -193,18 +193,21 @@ export async function createGitHub(env, fetcher=fetch, options={}) {
       try{return await this.requestRun(old.id);}
       catch(error){if(!required&&error.status===404)return {...old,unavailable:true};throw error;}
     },
-    async latestRun(id,{force=false}={}) {
+    async latestRun(id,{force=false,type=null}={}) {
       const runs=await this.runs({force}),pulls=runs.some(r=>r.pullNumber)?await this.pulls():[];
-      const run=runs.find(r=>r.issue===number(id)||r.title===`${config.runTitle}${id}`||r.pullNumber&&relatedRequest(pulls.find(p=>p.number===r.pullNumber)||{})===id);
-      if(!run)return null;
+      const candidates=runs.filter(r=>matchesRequestRun(r,type)&&(r.issue===number(id)||r.title===`${config.runTitle}${id}`||r.pullNumber&&relatedRequest(pulls.find(p=>p.number===r.pullNumber)||{})===id));
       // Also observes external reruns of old run IDs and their new attempt.
-      const fresh=await this.refreshRun(run,force);
-      if(fresh.title!==run.title)throw new GitHubError('요청과 실행 기록이 일치하지 않습니다.',409);
-      if(!fresh.unavailable)await this.saveRuns([fresh]);return fresh;
+      for(const run of candidates){
+       const fresh=await this.refreshRun(run,force);
+       if(fresh.title!==run.title)throw new GitHubError('요청과 실행 기록이 일치하지 않습니다.',409);
+       if(!fresh.unavailable)await this.saveRuns([fresh]);
+       if(matchesRequestRun(fresh,type))return fresh;
+      }
+      return null;
     },
     async retry(id,claim,beforeRetry=async()=>{}) {
       const issue=await this.issue(id);
-      const [pulls,run]=await allReads([this.pulls({force:true}),this.latestRun(id,{force:true})]);
+      const [pulls,run]=await allReads([this.pulls({force:true}),this.latestRun(id,{force:true,type:issueType(issue,config)})]);
       if(issue.state!=='open'||pulls.some(p=>relatedRequest(p)===id&&(p.state==='open'||p.merged))||!run||run.status!=='completed'||!['failure','cancelled','timed_out'].includes(run.conclusion))throw new GitHubError('실패가 확인된 열린 요청만 다시 실행할 수 있습니다.',409);
       if(issueType(issue,config)?.kind==='revert'&&run.workflow!=='rollback')throw new GitHubError('롤백 실행 기록을 확인할 수 없습니다.',409);
       await beforeRetry(run);

@@ -1,4 +1,5 @@
 import {deployment} from '../shared/deployment.js';
+import {issueType} from '../shared/github-sync.js';
 import {extractImages,MAX_IMAGES} from '../shared/images.js';
 import {normalizeRequest,requestBody} from '../shared/request-form.js';
 import {uploadAttachment,requestAttachments} from './attachments.js';
@@ -36,7 +37,7 @@ export function requestsAPI({github=createGitHub}={}) {
    if(requestDetail&&request.method==='GET'){
     const id=Number(requestDetail[1]);
     const issue=await gh.issue(id);
-    const run=await gh.latestRun(id);
+    const run=await gh.latestRun(id,{type:issueType(issue,deployment(env))});
     return reply({request:(await requestCatalog(gh,env,{issue,run}))[0]});
    }
    if(url.pathname==='/api/history'&&request.method==='GET'){const page=historyPage(url.searchParams);return reply(paginateHistory(await gh.history(),page));}

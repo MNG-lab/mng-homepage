@@ -85,3 +85,25 @@ test('skipped bot events cannot hide an actual failed request run',async()=>{
  });
  assert.deepEqual((await gh.runs()).map(r=>r.id),[100]);
 });
+
+test('newly queued bot events and another workflow cannot replace the actual request run',async()=>{
+ const DB=database(),{privateKey}=await generateKeyPair('RS256',{extractable:true});
+ const i={...issue(50,'admin-request'),body:'<!-- mng-admin:v1 -->\nRequest'};
+ const real={...run(100),event:'workflow_dispatch',display_title:'Admin request #50',status:'in_progress',conclusion:null};
+ const ignored={...run(200),status:'queued',conclusion:null};
+ const wrong={...run(300,50,'rollback'),status:'queued',conclusion:null};
+ const gh=await createGitHub({...env,DB,GITHUB_APP_ID:'1',GITHUB_INSTALLATION_ID:'2',GITHUB_APP_PRIVATE_KEY:await exportPKCS8(privateKey)},async url=>{
+  if(url.includes('access_tokens'))return Response.json({token:'mock'});
+  if(url.includes('/actions/workflows/'))return Response.json({workflow_runs:url.includes('rollback-from-issue')?[wrong]:[ignored,real]});
+  const matched=url.match(/\/actions\/runs\/(\d+)$/);if(matched)return Response.json([real,ignored,wrong].find(r=>r.id===Number(matched[1])));
+  throw Error('Unexpected URL: '+url);
+ });
+ const type=issueType(i,config);
+ assert.equal((await gh.latestRun(50,{type})).id,100);
+ const rows=await requestCatalog({list:async()=>[i],pulls:async()=>[],runs:()=>gh.runs()},{...env,DB});
+ assert.equal(rows[0].run.id,100);
+ const rollback={...issue(50,'rollback-request'),body:i.body};
+ wrong.event='workflow_dispatch';
+ const rollbackRows=await requestCatalog({list:async()=>[rollback],pulls:async()=>[],runs:async()=>[{id:300,issue:50,workflow:'rollback',event:'workflow_dispatch'},{id:400,issue:50,workflow:'codex',event:'issues'}]},{...env,DB});
+ assert.equal(rollbackRows[0].run.id,300);
+});

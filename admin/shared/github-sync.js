@@ -39,3 +39,9 @@ export function selectRequestPull(pulls,issue) {
  })[0]||null;
 }
 export const isRevert=request=>request.kind==='revert'||branchRequest(request.pull?.head?.ref)?.kind==='revert';
+export function matchesRequestRun(run,type) {
+ if(!run||run.conclusion==='skipped')return false;
+ if(!type)return true;
+ if(type.source==='admin'&&run.event==='issues')return false;
+ return (run.workflow||'codex')===(type.kind==='revert'?'rollback':'codex');
+}
