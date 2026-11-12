@@ -119,6 +119,33 @@ try {
  // A full refresh serves both tabs; switching tabs stays instant during the read.
  holdRequestRead=true;heldRequestRead=false;await refreshControl.click();for(let i=0;i<100&&!heldRequestRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldRequestRead,true);
  await page.getByRole('button',{name:/^지난 요청/}).click();await page.getByText('아직 지난 요청이 없습니다.',{exact:true}).waitFor();assert.equal(await refreshControl.getAttribute('aria-busy'),'true');releaseRequestRead();await page.getByRole('button',{name:'새로고침 완료',exact:true}).waitFor();
+ // Each route re-entry revalidates, preserving the visible list while it loads.
+ const catalogReads=()=>uiReads.get('/api/requests?view=catalog')||0;
+ for(const destination of ['대시보드','홈페이지 버전','설정','새 수정 요청']){
+  await page.getByRole('button',{name:destination,exact:true}).click();await page.getByRole('heading',{name:destination,exact:true}).waitFor();
+  const previousTitle=records[0].title,nextTitle=`${destination}에서 돌아온 최신 요청`,beforeReturn=catalogReads();
+  records=[{...records[0],title:nextTitle}];holdRequestRead=true;heldRequestRead=false;
+  await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('button',{name:'새로고침 중…',exact:true}).waitFor();
+  for(let i=0;i<100&&!heldRequestRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldRequestRead,true);
+  await page.getByText(previousTitle,{exact:true}).waitFor();assert.equal(await refreshControl.isDisabled(),true);
+  await page.getByRole('button',{name:/^지난 요청/}).click();await page.getByText('아직 지난 요청이 없습니다.',{exact:true}).waitFor();
+  await page.getByRole('button',{name:/^처리 중/}).click();assert.equal(catalogReads(),beforeReturn+1,'one catalogue read per visit, including tab switches during the read');
+  releaseRequestRead();await page.getByText(nextTitle,{exact:true}).waitFor();await page.getByRole('button',{name:'새로고침',exact:true}).waitFor();
+ }
+ // Back from a detail route also updates the list, without losing its search.
+ await page.getByLabel('요청 검색').fill('최신 요청');await page.getByText(records[0].title,{exact:true}).click();await page.getByRole('heading',{name:records[0].title,exact:true}).waitFor();
+ records=[{...records[0],title:'상세에서 돌아온 최신 요청'}];const beforeDetailReturn=catalogReads();
+ await page.getByRole('link',{name:'목록으로 돌아가기',exact:true}).click();await page.getByText(records[0].title,{exact:true}).waitFor();
+ assert.equal(catalogReads(),beforeDetailReturn+1);assert.equal(await page.getByLabel('요청 검색').inputValue(),'최신 요청');
+ // Failed re-entry leaves cached content available and allows manual retry.
+ await page.getByRole('button',{name:'대시보드',exact:true}).click();requestFailures=2;
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('alert').filter({hasText:'요청 조회 오류'}).waitFor();
+ await page.getByText(records[0].title,{exact:true}).waitFor();await refreshControl.click();await page.getByRole('button',{name:'새로고침 완료',exact:true}).waitFor();
+ // A late response from the previous visit cannot replace a newer catalogue.
+ holdRequestRead=true;heldRequestRead=false;await refreshControl.click();for(let i=0;i<100&&!heldRequestRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldRequestRead,true);
+ await page.getByRole('button',{name:'대시보드',exact:true}).click();await page.getByRole('heading',{name:'대시보드',exact:true}).waitFor();
+ records=[{...records[0],title:'재진입 후 최신 요청'}];await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByText(records[0].title,{exact:true}).waitFor();
+ releaseRequestRead();await new Promise(r=>setTimeout(r,100));await page.getByText(records[0].title,{exact:true}).waitFor();
  records=[];await page.goto('http://127.0.0.1:4193/requests');await page.getByText('지금 처리할 요청이 없습니다. 완료된 작업은 지난 요청에서 확인하세요.').waitFor();
  await page.getByRole('button',{name:'새 수정 요청',exact:true}).click();await page.getByLabel('어느 페이지인가요?',{exact:true}).selectOption('Members');await page.getByRole('textbox',{name:'요청 제목',exact:true}).fill('Connected test');await page.getByLabel('어떻게 바꾸면 될까요?',{exact:true}).fill('Update Members test content');holdWritePath='/api/requests';await page.getByRole('button',{name:'수정 요청 보내기',exact:true}).click();
  const submitPending=page.getByRole('button',{name:'요청 접수 중…',exact:true});await submitPending.waitFor();assert.equal(await submitPending.getAttribute('aria-busy'),'true');assert.equal(await submitPending.isDisabled(),true);assert.equal(await submitPending.locator('.spinner').count(),1);assert.equal(submissions,0);

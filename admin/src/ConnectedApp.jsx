@@ -71,7 +71,8 @@ export default function ConnectedApp({user}) {
   if(!path){++refreshSequence.current;setLoading(false);setError('');return;}
   if(isRequestList){
    setError('');
-   if(catalog)setLoading(false);else refresh();
+   // Revalidate on each visit; tabs, filters, and pages share this API path.
+   refresh();
    return()=>{++refreshSequence.current;activeRead.current=null;};
   }
   setError('');refresh();const update=()=>{if(document.visibilityState==='visible')refresh();};
@@ -109,7 +110,7 @@ export default function ConnectedApp({user}) {
      <section className="panel connected-panel"><h2>지금 확인할 작업</h2>{!current&&!error?<LoadingIndicator label="확인할 작업 불러오는 중"/>:attention.length?<RequestRows requests={attention}/>:<p className="connected-empty">확인을 기다리는 작업이 없습니다.</p>}</section>
      <section className="panel connected-panel"><div className="connected-heading"><h2>최근 작업</h2><Link className="text-button" to="/requests">요청 관리로 이동 →</Link></div>{!current&&!error?<LoadingIndicator label="최근 작업 불러오는 중"/>:recent.length?<RequestRows requests={recent}/>:<p className="connected-empty">첫 수정 요청을 작성해 보세요.</p>}</section>
     </>:isHistory?<History user={user} refresh={refresh}/>:isSettings?<Settings user={user} requests={requests} refresh={refresh} pagination={current?.pagination} connectionRequired={current?.connectionRequired} onPageChange={changeRecovery} loading={loading||!current}/>:isNew?<NewRequest user={user} onSubmitted={result=>{navigate(`/requests/${result.issue}`);setNotice(result.warning||'요청을 접수했습니다. 작업 상태는 자동으로 갱신됩니다.');}} onCancel={()=>navigate('/requests')}/>:selected?<RequestDetail key={selected.id} request={selected} user={user} refresh={refresh} requestLoading={loading} requestError={error} requestUpdatedAt={data?.updatedAt} listSearch={location.search}/>:detailId?<section className="panel connected-panel"><>{loading?<LoadingIndicator label="요청 불러오는 중"/>:<h2>{error?'요청을 불러오지 못했어요':'요청을 찾을 수 없어요'}</h2>}</><Link to={`/requests${location.search}`}>요청 목록으로 돌아가기</Link></section>:<section className="panel connected-panel">
-     <div className="connected-heading"><h2>{tab==='active'?'처리할 요청':'지난 요청'}</h2><RefreshButton key={path} onRefresh={refresh}/></div>
+     <div className="connected-heading"><h2>{tab==='active'?'처리할 요청':'지난 요청'}</h2><RefreshButton key={path} onRefresh={refresh} loading={loading}/></div>
      <div className="request-tabs" role="group" aria-label="요청 구분">{[['active','처리 중'],['past','지난 요청']].map(([value,label])=><button key={value} type="button" aria-pressed={tab===value} onClick={()=>switchTab(value)}>{label} {current?.scopeCounts&&<span>({current.scopeCounts[value]})</span>}</button>)}</div>
      <p className="request-tab-description">{tab==='active'?'자동 수정 중이거나 검토·재실행이 필요한 요청입니다.':'반영을 마쳤거나 종료한 요청입니다. 반영된 홈페이지는 버전 화면에서 확인할 수 있습니다.'}</p>
      <div className="request-tools"><label>요청 검색<input type="search" value={query} maxLength={200} onChange={e=>changeList({q:e.target.value,page:1},{replace:true})} placeholder="제목, 내용, 요청 번호, 버전 번호"/></label><label>상태<select aria-label="상태" value={filter} onChange={e=>changeList({status:e.target.value,q:query,page:1})}><option value="all">전체</option>{tabStatuses.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label></div>
