@@ -1,3 +1,4 @@
+import {validateSourceRevert,claimSourceRevert} from './revert-request.js';
 import {deployment} from '../shared/deployment.js';
 import {issueType} from '../shared/github-sync.js';
 import {extractImages,MAX_IMAGES} from '../shared/images.js';
@@ -102,6 +103,20 @@ export function requestsAPI({github=createGitHub}={}) {
       if(!row || row.actor_sub!==user.sub || row.payload!==payload) return reply({error:'다른 요청에 사용된 식별자입니다.'},409);
       if(row.issue_number) return reply({issue:row.issue_number,state:row.state});
       return reply({error:'이미 처리 중이거나 결과 확인이 필요한 요청입니다. 새 요청을 만들지 말고 목록을 확인해 주세요.'},409);
+    }
+    if(body.sourceRequest){
+      try {
+        const source=await validateSourceRevert(gh,env,body);
+        if(source.reversal){
+          await env.DB.prepare('DELETE FROM requests WHERE id=?').bind(body.requestId).run();
+          return reply({issue:source.reversal.requestId,warning:'이미 접수한 변경 취소 요청을 열었습니다.'});
+        }
+        await claimSourceRevert(gh,env,body,source);
+      }catch(error){
+        // No issue was created yet. A denied or stale source can be corrected safely.
+        await env.DB.prepare('DELETE FROM requests WHERE id=?').bind(body.requestId).run();
+        throw error;
+      }
     }
     let issue;
     try {issue=await gh.createRequest(body,attachments);} catch(error) {

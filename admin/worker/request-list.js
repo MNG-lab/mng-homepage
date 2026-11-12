@@ -1,3 +1,4 @@
+import {reversalLookup} from '../shared/revert-request.js';
 import {selectRequestPull,issueType,matchesRequestRun} from '../shared/github-sync.js';
 import {deployment} from '../shared/deployment.js';
 import {relatedRequest} from '../shared/version.js';
@@ -33,11 +34,13 @@ export function requestSummary(requests){
 }
 export async function requestCatalog(gh,env,{issue:single,run:singleRun}={}){
  const [issues,pulls,runs,recovery]=await allReads([single?[single]:gh.list(),gh.pulls(),single?[]:gh.runs(),recoveryMetadata(env)]);
+ const allIssues=single&&selectRequestPull(pulls,single.number)?.merged&&gh.list?await gh.list():issues;
+ const reversalFor=reversalLookup(allIssues,pulls);
  const associated=run=>run.issue||(run.pullNumber?relatedRequest(pulls.find(p=>p.number===run.pullNumber)||{}):Number(run.title?.match(/#([1-9]\d*)$/)?.[1]));
  const ordered=[...runs].sort((a,b)=>b.id-a.id);
  return issues.map(issue=>{
   const type=issueType(issue,deployment(env))||{source:issue.source,kind:issue.kind};
   const pull=selectRequestPull(pulls,issue.number),restoration=pull?.restoration||null,run=single?(matchesRequestRun(singleRun,type)?singleRun:null):ordered.find(r=>associated(r)===issue.number&&matchesRequestRun(r,type))||null;
-  return {...type,id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin(?: Preview)?\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run,pull,...(!pull&&issue.state==='open'?recovery(issue.number,run):{})};
+  return {...type,reversal:reversalFor(pull),id:issue.number,title:restoration?pull.displayTitle:issue.title.replace(/^\[Admin(?: Preview)?\] /,''),description:restoration?`‘${restoration.name}’ 반영 직후의 홈페이지 전체 상태로 복원합니다. 이후 변경은 현재 홈페이지에서 제외되지만 이력은 남습니다.`:issue.body,restoration,url:issue.html_url,state:issue.state,createdAt:issue.created_at,run,pull,...(!pull&&issue.state==='open'?recovery(issue.number,run):{})};
  }).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id-a.id);
 }

@@ -1,5 +1,5 @@
-name: "🛠️ 홈페이지 수정 요청 (AI 실행용)"
-description: "비개발자용 템플릿입니다. 항목을 채우면 Codex가 바로 코드 수정하기 쉬워집니다."
+name: "🛠️ 홈페이지 수정 요청"
+description: "페이지와 바꿀 내용을 알려 주세요. 사진이나 참고 자료도 함께 보낼 수 있습니다."
 title: "[수정요청] "
 labels:
   - codex-auto
@@ -7,131 +7,63 @@ body:
   - type: markdown
     attributes:
       value: |
-        아래 항목을 구체적으로 작성할수록 AI가 한 번에 정확하게 수정합니다.
-
-        작성 팁:
-        - `한 이슈 = 한 목표`로 작성
-        - "어디를", "무엇으로", "왜" 바꾸는지 분리해서 작성
-        - 언어 반영은 기본적으로 **국문/영문 모두 동시 적용**됩니다.
-        - 이미지 수정이 있으면 파일을 이슈 본문에 드래그앤드롭으로 첨부하고 URL을 함께 남겨주세요.
-        - 가능하면 **수정 전/수정 후 문구**를 그대로 붙여넣기
-        - 기준 링크(기존 사이트/문서/이미지)를 반드시 포함
-
+        어디를 어떻게 바꾸고 싶은지 편하게 적어 주세요.
+        별도 요청이 없으면 **국문·영문 페이지에 함께 반영**합니다.
+        사진과 참고 자료, 추가 정보는 필요한 경우에만 넣으면 됩니다.
+        이슈 내용과 첨부 파일은 공개되므로 개인정보·비공개 자료는 넣지 마세요.
   - type: dropdown
-    id: request_type
+    id: page
     attributes:
-      label: 수정 유형
-      description: 가장 가까운 유형 1개를 선택하세요.
+      label: 어느 페이지인가요?
       options:
-        - 텍스트/문구 수정
-        - 링크 수정
-        - 이미지 교체/추가
-        - 레이아웃/스타일 수정
-        - 콘텐츠 신규 추가
-        - 버그 수정
-        - 기타
+        - Home
+        - Research
+        - Professor
+        - Members
+        - Publications
+        - Gallery
+        - Contact
+        - 여러 페이지 / 직접 입력
     validations:
       required: true
-
-  - type: input
-    id: page_url
-    attributes:
-      label: 대상 페이지 URL
-      description: 수정이 필요한 페이지 URL을 적어주세요. 여러 개면 줄바꿈으로 구분해도 됩니다.
-      placeholder: "예) https://mng-lab.github.io/mng-homepage/research"
-    validations:
-      required: true
-
   - type: textarea
-    id: current_state
+    id: description
     attributes:
-      label: 현재 상태 (문제)
-      description: 지금 어떤 점이 문제인지 화면 기준으로 설명해주세요.
-      placeholder: |
-        예)
-        - KR 홈에서 노화/섬유화 버튼 위치가 다른 버튼과 어긋남
-        - 모바일에서 카드 하단 여백이 너무 좁음
+      label: 어떻게 바꾸면 될까요?
+      description: 바꿀 부분과 원하는 결과를 적어 주세요. 현재 상태나 이유가 필요하면 함께 적어 주세요.
+      placeholder: "예: Members의 홍길동 연구원 소개를 아래 문구로 바꾸고, 프로필 사진은 첨부한 사진으로 교체해 주세요."
     validations:
       required: true
-
   - type: textarea
-    id: expected_state
+    id: target_urls
     attributes:
-      label: 원하는 상태 (수정 결과)
-      description: 결과를 명확히 적어주세요. 가능하면 수정 전/수정 후 형태로 작성해주세요.
-      placeholder: |
-        예)
-        [수정 전]
-        노화/섬유화 버튼만 위치가 위로 올라감
-
-        [수정 후]
-        희귀질환/대사질환/노화·섬유화 3개 버튼의 위치와 크기 고정
-    validations:
-      required: true
-
-  - type: textarea
-    id: source_links
-    attributes:
-      label: 기준 자료/근거 링크
-      description: AI가 참조할 원본 사이트, 문서, 이미지 링크를 넣어주세요.
-      placeholder: |
-        예)
-        - 기존 사이트: https://dglab.yonsei.ac.kr/research-1
-        - 참고 시안: (링크)
-        - 텍스트 원문: (링크/파일)
-    validations:
-      required: true
-
-  - type: textarea
-    id: image_links
-    attributes:
-      label: 첨부 이미지 URL (선택)
-      description: 이미지 변경이 있을 때만 입력하세요. 이슈 본문 첨부 후 생성된 URL을 한 줄씩 넣어주세요.
-      placeholder: |
-        - https://github.com/user-attachments/assets/xxxx
-        - https://github.com/user-attachments/assets/yyyy
+      label: 다른 페이지 주소
+      description: 여러 페이지 또는 세부 주소를 지정할 때 입력하세요. 주소를 모르면 위 수정 내용에 페이지 이름을 적어 주세요.
+      placeholder: "https://dglab.yonsei.ac.kr/members"
     validations:
       required: false
-
+  - type: textarea
+    id: references
+    attributes:
+      label: 사진·참고 자료
+      description: 사용할 사진이나 참고 화면을 끌어 넣거나 붙여넣으세요. 이미지·문서·사이트 링크도 함께 넣을 수 있습니다.
+      placeholder: "예: 첫 번째 사진은 교체할 프로필 사진이고, 두 번째는 원하는 배치 예시입니다."
+    validations:
+      required: false
   - type: textarea
     id: exact_text
     attributes:
-      label: 정확한 문구 (있으면 필수)
-      description: 문구 수정이라면 실제로 들어갈 텍스트를 그대로 적어주세요.
+      label: 정확히 넣을 문구
+      description: 그대로 들어가야 하는 문구가 있으면 입력하세요. 수정 내용에 이미 적었다면 반복할 필요는 없습니다.
       placeholder: |
-        예)
-        KR: 일차섬모 대사를 기반으로 항노화 기술을 개발하고...
-        EN: We develop anti-aging technologies based on primary cilium metabolism...
+        국문: …
+        영문: …
     validations:
       required: false
-
   - type: textarea
     id: out_of_scope
     attributes:
-      label: 하지 말아야 할 것 (선택)
-      description: 이번 작업에서 건드리면 안 되는 범위를 적어주세요.
-      placeholder: |
-        예)
-        - 다른 페이지 디자인 변경 금지
-        - 데이터 구조/파일명 변경 금지
-        - 배포 설정 변경 금지
+      label: 변경하지 않을 부분
+      placeholder: "예: 다른 페이지의 디자인과 구성원 순서는 유지해 주세요."
     validations:
       required: false
-
-  - type: textarea
-    id: notes
-    attributes:
-      label: 추가 메모 (선택)
-      description: 우선순위, 일정, 참고사항 등을 자유롭게 적어주세요.
-    validations:
-      required: false
-
-  - type: checkboxes
-    id: confirm
-    attributes:
-      label: 제출 전 확인
-      options:
-        - label: 한 이슈에서 한 가지 목표를 다루고 있습니다.
-          required: true
-        - label: 기준 링크(또는 원문 문구)를 포함했습니다.
-          required: true

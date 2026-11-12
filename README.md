@@ -5,36 +5,19 @@ MNG Lab 홈페이지 저장소입니다.
 
 ## 비개발자용 빠른 사용법
 
-### 1) 수정/롤백 요청하기 (가장 많이 쓰는 방식)
+### 1) 수정 요청하기
 
-아래 버튼으로 템플릿 이슈를 생성하세요.
+[어드민](https://admin.mng-lab.workers.dev)의 **새 수정 요청**에서 페이지와 바꿀 내용을 입력하세요. 제목은 자동으로 제안되며 직접 고칠 수 있습니다. 사진 선택·끌어넣기·붙여넣기를 지원하고, 정확한 문구나 변경 제외 범위가 있으면 추가 정보에 적습니다.
 
-[![수정 요청하기](https://img.shields.io/badge/%EC%88%98%EC%A0%95%20%EC%9A%94%EC%B2%AD%ED%95%98%EA%B8%B0-0A66C2?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)
-[![즉시 롤백 요청하기](https://img.shields.io/badge/%EC%A6%89%EC%8B%9C%20%EB%A1%A4%EB%B0%B1%20%EC%9A%94%EC%B2%AD-FF8A00?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-simple-request.yml)
+GitHub에서도 [홈페이지 수정 요청 양식](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)을 사용할 수 있습니다. 제목을 입력하고 페이지와 수정 내용을 작성하세요. 사진은 **사진·참고 자료** 칸에 끌어 넣거나 붙여넣으면 됩니다. 사진을 넣을 위치도 함께 알려 주세요. 별도 요청이 없으면 국문·영문에 함께 반영합니다.
 
-즉시 롤백은 아래 상황에서 쓰는 **긴급 복구 버튼**입니다.
+한 번에 작은 변경을 요청하고, 미리보기에서 확인한 뒤 승인하는 것을 권장합니다.
 
-- 방금 수정/배포 후 홈페이지가 갑자기 깨졌을 때
-- 원인 분석보다 먼저, 일단 직전 정상 상태로 빠르게 되돌려야 할 때
+- 요청 하나의 변경을 취소하려면: **요청 관리 → 지난 요청 → 해당 요청 → 이 변경 취소**. 관리자 권한으로 이유를 적으면 취소할 변경을 담은 PR이 만들어집니다. 이후 변경은 유지하며 충돌하면 검토를 위해 멈춥니다.
+- 홈페이지 전체를 예전 상태로 돌리려면: **홈페이지 버전 → 원하는 버전 → 이 버전으로 되돌리기**. 선택한 버전 이후의 홈페이지 변경도 함께 제외됩니다.
+- 추가 수정이 필요하면: 취소하지 않고 새 수정 요청을 작성해도 됩니다.
 
-버튼을 누르고 양식만 제출하면, 시스템이 자동으로:
-
-- 직전 상태로 되돌리는 PR을 생성하고
-- 확인 후 머지하면 사이트를 복구할 수 있게 준비합니다.
-
-> 팁: 웹페이지를 수정할때 한번에 많은 양에 대한 수정 요청을 하기보단, 다음 과정을 반복하는 것을 추천합니다.
->
-> 1. 작은 수정 요청
-> 2. 해당 수정이 잘 반영되었는지 확인
->    - 생각하지 못한 문제 발생했을 경우 롤백 수행
->    - 추가로 수정해야할 사항이 생긴 경우, 롤백 대신 수정 요청 추가 생성
-> 3. 1~2번을 반복
-
-이미지 수정이 필요한 경우도 같은 `수정 요청하기` 템플릿을 사용합니다.
-
-1. 이미지 파일을 이슈 본문에 드래그앤드롭으로 첨부
-2. 생성된 첨부 URL을 `첨부 이미지 URL` 항목에 입력
-3. 어느 페이지/어느 위치에 반영할지 함께 작성
+두 되돌리기 모두 검토 후 승인해야 홈페이지에 반영됩니다. 개발자용 [특정 PR·커밋 변경 취소](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-request.yml)와 [직전 변경 취소](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-simple-request.yml) 양식도 유지합니다.
 
 ### 2) 댓글로 Codex 실행하기
 
@@ -83,7 +66,7 @@ PR(Pull Request)은 개발자 작업 결과를 올려두는 **검토용 제안�
 
 ![GitHub Actions 탭 예시](https://docs.github.com/assets/cb-40119/images/help/repository/actions-tab-global-nav-update.png)
 
-2. 실패(빨간색)인 경우 AI가 버그가 포함된 코드를 잘못 생성한 경우로, 롤백을 수행하여 원래 코드로 되돌린 뒤, 다시 수정 요청부터 진행합니다.
+2. 실패(빨간색)라면 요청 상세나 Actions 로그에서 원인을 확인합니다. 인증 문제는 Codex를 연결한 뒤 같은 요청을 다시 실행합니다. 아직 승인하지 않은 변경은 운영 홈페이지에 반영되지 않으므로 되돌릴 필요가 없습니다.
 
 ### 5) 배포 확인하기
 
@@ -140,8 +123,8 @@ npm run preview
 - `.github/workflows/rollback-from-issue.yml`
 - `.github/workflows/deploy-pages.yml` (GitHub Pages fallback only; automatic production deploy is disabled)
 - 롤백 템플릿:
-  - 비개발자용: `.github/ISSUE_TEMPLATE/rollback-simple-request.yml`
-  - 개발자용: `.github/ISSUE_TEMPLATE/rollback-request.yml`
+  - 직전 변경 취소 (개발자용): `.github/ISSUE_TEMPLATE/rollback-simple-request.yml`
+  - 특정 변경 취소 (개발자용): `.github/ISSUE_TEMPLATE/rollback-request.yml`
 - 두 워크플로 모두 lockfile(`package-lock.json`/`npm-shrinkwrap.json`)이 있으면 `npm ci`, 없으면 `npm install`로 자동 분기
 - `codex-comment.yml`은 GitHub App 토큰을 사용해 이슈 할당/커밋/PR 생성 주체를 앱 봇으로 통일함
 - `rollback-from-issue.yml`은 두 롤백 템플릿(간단/개발자용)을 파싱해 자동으로 revert PR을 생성함

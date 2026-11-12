@@ -7,3 +7,6 @@ dist-admin
 .wrangler
 .dev.vars*
 .env.local
+
+# Isolated local UX review build
+dist-admin-review/

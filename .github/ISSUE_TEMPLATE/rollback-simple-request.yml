@@ -1,54 +1,28 @@
-name: "⏪ 간단 롤백 요청 (비개발자용)"
-description: "main 최신 반영 1건을 되돌려 직전 상태로 복구하는 자동 롤백 PR을 생성합니다."
-title: "[간단롤백요청] "
+name: "⏪ 직전 변경 취소 (개발자용)"
+description: "실행 시작 시 main의 최신 커밋 1건을 취소하는 검토용 PR을 만듭니다."
+title: "[변경취소] "
 labels:
   - rollback-simple-request
 body:
   - type: markdown
     attributes:
       value: |
-        이 템플릿은 **가장 간단한 긴급 복구용**입니다.
-
-        동작:
-        - 현재 `main`의 최신 커밋 1건을 자동으로 되돌립니다.
-        - 롤백 브랜치/PR을 자동 생성합니다.
-
-        이 템플릿을 쓰면 안 되는 경우:
-        - 특정 PR/커밋만 골라 롤백해야 하는 경우
-        - 여러 커밋 구간을 선택 롤백해야 하는 경우
-        - 위 경우는 `개발자용 롤백 요청` 템플릿을 사용하세요.
-
+        **실행이 시작될 때 main의 최신 커밋 1건**을 취소합니다. 작성 중 다른 변경이 반영되면 대상이 달라질 수 있습니다.
+        대상이 정해져 있으면 **특정 변경 취소** 양식이나 어드민의 완료된 요청에서 **이 변경 취소**를 사용하세요.
+        처음 실행한 대상은 재실행해도 유지됩니다. 결과는 검토용 PR이며, 승인 전에는 홈페이지가 바뀌지 않습니다.
+        홈페이지 전체를 과거 상태로 되돌리는 기능은 어드민의 **홈페이지 버전**에서 제공합니다.
   - type: textarea
     id: rollback_reason
     attributes:
-      label: 롤백 사유
-      description: 어떤 문제가 발생했고 왜 즉시 복구가 필요한지 작성하세요.
-      placeholder: |
-        예)
-        - 배포 직후 홈 화면이 빈 페이지로 보임
-        - 모바일/데스크톱 모두 접속 장애 발생
-        - 직전 정상 상태로 즉시 복구 필요
+      label: 취소하려는 이유
+      placeholder: "예: 방금 반영한 변경으로 홈페이지가 표시되지 않습니다."
     validations:
       required: true
-
   - type: textarea
     id: expected_result
     attributes:
-      label: 기대 결과
-      description: 롤백 후 확인할 항목을 체크리스트로 작성하세요.
-      placeholder: |
-        - [ ] 주요 페이지 접속 정상
-        - [ ] 빌드/배포 오류 없음
-        - [ ] 배포 이전 정상 동작으로 복구됨
+      label: 취소 후 확인할 내용
+      description: 추가로 확인할 사항이 있으면 적어 주세요.
+      placeholder: "예: Home과 Members 페이지에 정상적으로 접속됩니다."
     validations:
-      required: true
-
-  - type: checkboxes
-    id: confirm
-    attributes:
-      label: 제출 전 확인
-      options:
-        - label: 이 요청은 main 최신 반영 1건을 되돌리는 긴급 복구 요청입니다.
-          required: true
-        - label: 특정 커밋/PR을 지정하는 롤백이 아님을 확인했습니다.
-          required: true
+      required: false

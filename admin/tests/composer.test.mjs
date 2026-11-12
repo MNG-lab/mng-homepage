@@ -4,7 +4,7 @@ import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {generateKeyPair,exportPKCS8} from 'jose';
-import {normalizeRequest,requestBody,requestTypes,requestSections,fieldLabels} from '../shared/request-form.js';
+import {normalizeRequest,requestBody,requestTypes,requestSections,fieldLabels,simpleFieldLabels,suggestRequestTitle} from '../shared/request-form.js';
 import {imageType,extractImages,MAX_IMAGE_BYTES,readBounded} from '../shared/images.js';
 import {parseRollback} from '../shared/rollback.js';
 import {downloadImages} from '../scripts/request-images.mjs';
@@ -21,16 +21,21 @@ const url=`https://raw.githubusercontent.com/MNG-lab/mng-homepage/${'a'.repeat(4
 const post=(path,body,headers={})=>new Request(origin+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 const upload=(value=image,headers={})=>new Request(origin+`/api/attachments/${id}`,{method:'POST',headers:{Origin:origin,'X-Request-Id':requestId,'X-File-Name':encodeURIComponent('참고 사진.png'),...headers},body:value});
 
-test('every existing change type preserves all issue form fields and image captions',()=>{
+test('simplified requests and older clients preserve context and image captions',()=>{
  const template=readFileSync(new URL('../../.github/ISSUE_TEMPLATE/change-request.yml',import.meta.url),'utf8');
  for(const requestType of requestTypes){
-  assert.ok(template.includes(requestType));
+  for(const label of Object.values(simpleFieldLabels))assert.ok(template.includes(label));
   const value=normalizeRequest({...change,requestType,attachments:[{id,caption:'홈 소개 이미지'}]});
   const body=requestBody(value,deployment({ADMIN_ENV:'production'}),[{id,name:'참고 사진.png',caption:'홈 소개 이미지',url}]);
-  for(const label of Object.values(fieldLabels))assert.ok(body.includes('### '+label));
+  for(const value of [change.currentState,change.description,change.sourceLinks,change.exactText,change.outOfScope,change.notes])assert.ok(body.includes(value));
+  assert.ok(body.includes(requestType));
   assert.match(body,/국문·영문/);assert.equal(extractImages(body)[0].url,url);
-  assert.equal(requestSections(body).find(s=>s.label==='정확한 문구 (있으면 필수)').text,change.exactText);
+  assert.equal(requestSections(body).find(s=>s.label==='정확히 넣을 문구').text,change.exactText);
  }
+ assert.equal(normalizeRequest({...change,title:''}).title,suggestRequestTitle(change));
+ assert.ok(suggestRequestTitle({page:'Members',description:'🧪'.repeat(100)}).length<100);
+ const simple=normalizeRequest({requestId,page:'Members',description:'소개 문구를 바꿔 주세요.'});assert.equal(simple.targetUrls,'https://dglab.yonsei.ac.kr/members');assert.equal(simple.requestType,'');
+ assert.equal(normalizeRequest({requestId,page:'Multiple',description:'Home과 Members의 소개 문구를 변경해 주세요.'}).targetUrls,'');
  assert.throws(()=>normalizeRequest({...change,targetUrls:'javascript:alert(1)'}));
  assert.throws(()=>normalizeRequest({...change,attachments:[{id},{id}]}));
  assert.throws(()=>normalizeRequest({...change,kind:'unknown'}));
@@ -73,7 +78,7 @@ test('submission binds uploaded photos to the actor and request; rollback uses i
  const rollback={requestId:'32345678-1234-4234-9234-123456789abc',kind:'rollback',title:'변경 취소',rollbackType:'pr',rollbackTarget:'85',reason:'문제',expectedResult:'정상'};
  assert.equal((await api(post('/api/requests',rollback),env,{...user,role:'editor'})).status,403);
  assert.equal((await api(post('/api/requests',rollback),env,user)).status,201);assert.equal(rollbacks,1);assert.equal(dispatches,1);
- assert.equal((await api(post('/api/requests',{...change,title:''}),env,user)).status,400);
+ assert.equal((await api(post('/api/requests',{...change,description:''}),env,user)).status,400);
 });
 test('removed drafts cannot be attached, while upload caps count concurrent reservations',async()=>{
  const DB=database(),env={APP_ORIGIN:origin,GITHUB_ENABLED:'true',DB};const api=requestsAPI({github:async()=>({storeAttachment:async()=>url})});

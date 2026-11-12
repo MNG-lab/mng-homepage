@@ -34,21 +34,22 @@ try {
  await page.getByRole('button',{name:'대시보드',exact:true}).click();assert.equal(refreshes,2,'rapid activity is throttled');
  await page.clock.fastForward(61000);
  await renewed(()=>page.getByRole('button',{name:'새 수정 요청',exact:true}).click());
+ await page.getByRole('button',{name:'제목 수정',exact:true}).click();
  await page.clock.fastForward(61000);
- await renewed(()=>page.getByLabel('요청 제목',{exact:true}).pressSequentially('Session test'));
+ await renewed(()=>page.getByRole('textbox',{name:'요청 제목',exact:true}).pressSequentially('Session test'));
  const afterTyping=refreshes;await page.clock.fastForward(61000);
  await page.evaluate(()=>{document.dispatchEvent(new Event('pointerdown'));window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});
  assert.equal(refreshes,afterTyping,'synthetic events and window focus must not renew');
  refreshStatus=503;
- await renewed(()=>page.getByLabel('요청 제목',{exact:true}).press('x'),503);
- assert.match(page.url(),/requests\/new$/);assert.equal(await page.getByLabel('요청 제목').inputValue(),'Session testx');
+ await renewed(()=>page.getByRole('textbox',{name:'요청 제목',exact:true}).press('x'),503);
+ assert.match(page.url(),/requests\/new$/);assert.equal(await page.getByRole('textbox',{name:'요청 제목'}).inputValue(),'Session testx');
  await page.clock.fastForward(11000);refreshStatus=200;
- await renewed(()=>page.getByLabel('요청 제목',{exact:true}).press('y'));
- assert.equal(await page.getByLabel('요청 제목').inputValue(),'Session testxy');
+ await renewed(()=>page.getByRole('textbox',{name:'요청 제목',exact:true}).press('y'));
+ assert.equal(await page.getByRole('textbox',{name:'요청 제목'}).inputValue(),'Session testxy');
  // Logout must clear the cookie after any in-flight renewal, not before it.
  await page.clock.fastForward(61000);hold=true;
  const held=page.waitForRequest(r=>new URL(r.url()).pathname==='/api/session/refresh');
- await page.getByLabel('요청 제목',{exact:true}).press('z');await held;
+ await page.getByRole('textbox',{name:'요청 제목',exact:true}).press('z');await held;
  await page.getByRole('button',{name:'로그아웃',exact:true}).click();assert.equal(logoutCalls,0);
  hold=false;release();await page.waitForURL('**/login');assert.equal(logoutCalls,1);
  // Initial lookup outages offer retry and do not send the user to login.

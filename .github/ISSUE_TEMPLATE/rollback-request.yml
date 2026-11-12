@@ -1,75 +1,45 @@
-name: "⏪ 롤백 요청 (개발자용, 대상 지정)"
-description: "특정 커밋/PR을 지정해 롤백 PR을 자동으로 생성합니다."
-title: "[롤백요청] "
+name: "⏪ 특정 변경 취소 (개발자용)"
+description: "PR 또는 커밋 1건의 변경을 취소하는 검토용 PR을 만듭니다."
+title: "[변경취소] "
 labels:
   - rollback-request
 body:
   - type: markdown
     attributes:
       value: |
-        이 템플릿은 **개발자용 대상 지정 롤백**입니다.
-        (특정 커밋 또는 PR 1개 지정)
-
-        참고:
-        - `main` 최신 반영 1건만 되돌리는 경우는
-          `간단 롤백 요청 (비개발자용)` 템플릿을 사용하세요.
-
-        작성 규칙:
-        - `commit` 또는 `pr` 중 하나를 선택
-        - 대상은 1개만 입력
-        - 왜 롤백하는지 명확히 작성
-
+        **지정한 PR 또는 커밋 1건만 취소**합니다. 이후 변경과 겹치면 충돌로 멈출 수 있습니다.
+        홈페이지 전체를 과거 상태로 되돌리려면 어드민의 **홈페이지 버전**을 사용하세요.
+        어드민에서는 완료된 요청의 **이 변경 취소** 버튼으로 대상을 자동 지정할 수 있습니다.
+        결과는 검토용 PR이며, 승인 전에는 홈페이지가 바뀌지 않습니다.
   - type: dropdown
     id: rollback_type
     attributes:
-      label: 롤백 유형
-      description: 되돌릴 대상을 선택하세요.
+      label: 취소할 대상
       options:
-        - commit
-        - pr
+        - PR 번호
+        - 커밋 번호
     validations:
       required: true
-
   - type: input
     id: rollback_target
     attributes:
-      label: 롤백 대상
-      description: 유형에 맞는 값을 입력하세요.
-      placeholder: "commit이면 SHA(예: a1b2c3d), pr이면 번호(예: 123 또는 #123)"
+      label: 대상 번호
+      description: main에 반영된 PR 또는 커밋 1개를 지정하세요.
+      placeholder: "PR: 85 또는 #85 / 커밋: 7~40자리 SHA"
     validations:
       required: true
-
   - type: textarea
     id: rollback_reason
     attributes:
-      label: 롤백 사유
-      description: 장애/회귀 등 롤백이 필요한 이유를 구체적으로 작성하세요.
-      placeholder: |
-        예)
-        - 배포 후 members 페이지에서 렌더링 오류 발생
-        - 원인 커밋 확인: xxxx
-        - 서비스 영향: 모바일/데스크톱 모두 영향
+      label: 취소하려는 이유
+      placeholder: "예: 반영 후 모바일에서 소개 문구가 겹쳐 보여요."
     validations:
       required: true
-
   - type: textarea
     id: expected_result
     attributes:
-      label: 기대 결과
-      description: 롤백 후 확인할 기대 상태를 작성하세요.
-      placeholder: |
-        - [ ] 문제 증상 재현되지 않음
-        - [ ] 주요 페이지 빌드/접속 정상
-        - [ ] 기존 기능 회귀 없음
+      label: 취소 후 확인할 내용
+      description: 추가로 확인할 사항이 있으면 적어 주세요.
+      placeholder: "예: 변경 전 문구로 돌아오고, 이후 추가한 사진은 유지됩니다."
     validations:
-      required: true
-
-  - type: checkboxes
-    id: confirm
-    attributes:
-      label: 제출 전 확인
-      options:
-        - label: 롤백 대상(커밋/PR) 1개를 정확히 입력했습니다.
-          required: true
-        - label: 롤백 사유와 기대 결과를 작성했습니다.
-          required: true
+      required: false

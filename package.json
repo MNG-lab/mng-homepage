@@ -30,7 +30,9 @@
     "admin:test": "node --test admin/tests/model.test.mjs admin/tests/auth.test.mjs admin/tests/github.test.mjs admin/tests/requests.test.mjs admin/tests/management.test.mjs admin/tests/restore.test.mjs admin/tests/operations.test.mjs admin/tests/polish.test.mjs admin/tests/preview.test.mjs admin/tests/device-auth-proof.test.mjs admin/tests/device-login.test.mjs admin/tests/request-recovery.test.mjs admin/tests/pagination.test.mjs && npm run admin:build && node admin/tests/smoke.mjs",
     "admin:build:production": "VITE_ADMIN_AUTH=required VITE_ADMIN_ENV=production vite build --config admin/vite.config.js",
     "admin:build:auth": "VITE_ADMIN_AUTH=required vite build --config admin/vite.config.js",
-    "admin:test:connected": "npm run admin:build:auth && node admin/tests/connected-smoke.mjs && node admin/tests/session-smoke.mjs"
+    "admin:test:connected": "npm run admin:build:auth && node admin/tests/connected-smoke.mjs && node admin/tests/session-smoke.mjs",
+    "admin:build:review": "VITE_ADMIN_AUTH=required VITE_ADMIN_ENV=production VITE_ADMIN_REVIEW=true vite build --config admin/vite.config.js --outDir ../dist-admin-review",
+    "admin:review": "node admin/scripts/review-server.mjs"
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",
