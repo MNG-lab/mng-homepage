@@ -1,11 +1,18 @@
 # MNG Homepage
 
 MNG Lab 홈페이지 저장소입니다.  
-이 문서는 **비개발자가 이슈 기반으로 유지보수**할 때 바로 사용할 수 있게 구성되어 있습니다.
+이 문서는 **이슈 기반으로 홈페이지를 유지보수**하는 방법을 안내합니다.
 
-## 비개발자용 빠른 사용법
+## 빠른 사용법
 
 ### 1) 수정 요청하기
+
+GitHub에서 요청하려면 아래 버튼을 사용하세요.
+
+[![수정 요청하기](https://img.shields.io/badge/%EC%88%98%EC%A0%95%20%EC%9A%94%EC%B2%AD%ED%95%98%EA%B8%B0-0A66C2?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=change-request.yml)
+[![직전 변경 되돌리기](https://img.shields.io/badge/%EC%A7%81%EC%A0%84%20%EB%B3%80%EA%B2%BD%20%EB%90%98%EB%8F%8C%EB%A6%AC%EA%B8%B0-FF8A00?style=for-the-badge)](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-simple-request.yml)
+
+**직전 변경 되돌리기**는 방금 반영한 변경에 문제가 있을 때 사용합니다. 실행 시 `main`의 최신 커밋 1건을 취소하는 PR을 만들며, 검토 후 승인해야 홈페이지에 반영됩니다. 특정 요청을 고르려면 아래 어드민의 **이 변경 취소**를 사용하세요.
 
 [어드민](https://admin.mng-lab.workers.dev)의 **새 수정 요청**에서 페이지와 바꿀 내용을 입력하세요. 제목은 자동으로 제안되며 직접 고칠 수 있습니다. 사진 선택·끌어넣기·붙여넣기를 지원하고, 정확한 문구나 변경 제외 범위가 있으면 추가 정보에 적습니다.
 
@@ -17,7 +24,7 @@ GitHub에서도 [홈페이지 수정 요청 양식](https://github.com/MNG-lab/m
 - 홈페이지 전체를 예전 상태로 돌리려면: **홈페이지 버전 → 원하는 버전 → 이 버전으로 되돌리기**. 선택한 버전 이후의 홈페이지 변경도 함께 제외됩니다.
 - 추가 수정이 필요하면: 취소하지 않고 새 수정 요청을 작성해도 됩니다.
 
-두 되돌리기 모두 검토 후 승인해야 홈페이지에 반영됩니다. 개발자용 [특정 PR·커밋 변경 취소](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-request.yml)와 [직전 변경 취소](https://github.com/MNG-lab/mng-homepage/issues/new?template=rollback-simple-request.yml) 양식도 유지합니다.
+두 되돌리기 모두 검토 후 승인해야 홈페이지에 반영됩니다.
 
 ### 2) 댓글로 Codex 실행하기
 
@@ -40,7 +47,7 @@ GitHub에서도 [홈페이지 수정 요청 양식](https://github.com/MNG-lab/m
 - PR 댓글: 해당 PR 브랜치에 직접 커밋/푸시
 - 워크플로가 실행되면 변경 후 검증(`build`, 필요 시 `validate:content`)을 수행하도록 지시됨
 
-### 3) PR 확인 및 머지하기 (비개발자용)
+### 3) PR 확인 및 머지하기
 
 PR(Pull Request)은 개발자 작업 결과를 올려두는 **검토용 제안서**입니다.  
 머지(승인)하기 전에는 실제 운영 페이지에 반영되지 않습니다.
@@ -122,12 +129,10 @@ npm run preview
 - `.github/workflows/close-codex-issue.yml`: 자동 생성된 PR이 닫히면 원본 이슈도 종료합니다. 병합 시 `completed`, 병합 없이 닫으면 `not planned`로 처리하며 이미 닫힌 이슈는 유지합니다.
 - `.github/workflows/rollback-from-issue.yml`
 - `.github/workflows/deploy-pages.yml` (GitHub Pages fallback only; automatic production deploy is disabled)
-- 롤백 템플릿:
-  - 직전 변경 취소 (개발자용): `.github/ISSUE_TEMPLATE/rollback-simple-request.yml`
-  - 특정 변경 취소 (개발자용): `.github/ISSUE_TEMPLATE/rollback-request.yml`
+- 되돌리기 템플릿: `.github/ISSUE_TEMPLATE/rollback-simple-request.yml`
 - 두 워크플로 모두 lockfile(`package-lock.json`/`npm-shrinkwrap.json`)이 있으면 `npm ci`, 없으면 `npm install`로 자동 분기
 - `codex-comment.yml`은 GitHub App 토큰을 사용해 이슈 할당/커밋/PR 생성 주체를 앱 봇으로 통일함
-- `rollback-from-issue.yml`은 두 롤백 템플릿(간단/개발자용)을 파싱해 자동으로 revert PR을 생성함
+- `rollback-from-issue.yml`은 직전 변경 되돌리기와 어드민의 특정 변경 취소 요청을 처리해 revert PR을 생성함. 기존 `rollback-request` 이슈도 계속 지원함
 - 운영 호스팅은 Cloudflare Pages이며, GitHub Pages는 수동 fallback 용도로만 보관합니다.
 
 ## GitHub App 설정 (Codex 자동화)
