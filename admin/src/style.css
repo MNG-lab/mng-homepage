@@ -1936,7 +1936,11 @@ select {
 /* Request composer: context, attachments, and references are separate tasks. */
 .request-compose { display: grid; gap: 24px; max-width: 1040px; }
 .request-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 24px; }
-.request-mode { display: flex; gap: 8px; border-bottom: 1px solid var(--line, #dce5ef); padding-bottom: 12px; }
+.request-compose-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line, #dce5ef); padding-bottom: 12px; }
+.request-mode { display: flex; gap: 8px; }
+.request-required-note { margin: 0; color: #637590; font-size: 13px; white-space: nowrap; }
+.request-required-mark { color: #ba303a; font-weight: 700; }
+.request-field-label > .request-required-mark { margin-left: 4px; }
 .request-mode button { background: transparent; color: #637590; border: 1px solid transparent; border-radius: 9px; padding: 12px 20px; font-weight: 700; }
 .request-mode button[aria-pressed="true"] { color: #28599a; background: #edf3fc; border-color: #cedcf1; }
 .request-section { display: grid; gap: 22px; }
@@ -1946,7 +1950,6 @@ select {
 .request-field input, .request-field textarea, .request-field select, .attachment-grid input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #d7dfeb; border-radius: 8px; background: #fff; font: inherit; font-weight: 400; }
 .request-field textarea { resize: vertical; font-weight: 400; line-height: 1.7; }
 .request-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.optional-label { font-size: 13px; font-weight: 400; color: #78869b; margin-left: 8px; }
 .attachment-dropzone { padding: 28px 20px; background: #f8fafc; border: 1px dashed #b9c9df; border-radius: 12px; text-align: center; display: grid; justify-items: center; gap: 12px; }
 .attachment-dropzone.dragging { background: #eaf2ff; border-color: #315d9f; }
 .attachment-dropzone small, .request-help { color: #697b93; line-height: 1.7; }
