@@ -13,7 +13,11 @@ Cloudflare Workers Free와 D1을 사용하는 운영 어드민입니다.
 
 요청 작성 → Codex 실행 → PR 생성 → 홈페이지 미리보기·CI 확인 → 관리자 승인 → main 병합 → Cloudflare Pages 운영 배포.
 PR을 만들었다고 바로 운영 홈페이지가 바뀌지는 않습니다. 승인 후에도 Pages 배포가 완료되기까지 잠시 걸립니다.
-어드민 UI 배포는 홈페이지 배포와 별개입니다. GitHub main 갱신만으로 Worker가 자동 배포되지는 않으며 아래 명령으로 배포합니다.
+어드민 UI는 [Deploy Admin Worker](../.github/workflows/deploy-admin.yml)가 배포합니다. `main`에 어드민 코드나 빌드 설정이 변경되면 서버 테스트와 운영 빌드·브라우저 테스트를 통과한 뒤, 적용되지 않은 D1 마이그레이션을 적용하고 Worker를 배포합니다.
+
+처음 한 번 GitHub 저장소의 **Settings → Environments**에서 `admin-production`을 만들고 배포 브랜치를 `main`으로 제한합니다. Cloudflare 운영 계정에만 범위를 지정한 토큰에 `Workers Scripts: Edit`, `D1: Edit` 권한을 주고, 이 환경의 Secret `CLOUDFLARE_ADMIN_DEPLOY_TOKEN`에 저장합니다. 계정 ID는 `admin/wrangler.jsonc`를 사용합니다. 토큰을 추가한 뒤 **Actions → Deploy Admin Worker → Run workflow**에서 `main`을 선택하면 현재 버전을 바로 배포할 수 있습니다.
+
+직접 배포가 필요한 경우 아래 명령을 사용합니다.
 
 ```sh
 npm ci

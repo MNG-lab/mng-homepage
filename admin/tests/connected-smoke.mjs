@@ -1,9 +1,12 @@
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {chromium} from 'playwright';
 import {paginateRequests,requestSummary,listQuery} from '../worker/request-list.js';
 import {paginateHistory,historyPage} from '../worker/history-list.js';
 const server=spawn('npm',['run','admin:preview','--','--port','4193'],{stdio:'ignore'});
+const screenshotDir=tmpdir();
 let browser;
 try {
  for(let i=0;i<80;i++){try{if((await fetch('http://127.0.0.1:4193')).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
@@ -25,7 +28,7 @@ try {
   if(screenshot)await page.screenshot({path:screenshot,fullPage:true});
   releaseUI();await button.locator('.refresh-labels .is-visible').filter({hasText:/완료$/}).waitFor();
   uiFailures.set(path,2);await button.click();await button.locator('.refresh-labels .is-visible').filter({hasText:/재시도$/}).waitFor();await keep();await onError();
-  const previousViewport=page.viewportSize();await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'refresh error mobile overflow: '+path);await page.screenshot({path:'/private/tmp/mng-refresh-error-mobile.png',fullPage:true});await page.setViewportSize(previousViewport);
+  const previousViewport=page.viewportSize();await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'refresh error mobile overflow: '+path);await page.screenshot({path:join(screenshotDir,'mng-refresh-error-mobile.png'),fullPage:true});await page.setViewportSize(previousViewport);
   await button.click();await button.locator('.refresh-labels .is-visible').filter({hasText:/완료$/}).waitFor();
  }
 
@@ -120,7 +123,7 @@ try {
  holdRequestRead=true;heldRequestRead=false;await refreshControl.click();for(let i=0;i<100&&!heldRequestRead;i++)await new Promise(r=>setTimeout(r,20));assert.equal(heldRequestRead,true);
  await page.getByRole('button',{name:/^지난 요청/}).click();await page.getByText('아직 지난 요청이 없습니다.',{exact:true}).waitFor();assert.equal(await refreshControl.getAttribute('aria-busy'),'true');releaseRequestRead();await page.getByRole('button',{name:'새로고침 완료',exact:true}).waitFor();
  // Each route re-entry revalidates, preserving the visible list while it loads.
- const catalogReads=()=>uiReads.get('/api/requests?view=catalog')||0;
+ const catalogReads=()=>uiReads.get('/api/requests?view=catalog&cached=1')||0;
  for(const destination of ['대시보드','홈페이지 버전','설정','새 수정 요청']){
   await page.getByRole('button',{name:destination,exact:true}).click();await page.getByRole('heading',{name:destination,exact:true}).waitFor();
   const previousTitle=records[0].title,nextTitle=`${destination}에서 돌아온 최신 요청`,beforeReturn=catalogReads();
@@ -169,7 +172,7 @@ try {
  for(let i=0;i<4;i++){await page.keyboard.press('Tab');assert.equal(await approvalDialog.evaluate(el=>el.contains(document.activeElement)||document.activeElement===document.body),true,'Tab may reach browser chrome, but never background controls');}
  await page.setViewportSize({width:390,height:844});
  assert.equal(await approvalDialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}),true);
- await page.screenshot({path:'/private/tmp/mng-approval-dialog-mobile.png'});await page.setViewportSize({width:1440,height:1000});
+ await page.screenshot({path:join(screenshotDir,'mng-approval-dialog-mobile.png')});await page.setViewportSize({width:1440,height:1000});
  await page.keyboard.press('Escape');await approvalDialog.waitFor({state:'detached'});assert.equal(approvals,0);assert.equal(await approveButton.evaluate(el=>el===document.activeElement),true);
  // A polling update must not silently approve a different revision.
  await approveButton.click();approvalResponseHead='b'.repeat(40);
@@ -200,20 +203,21 @@ try {
  const restoredRow=page.locator('.version-card').filter({has:page.locator('.version-number').getByText('버전 122',{exact:true})});
  await restoredRow.getByRole('heading',{name:'롤백 체험 — 임시 변경 B',exact:true}).waitFor();await restoredRow.locator('.version-kind').getByText('되돌리기',{exact:true}).waitFor();assert.equal(await restoredRow.getByRole('link',{name:'되돌린 대상 버전 121 상세 보기'}).getAttribute('href'),'/history/121');
  await page.locator('.version-card').filter({has:page.locator('.version-number').getByText('버전 121',{exact:true})}).locator('.version-kind').getByText('AI 수정',{exact:true}).waitFor();
- await page.screenshot({path:'/private/tmp/mng-version-design-desktop.png',fullPage:true});
- await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'version header mobile overflow');await page.screenshot({path:'/private/tmp/mng-version-design-mobile.png',fullPage:true});
+ await page.screenshot({path:join(screenshotDir,'mng-version-design-desktop.png'),fullPage:true});
+ await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'version header mobile overflow');await page.screenshot({path:join(screenshotDir,'mng-version-design-mobile.png'),fullPage:true});
  await page.setViewportSize({width:1440,height:1000});
- await exerciseRefresh({path:'/api/history?page=1',button:page.locator('.version-toolbar .refresh-button'),keep:async()=>{assert.equal(await page.locator('.version-card').count(),3);assert.equal(await page.getByRole('region',{name:'현재 홈페이지 버전'}).getByText('버전 124',{exact:true}).count(),1);},screenshot:'/private/tmp/mng-history-refresh-busy.png'});
+ const firstHistoryRead='/api/history?page=1&cached=1';
+ await exerciseRefresh({path:firstHistoryRead,button:page.locator('.version-toolbar .refresh-button'),keep:async()=>{assert.equal(await page.locator('.version-card').count(),3);assert.equal(await page.getByRole('region',{name:'현재 홈페이지 버전'}).getByText('버전 124',{exact:true}).count(),1);},screenshot:join(screenshotDir,'mng-history-refresh-busy.png')});
  // Re-entering history immediately shows the saved page and revalidates it.
  await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('heading',{name:'요청 관리',exact:true}).waitFor();
- holdUIPath='/api/history?page=1';uiHeld=false;
+ holdUIPath=firstHistoryRead;uiHeld=false;
  await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await waitForHeld();
  assert.equal(await page.locator('.version-card').count(),3);assert.equal(await page.locator('.version-toolbar .refresh-button').getAttribute('aria-busy'),'true');
  assert.equal(await page.getByText('홈페이지 버전 불러오는 중',{exact:true}).count(),0);
  historyRows=historyRows.map(r=>r.number===120?{...r,title:'홈페이지 버전 갱신 확인'}:r);
  releaseUI();await page.locator('.version-card').getByRole('heading',{name:'홈페이지 버전 갱신 확인',exact:true}).waitFor();
  // Read failures retain the cached page; retry clears the error and updates it.
- await page.getByRole('button',{name:'요청 관리',exact:true}).click();uiFailures.set('/api/history?page=1',2);
+ await page.getByRole('button',{name:'요청 관리',exact:true}).click();uiFailures.set(firstHistoryRead,2);
  await page.getByRole('button',{name:'홈페이지 버전',exact:true}).click();await page.getByRole('alert').filter({hasText:'새로고침 테스트 조회 오류'}).waitFor();assert.equal(await page.locator('.version-card').count(),3);
  await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();await page.getByRole('alert').waitFor({state:'hidden'});
  await page.getByRole('link',{name:'현재 버전 보기',exact:true}).click();await page.locator('.version-detail').getByText('버전 124',{exact:true}).waitFor();
@@ -279,7 +283,7 @@ try {
  await page.goto('http://127.0.0.1:4193/dashboard');await page.locator('.stat-card').filter({hasText:'확인이 필요한 실패'}).getByText('42',{exact:false}).waitFor();assert.equal(await page.locator('.connected-list').first().locator('li').count(),5);
  // Dashboard summaries survive other routes and refresh with the same feedback.
  await page.getByRole('button',{name:'요청 관리',exact:true}).click();await page.getByRole('heading',{name:'요청 관리',exact:true}).waitFor();
- holdUIPath='/api/requests?view=summary';uiHeld=false;await page.getByRole('button',{name:'대시보드',exact:true}).click();await waitForHeld();
+ holdUIPath='/api/requests?view=summary&cached=1';uiHeld=false;await page.getByRole('button',{name:'대시보드',exact:true}).click();await waitForHeld();
  assert.equal(await page.locator('.stat-card').filter({hasText:'확인이 필요한 실패'}).getByText('42',{exact:false}).count(),1);assert.equal(await page.locator('.refresh-button').getAttribute('aria-busy'),'true');
  releaseUI();await page.getByRole('button',{name:'새로고침',exact:true}).waitFor();
  records=records.map((r,i)=>({...r,auth:i<25?{renewed:false}:null,run:{id:r.id,attempt:1,status:'completed',conclusion:'failure'}}));
@@ -388,7 +392,7 @@ try {
  await page.goto('http://127.0.0.1:4193/requests/99999');await page.getByRole('heading',{name:'요청을 찾을 수 없어요'}).waitFor();
  await page.setViewportSize({width:390,height:844});
  for(const route of ['dashboard','requests','history','settings']){await page.goto('http://127.0.0.1:4193/'+route);await page.locator('.connected-main').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'mobile overflow: '+route);}
- await page.screenshot({path:'/private/tmp/mng-settings-mobile.png',fullPage:true});
+ await page.screenshot({path:join(screenshotDir,'mng-settings-mobile.png'),fullPage:true});
  sameSnapshot=true;await page.goto('http://127.0.0.1:4193/history/124');await page.getByRole('button',{name:'현재와 같은 상태입니다'}).waitFor();assert.equal(await page.getByRole('button',{name:'현재와 같은 상태입니다'}).isDisabled(),true);
  role='editor';transfer={from_email:'previous@gmail.com',to_email:'owner@example.test',expires_at:Date.now()+86400000};await page.goto('http://127.0.0.1:4193/settings');
  const incoming=page.getByRole('region',{name:'최고 관리자 변경 요청',exact:true});await incoming.getByRole('button',{name:'최고 관리자 역할 수락',exact:true}).click();assert.equal(settingsWrites.length,6);assert.equal(await page.getByRole('heading',{name:'구성원 관리',exact:true}).count(),0);
